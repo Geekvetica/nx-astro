@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "author": "Geekvetica Paweł Wojciechowski",
+  "packageManager": "pnpm@10.18.2",
   "scripts": {
     "build": "nx build nx-astro",
     "test": "nx test nx-astro",
