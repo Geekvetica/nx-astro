@@ -15,7 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "nx-astro": ["nx-astro/src/index.ts"]
+      "@geekvetica/nx-astro": ["nx-astro/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

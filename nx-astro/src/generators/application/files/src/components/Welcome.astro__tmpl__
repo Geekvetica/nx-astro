@@ -1,0 +1,147 @@
+---
+const projectName = '<%= projectName %>';
+---
+
+<main>
+  <h1>Welcome to <span class="text-gradient">{projectName}</span></h1>
+  <p class="instructions">
+    To get started, open the directory <code>src/pages</code> in your project.<br />
+    <strong>Code Challenge:</strong> Tweak the "Welcome to {projectName}" message above.
+  </p>
+  <ul role="list" class="link-card-grid">
+    <li class="link-card">
+      <a href="https://docs.astro.build/">
+        <h2>
+          Documentation
+          <span>&rarr;</span>
+        </h2>
+        <p>Learn how Astro works and explore the official API docs.</p>
+      </a>
+    </li>
+    <li class="link-card">
+      <a href="https://astro.build/integrations/">
+        <h2>
+          Integrations
+          <span>&rarr;</span>
+        </h2>
+        <p>Supercharge your project with new frameworks and libraries.</p>
+      </a>
+    </li>
+    <li class="link-card">
+      <a href="https://astro.build/themes/">
+        <h2>
+          Themes
+          <span>&rarr;</span>
+        </h2>
+        <p>Explore a galaxy of community-built starter themes.</p>
+      </a>
+    </li>
+    <li class="link-card">
+      <a href="https://astro.build/chat/">
+        <h2>
+          Community
+          <span>&rarr;</span>
+        </h2>
+        <p>Come say hi to our amazing Discord community.</p>
+      </a>
+    </li>
+  </ul>
+</main>
+
+<style>
+  main {
+    margin: auto;
+    padding: 1rem;
+    width: 800px;
+    max-width: calc(100% - 2rem);
+    color: white;
+    font-size: 20px;
+    line-height: 1.6;
+  }
+  h1 {
+    font-size: 4rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    margin-bottom: 1em;
+  }
+  .text-gradient {
+    background-image: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 400%;
+    background-position: 0%;
+  }
+  .instructions {
+    margin-bottom: 2rem;
+    border: 1px solid rgba(var(--accent-light), 25%);
+    background: linear-gradient(
+      rgba(var(--accent-dark), 66%),
+      rgba(var(--accent-dark), 33%)
+    );
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+  .instructions code {
+    font-size: 0.8em;
+    font-weight: bold;
+    background: rgba(var(--accent-light), 12%);
+    color: rgb(var(--accent-light));
+    border-radius: 4px;
+    padding: 0.3em 0.4em;
+  }
+  .instructions strong {
+    color: rgb(var(--accent-light));
+  }
+  .link-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(24ch, 1fr));
+    gap: 2rem;
+    padding: 0;
+  }
+  .link-card {
+    list-style: none;
+    display: flex;
+    padding: 1px;
+    background-color: #23262d;
+    background-image: none;
+    background-size: 400%;
+    border-radius: 7px;
+    background-position: 100%;
+    transition: background-position 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  }
+  .link-card > a {
+    width: 100%;
+    text-decoration: none;
+    line-height: 1.4;
+    padding: calc(1.5rem - 1px);
+    border-radius: 8px;
+    color: white;
+    background-color: #23262d;
+    opacity: 0.8;
+  }
+  .link-card:is(:hover, :focus-within) {
+    background-position: 0;
+    background-image: var(--accent-gradient);
+  }
+  .link-card:is(:hover, :focus-within) h2 {
+    color: rgb(var(--accent-light));
+  }
+  .link-card h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    transition: color 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-card p {
+    margin-top: 0.5rem;
+    margin-bottom: 0;
+  }
+  .link-card h2 span {
+    display: inline-block;
+    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .link-card:is(:hover, :focus-within) h2 span {
+    transform: translateX(4px);
+  }
+</style>

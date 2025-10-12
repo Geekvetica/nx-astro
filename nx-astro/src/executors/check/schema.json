@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "NxAstroCheck",
+  "title": "Run Astro type checking and diagnostics",
+  "description": "Runs Astro's type checking and diagnostics using the `astro check` command",
+  "type": "object",
+  "properties": {
+    "watch": {
+      "type": "boolean",
+      "description": "Run in watch mode for continuous checking",
+      "default": false
+    },
+    "tsconfig": {
+      "type": "string",
+      "description": "Path to tsconfig.json file"
+    },
+    "root": {
+      "type": "string",
+      "description": "Project root path (usually provided by Nx)"
+    },
+    "config": {
+      "type": "string",
+      "description": "Path to Astro config file",
+      "default": "astro.config.mjs"
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Enable verbose output",
+      "default": false
+    },
+    "additionalArgs": {
+      "type": "array",
+      "description": "Additional CLI arguments to pass to Astro",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": []
+}

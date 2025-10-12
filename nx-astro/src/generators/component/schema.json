@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "NxAstroComponent",
+  "title": "Create an Astro component",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Component name",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
+      "x-prompt": "What name would you like to use for the component?",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9-_]*$"
+    },
+    "project": {
+      "type": "string",
+      "description": "The name of the Astro project",
+      "$default": {
+        "$source": "projectName"
+      },
+      "x-prompt": "What is the name of the Astro project?",
+      "x-dropdown": "projects"
+    },
+    "directory": {
+      "type": "string",
+      "description": "Directory path within src/components where the component will be placed (e.g., 'ui', 'forms', 'ui/buttons')"
+    },
+    "export": {
+      "type": "boolean",
+      "description": "Add an export to src/components/index.ts",
+      "default": false
+    },
+    "skipFormat": {
+      "type": "boolean",
+      "description": "Skip formatting files after generation",
+      "default": false
+    }
+  },
+  "required": ["name", "project"]
+}

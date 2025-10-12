@@ -1,0 +1,57 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "version": 2,
+  "title": "Test executor",
+  "description": "Run tests using Vitest for an Astro project",
+  "type": "object",
+  "properties": {
+    "testPathPattern": {
+      "type": "string",
+      "description": "Test file pattern to match"
+    },
+    "watch": {
+      "type": "boolean",
+      "description": "Watch mode for continuous testing",
+      "default": false
+    },
+    "coverage": {
+      "type": "boolean",
+      "description": "Generate coverage reports",
+      "default": false
+    },
+    "ci": {
+      "type": "boolean",
+      "description": "CI mode (non-interactive)",
+      "default": false
+    },
+    "root": {
+      "type": "string",
+      "description": "Project root path (usually provided by Nx)"
+    },
+    "config": {
+      "type": "string",
+      "description": "Path to Vitest config file"
+    },
+    "reporter": {
+      "type": "string",
+      "description": "Reporter to use (e.g., 'default', 'verbose', 'json')"
+    },
+    "run": {
+      "type": "boolean",
+      "description": "Run tests once and exit (disables watch by default)"
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Verbose output",
+      "default": false
+    },
+    "additionalArgs": {
+      "type": "array",
+      "description": "Additional CLI arguments",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": []
+}

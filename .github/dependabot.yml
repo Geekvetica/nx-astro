@@ -1,0 +1,176 @@
+# =============================================================================
+# Dependabot Configuration for nx-astro plugin
+# =============================================================================
+#
+# Purpose:
+#   Automated dependency updates to keep the project secure and up-to-date.
+#   Dependabot will create PRs for outdated dependencies automatically.
+#
+# Strategy:
+#   - Check for npm updates daily
+#   - Check for GitHub Actions updates weekly
+#   - Group related updates to reduce PR noise
+#   - Apply semantic versioning rules
+#
+# Documentation:
+#   https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+#
+# =============================================================================
+
+version: 2
+
+updates:
+  # ===========================================================================
+  # NPM Dependencies
+  # ===========================================================================
+  # Updates all npm packages including dev dependencies
+  # Runs daily to catch security updates quickly
+  # ===========================================================================
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'daily'
+      time: '03:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 10
+
+    # Group updates by type to reduce PR clutter
+    groups:
+      # Nx packages should be updated together to maintain compatibility
+      nx:
+        patterns:
+          - '@nx/*'
+          - 'nx'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+      # TypeScript and related tooling
+      typescript:
+        patterns:
+          - 'typescript'
+          - 'typescript-eslint'
+          - '@types/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+      # Jest testing framework and related packages
+      jest:
+        patterns:
+          - 'jest'
+          - 'jest-*'
+          - '@types/jest'
+          - 'ts-jest'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+      # ESLint and linting tools
+      eslint:
+        patterns:
+          - 'eslint'
+          - 'eslint-*'
+          - '@eslint/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+      # SWC compiler and related packages
+      swc:
+        patterns:
+          - '@swc/*'
+          - '@swc-node/*'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+      # Development dependencies (non-critical)
+      dev-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+
+    # Version strategy
+    versioning-strategy: 'increase'
+
+    # Commit message configuration
+    commit-message:
+      prefix: 'chore(deps)'
+      prefix-development: 'chore(deps-dev)'
+      include: 'scope'
+
+    # Labels for PRs
+    labels:
+      - 'dependencies'
+      - 'automated'
+
+    # Reviewers (update with actual GitHub usernames if needed)
+    # reviewers:
+    #   - "your-github-username"
+
+    # Allow both direct and indirect dependencies
+    allow:
+      - dependency-type: 'direct'
+      - dependency-type: 'indirect'
+
+    # Ignore specific packages if needed
+    # ignore:
+    #   - dependency-name: "package-name"
+    #     versions: ["1.x", "2.x"]
+
+  # ===========================================================================
+  # GitHub Actions
+  # ===========================================================================
+  # Updates GitHub Actions to their latest versions
+  # Runs weekly (actions change less frequently)
+  # ===========================================================================
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '03:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 5
+
+    # Commit message configuration
+    commit-message:
+      prefix: 'chore(ci)'
+      include: 'scope'
+
+    # Labels for PRs
+    labels:
+      - 'ci'
+      - 'dependencies'
+      - 'automated'
+
+    # Reviewers (update with actual GitHub usernames if needed)
+    # reviewers:
+    #   - "your-github-username"
+# =============================================================================
+# Additional Notes
+# =============================================================================
+#
+# Security Updates:
+#   Dependabot will automatically create PRs for security vulnerabilities
+#   regardless of the schedule settings above.
+#
+# PR Management:
+#   - Review and merge PRs promptly to keep dependencies current
+#   - CI must pass before merging
+#   - Major version updates will create separate PRs for review
+#
+# Customization:
+#   - Adjust schedules based on team preferences
+#   - Modify grouping strategy as the project evolves
+#   - Add specific ignore rules for problematic dependencies
+#
+# Best Practices:
+#   - Always run tests before merging dependency updates
+#   - Review changelogs for major updates
+#   - Keep the number of open PRs manageable
+#   - Use branch protection rules to require CI checks
+#
+# =============================================================================

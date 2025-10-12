@@ -1,0 +1,689 @@
+# =============================================================================
+# Example CI/CD Workflow for Nx Workspace with Astro Applications
+# =============================================================================
+#
+# Purpose:
+#   Complete reference workflow for projects using nx-astro plugin.
+#   Demonstrates testing, building, and deploying Astro applications in an
+#   Nx monorepo using affected commands and optimal caching.
+#
+# Usage:
+#   Copy this file to your repository as .github/workflows/ci.yml
+#   Adjust project names, deployment targets, and secrets as needed.
+#
+# Prerequisites:
+#   - Nx workspace with @geekvetica/nx-astro installed
+#   - One or more Astro applications
+#   - Package manager: pnpm (adjust for npm/yarn if needed)
+#
+# Features:
+#   - Nx affected commands for efficiency
+#   - Comprehensive caching (dependencies, Nx cache, build outputs)
+#   - Astro-specific checks (sync, check)
+#   - Parallel execution for speed
+#   - Multiple deployment examples
+#   - Preview deployments for PRs
+#
+# Customization Points:
+#   - Replace 'my-astro-app' with your actual app names
+#   - Add/remove deployment jobs based on your platform
+#   - Adjust Node.js version if needed
+#   - Modify parallel execution count based on CI runner size
+#   - Add environment-specific secrets
+#
+# =============================================================================
+
+name: CI/CD
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same workflow and branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Minimal permissions for security
+permissions:
+  contents: read
+  pull-requests: write # For commenting on PRs with preview URLs
+
+env:
+  NODE_VERSION: '20.x'
+  PNPM_VERSION: '9'
+  # Disable Astro telemetry in CI
+  ASTRO_TELEMETRY_DISABLED: '1'
+  # Nx Cloud token (optional - for remote caching)
+  # NX_CLOUD_ACCESS_TOKEN: ${{ secrets.NX_CLOUD_ACCESS_TOKEN }}
+
+jobs:
+  # ===========================================================================
+  # Job 1: Setup and Install Dependencies
+  # ===========================================================================
+  # Purpose:
+  #   - Install dependencies with caching
+  #   - Determine affected projects for subsequent jobs
+  #   - Create reusable cache artifacts
+  # ===========================================================================
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      has-affected: ${{ steps.affected.outputs.has-affected }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history for Nx affected commands
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            libs/*/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+      - name: Check for affected projects
+        id: affected
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            AFFECTED=$(npx nx affected:apps --base=origin/${{ github.base_ref }} --head=HEAD --plain)
+            if [ -n "$AFFECTED" ]; then
+              echo "has-affected=true" >> $GITHUB_OUTPUT
+              echo "Affected projects: $AFFECTED"
+            else
+              echo "has-affected=false" >> $GITHUB_OUTPUT
+              echo "No affected projects"
+            fi
+          else
+            echo "has-affected=true" >> $GITHUB_OUTPUT
+          fi
+
+  # ===========================================================================
+  # Job 2: Sync Astro Dependencies
+  # ===========================================================================
+  # Purpose:
+  #   - Run 'astro sync' to generate TypeScript definitions
+  #   - Required before type checking and building
+  #   - Uses Nx affected commands for efficiency
+  # ===========================================================================
+  sync:
+    name: Sync Astro Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: setup
+    if: needs.setup.outputs.has-affected == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            libs/*/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-sync-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-sync-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Run Astro sync on affected projects
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            pnpm nx affected -t sync --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3
+          else
+            pnpm nx run-many -t sync --all --parallel=3
+          fi
+
+  # ===========================================================================
+  # Job 3: Lint
+  # ===========================================================================
+  # Purpose:
+  #   - Run ESLint/Prettier on affected projects
+  #   - Ensure code quality standards
+  #   - Fail fast on linting errors
+  # ===========================================================================
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: setup
+    if: needs.setup.outputs.has-affected == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            libs/*/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-lint-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-lint-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Run lint on affected projects
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            pnpm nx affected -t lint --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3
+          else
+            pnpm nx run-many -t lint --all --parallel=3
+          fi
+
+  # ===========================================================================
+  # Job 4: Type Check with Astro
+  # ===========================================================================
+  # Purpose:
+  #   - Run 'astro check' for TypeScript validation
+  #   - Catches type errors specific to Astro components
+  #   - Depends on sync job to generate type definitions
+  # ===========================================================================
+  check:
+    name: Astro Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [setup, sync]
+    if: needs.setup.outputs.has-affected == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            libs/*/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-check-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-check-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Run Astro check on affected projects
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            pnpm nx affected -t check --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3
+          else
+            pnpm nx run-many -t check --all --parallel=3
+          fi
+
+  # ===========================================================================
+  # Job 5: Test
+  # ===========================================================================
+  # Purpose:
+  #   - Run unit tests with coverage
+  #   - Upload coverage reports
+  #   - Fail if coverage drops below threshold
+  # ===========================================================================
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: setup
+    if: needs.setup.outputs.has-affected == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            libs/*/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-test-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-test-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Run tests on affected projects
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            pnpm nx affected -t test --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3 --coverage
+          else
+            pnpm nx run-many -t test --all --parallel=3 --coverage
+          fi
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+  # ===========================================================================
+  # Job 6: Build
+  # ===========================================================================
+  # Purpose:
+  #   - Build affected Astro applications
+  #   - Generate production-ready static sites or server bundles
+  #   - Cache build outputs for deployment
+  # ===========================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [setup, sync]
+    if: needs.setup.outputs.has-affected == 'true'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/*/node_modules
+            libs/*/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-build-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Build affected projects
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            pnpm nx affected -t build --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3
+          else
+            pnpm nx run-many -t build --all --parallel=3
+          fi
+
+      - name: Verify build outputs
+        run: |
+          # Check that dist directory exists
+          if [ ! -d "dist" ]; then
+            echo "Error: dist directory not found"
+            exit 1
+          fi
+
+          # List built applications
+          echo "Built applications:"
+          ls -la dist/apps/ || echo "No apps in dist/apps/"
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: dist/
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+          retention-days: 7
+
+  # ===========================================================================
+  # Job 7: Deploy to Production
+  # ===========================================================================
+  # Purpose:
+  #   - Deploy to production hosting platform
+  #   - Only runs on main branch pushes
+  #   - Uses platform-specific deployment action
+  #
+  # Note: This is a template. Uncomment and customize for your platform.
+  # ===========================================================================
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, check, test, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    # Add environment for GitHub environments (optional)
+    # environment:
+    #   name: production
+    #   url: https://your-app.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore build artifacts
+        uses: actions/cache@v4
+        with:
+          path: dist/
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      # ========================================================================
+      # Choose your deployment platform:
+      # Uncomment the relevant section and add required secrets
+      # ========================================================================
+
+      # --- Vercel ---
+      # - name: Deploy to Vercel
+      #   uses: amondnet/vercel-action@v25
+      #   with:
+      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
+      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+      #     working-directory: ./dist/apps/my-astro-app
+      #     vercel-args: '--prod'
+
+      # --- Netlify ---
+      # - name: Deploy to Netlify
+      #   uses: nwtgck/actions-netlify@v2
+      #   with:
+      #     publish-dir: './dist/apps/my-astro-app'
+      #     production-branch: main
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     deploy-message: "Deploy from GitHub Actions"
+      #   env:
+      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      # --- Cloudflare Pages ---
+      # - name: Deploy to Cloudflare Pages
+      #   uses: cloudflare/pages-action@v1
+      #   with:
+      #     apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      #     accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      #     projectName: my-astro-app
+      #     directory: ./dist/apps/my-astro-app
+      #     gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+
+      # --- GitHub Pages ---
+      # - name: Deploy to GitHub Pages
+      #   uses: peaceiris/actions-gh-pages@v3
+      #   with:
+      #     github_token: ${{ secrets.GITHUB_TOKEN }}
+      #     publish_dir: ./dist/apps/my-astro-app
+
+      # --- AWS S3 + CloudFront ---
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: us-east-1
+      #
+      # - name: Deploy to S3
+      #   run: |
+      #     aws s3 sync ./dist/apps/my-astro-app s3://${{ secrets.S3_BUCKET }} --delete
+      #
+      # - name: Invalidate CloudFront
+      #   run: |
+      #     aws cloudfront create-invalidation \
+      #       --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
+      #       --paths "/*"
+
+      - name: Deployment placeholder
+        run: |
+          echo "Configure deployment by uncommenting the relevant section above"
+          echo "Built applications available in: dist/apps/"
+          ls -la dist/apps/
+
+  # ===========================================================================
+  # Job 8: Deploy Preview (Pull Requests)
+  # ===========================================================================
+  # Purpose:
+  #   - Deploy preview versions for pull requests
+  #   - Allows testing changes before merging
+  #   - Posts preview URL as PR comment
+  #
+  # Note: This is a template. Uncomment and customize for your platform.
+  # ===========================================================================
+  deploy-preview:
+    name: Deploy Preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [lint, check, test, build]
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore build artifacts
+        uses: actions/cache@v4
+        with:
+          path: dist/
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      # ========================================================================
+      # Choose your preview deployment platform:
+      # ========================================================================
+
+      # --- Vercel Preview ---
+      # - name: Deploy preview to Vercel
+      #   id: vercel-preview
+      #   uses: amondnet/vercel-action@v25
+      #   with:
+      #     vercel-token: ${{ secrets.VERCEL_TOKEN }}
+      #     vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+      #     vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+      #     working-directory: ./dist/apps/my-astro-app
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #
+      # - name: Comment PR with preview URL
+      #   uses: actions/github-script@v7
+      #   with:
+      #     script: |
+      #       github.rest.issues.createComment({
+      #         issue_number: context.issue.number,
+      #         owner: context.repo.owner,
+      #         repo: context.repo.repo,
+      #         body: `Preview deployed to: ${{ steps.vercel-preview.outputs.preview-url }}`
+      #       })
+
+      # --- Netlify Preview ---
+      # - name: Deploy preview to Netlify
+      #   id: netlify-preview
+      #   uses: nwtgck/actions-netlify@v2
+      #   with:
+      #     publish-dir: './dist/apps/my-astro-app'
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+      #     deploy-message: "Preview for PR #${{ github.event.pull_request.number }}"
+      #     alias: pr-${{ github.event.pull_request.number }}
+      #   env:
+      #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+      - name: Preview deployment placeholder
+        run: |
+          echo "Configure preview deployment by uncommenting the relevant section above"
+          echo "Preview URL would be posted to PR #${{ github.event.pull_request.number }}"
+
+  # ===========================================================================
+  # Job 9: CI Success Check
+  # ===========================================================================
+  # Purpose:
+  #   - Aggregates all job statuses
+  #   - Used as a required status check in branch protection
+  #   - Simplifies branch protection rules
+  # ===========================================================================
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [lint, check, test, build]
+
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" && "${{ needs.lint.result }}" != "skipped" ]] || \
+             [[ "${{ needs.check.result }}" != "success" && "${{ needs.check.result }}" != "skipped" ]] || \
+             [[ "${{ needs.test.result }}" != "success" && "${{ needs.test.result }}" != "skipped" ]] || \
+             [[ "${{ needs.build.result }}" != "success" && "${{ needs.build.result }}" != "skipped" ]]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          fi
+          echo "All CI jobs passed successfully"

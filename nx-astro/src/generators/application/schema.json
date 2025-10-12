@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "NxAstroApplication",
+  "title": "Create or import an Astro application",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Application name",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
+      "x-prompt": "What name would you like to use for the application?",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$"
+    },
+    "directory": {
+      "type": "string",
+      "description": "Directory where the application will be placed (e.g., 'apps/my-app')"
+    },
+    "tags": {
+      "type": "string",
+      "description": "Tags to add to the project (comma-separated)"
+    },
+    "importExisting": {
+      "type": "boolean",
+      "description": "Import an existing Astro project into the workspace",
+      "default": false
+    },
+    "template": {
+      "type": "string",
+      "description": "Starter template to use",
+      "enum": ["minimal", "blog", "portfolio"],
+      "default": "minimal",
+      "x-prompt": {
+        "message": "Which template would you like to use?",
+        "type": "list",
+        "items": [
+          {
+            "value": "minimal",
+            "label": "Minimal - A basic starter template"
+          },
+          {
+            "value": "blog",
+            "label": "Blog - A blog template with content collections"
+          },
+          {
+            "value": "portfolio",
+            "label": "Portfolio - A portfolio template"
+          }
+        ]
+      }
+    },
+    "skipFormat": {
+      "type": "boolean",
+      "description": "Skip formatting files after generation",
+      "default": false
+    }
+  },
+  "required": ["name"]
+}

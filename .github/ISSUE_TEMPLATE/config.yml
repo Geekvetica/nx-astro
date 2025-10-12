@@ -1,0 +1,14 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Question or Discussion
+    url: https://github.com/pwojciechowski/_dev/nx-astro/discussions
+    about: Ask questions or discuss ideas with the community
+  - name: Documentation
+    url: https://github.com/pwojciechowski/_dev/nx-astro#readme
+    about: Check the documentation for usage instructions and examples
+  - name: Astro Documentation
+    url: https://docs.astro.build
+    about: Official Astro documentation for Astro-specific questions
+  - name: Nx Documentation
+    url: https://nx.dev
+    about: Official Nx documentation for Nx-specific questions

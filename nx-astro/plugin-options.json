@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "NxAstroPluginOptions",
+  "title": "Nx-Astro Plugin Options",
+  "description": "Configuration options for the Nx-Astro plugin",
+  "type": "object",
+  "properties": {
+    "devTargetName": {
+      "type": "string",
+      "description": "Name of the target for running the Astro development server",
+      "default": "dev"
+    },
+    "buildTargetName": {
+      "type": "string",
+      "description": "Name of the target for building the Astro project for production",
+      "default": "build"
+    },
+    "previewTargetName": {
+      "type": "string",
+      "description": "Name of the target for previewing the built Astro project",
+      "default": "preview"
+    },
+    "checkTargetName": {
+      "type": "string",
+      "description": "Name of the target for running Astro type checking",
+      "default": "check"
+    },
+    "testTargetName": {
+      "type": "string",
+      "description": "Name of the target for running tests",
+      "default": "test"
+    },
+    "syncTargetName": {
+      "type": "string",
+      "description": "Name of the target for syncing content collections",
+      "default": "sync"
+    }
+  }
+}

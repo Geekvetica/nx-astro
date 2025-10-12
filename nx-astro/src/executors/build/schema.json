@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "NxAstroBuild",
+  "title": "Build an Astro project for production",
+  "description": "Builds an Astro project using the `astro build` command",
+  "type": "object",
+  "properties": {
+    "outputPath": {
+      "type": "string",
+      "description": "Override the default output directory (default from astro.config)"
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["static", "server"],
+      "description": "Build mode: 'static' for static site generation, 'server' for SSR"
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Enable verbose output",
+      "default": false
+    },
+    "root": {
+      "type": "string",
+      "description": "Project root path (usually provided by Nx)"
+    },
+    "config": {
+      "type": "string",
+      "description": "Path to Astro config file",
+      "default": "astro.config.mjs"
+    },
+    "site": {
+      "type": "string",
+      "description": "Site URL for absolute URLs"
+    },
+    "base": {
+      "type": "string",
+      "description": "Base path for deployment"
+    },
+    "sourcemap": {
+      "type": "boolean",
+      "description": "Generate source maps",
+      "default": false
+    },
+    "clean": {
+      "type": "boolean",
+      "description": "Clean output directory before build",
+      "default": true
+    },
+    "additionalArgs": {
+      "type": "array",
+      "description": "Additional CLI arguments to pass to Astro",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": []
+}

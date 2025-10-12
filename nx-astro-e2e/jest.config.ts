@@ -8,4 +8,5 @@ export default {
   coverageDirectory: '../coverage/nx-astro-e2e',
   globalSetup: '../tools/scripts/start-local-registry.ts',
   globalTeardown: '../tools/scripts/stop-local-registry.ts',
+  testTimeout: 300000, // 5 minutes for E2E tests
 };

@@ -1,11 +1,27 @@
 {
-  "name": "@nx-astro/source",
+  "name": "@geekvetica/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "author": "Geekvetica Paweł Wojciechowski",
+  "scripts": {
+    "build": "nx build nx-astro",
+    "test": "nx test nx-astro",
+    "test:e2e": "nx e2e nx-astro-e2e",
+    "test:all": "nx run-many -t test && nx e2e nx-astro-e2e",
+    "lint": "nx run-many -t lint --all",
+    "lint:fix": "nx run-many -t lint --all --fix",
+    "format": "nx format:write",
+    "format:check": "nx format:check",
+    "typecheck": "nx run-many -t build --all",
+    "clean": "nx reset && rm -rf dist node_modules/.cache",
+    "release": "nx release",
+    "verify": "npm run format:check && npm run lint && npm run test && npm run build"
+  },
   "private": true,
   "dependencies": {
-    "@nx/devkit": "21.6.4"
+    "@astrojs/node": "^9.0.0",
+    "@nx/devkit": "21.6.4",
+    "astro": "^5.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.8.0",
@@ -13,6 +29,7 @@
     "@nx/eslint-plugin": "21.6.4",
     "@nx/jest": "21.6.4",
     "@nx/js": "21.6.4",
+    "@nx/plugin": "21.6.4",
     "@nx/workspace": "21.6.4",
     "@swc-node/register": "~1.9.1",
     "@swc/cli": "~0.6.0",
@@ -34,8 +51,7 @@
     "tslib": "^2.3.0",
     "typescript": "~5.9.2",
     "typescript-eslint": "^8.40.0",
-    "verdaccio": "^6.0.5",
-    "@nx/plugin": "21.6.4"
+    "verdaccio": "^6.0.5"
   },
   "nx": {
     "includedScripts": []

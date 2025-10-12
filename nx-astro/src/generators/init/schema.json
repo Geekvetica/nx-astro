@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/schema",
+  "$id": "NxAstroInit",
+  "title": "Initialize the @geekvetica/nx-astro plugin",
+  "description": "Initialize the @geekvetica/nx-astro plugin in an Nx workspace by registering the plugin and installing dependencies.",
+  "type": "object",
+  "properties": {
+    "skipPackageJson": {
+      "type": "boolean",
+      "description": "Skip adding Astro dependencies to package.json",
+      "default": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,8 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Welcome from '../components/Welcome.astro';
+---
+
+<Layout title="Welcome to <%= projectName %>">
+  <Welcome />
+</Layout>

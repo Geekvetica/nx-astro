@@ -1,0 +1,67 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "NxAstroDev",
+  "title": "Run Astro development server",
+  "description": "Runs the Astro development server with Hot Module Replacement (HMR) using the `astro dev` command",
+  "type": "object",
+  "properties": {
+    "port": {
+      "type": "number",
+      "description": "Development server port",
+      "default": 4321
+    },
+    "host": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "boolean"
+        }
+      ],
+      "description": "Host address to bind the server to (default: localhost)"
+    },
+    "open": {
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "boolean"
+        }
+      ],
+      "description": "Open browser on server start",
+      "default": false
+    },
+    "root": {
+      "type": "string",
+      "description": "Project root path (usually provided by Nx)"
+    },
+    "config": {
+      "type": "string",
+      "description": "Path to Astro config file",
+      "default": "astro.config.mjs"
+    },
+    "site": {
+      "type": "string",
+      "description": "Site URL for absolute URLs"
+    },
+    "base": {
+      "type": "string",
+      "description": "Base path for deployment"
+    },
+    "verbose": {
+      "type": "boolean",
+      "description": "Enable verbose output",
+      "default": false
+    },
+    "additionalArgs": {
+      "type": "array",
+      "description": "Additional CLI arguments to pass to Astro",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": []
+}

@@ -45,7 +45,46 @@
   },
   "release": {
     "version": {
-      "preVersionCommand": "pnpm dlx nx run-many -t build"
+      "preVersionCommand": "pnpm dlx nx run-many -t build",
+      "generatorOptions": {
+        "currentVersionResolver": "git-tag",
+        "fallbackCurrentVersionResolver": "disk",
+        "specifierSource": "prompt"
+      }
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "createRelease": "github",
+        "file": "CHANGELOG.md",
+        "entryWhenNoChanges": false,
+        "renderOptions": {
+          "authors": true,
+          "commitReferences": true,
+          "versionTitleDate": true
+        }
+      },
+      "projectChangelogs": false
+    },
+    "git": {
+      "commit": true,
+      "commitMessage": "chore(release): publish {version}",
+      "commitArgs": "--no-verify",
+      "tag": true,
+      "tagMessage": "v{version}",
+      "tagArgs": "--force"
     }
-  }
+  },
+  "plugins": [
+    {
+      "plugin": "@geekvetica/nx-astro",
+      "options": {
+        "devTargetName": "dev",
+        "buildTargetName": "build",
+        "previewTargetName": "preview",
+        "checkTargetName": "check",
+        "testTargetName": "test",
+        "syncTargetName": "sync"
+      }
+    }
+  ]
 }

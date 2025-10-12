@@ -1,0 +1,433 @@
+# =============================================================================
+# CI/CD Pipeline for nx-astro plugin
+# =============================================================================
+#
+# Purpose:
+#   Automated continuous integration pipeline that runs on every push and PR.
+#   Ensures code quality, runs tests, and validates the build process.
+#
+# Triggers:
+#   - Push to main branch
+#   - Pull requests to main branch
+#   - Manual workflow dispatch
+#
+# Architecture:
+#   - Uses a modular approach with reusable composite steps
+#   - Implements aggressive caching for performance
+#   - Runs jobs in parallel where possible
+#   - Fails fast on errors
+#
+# Jobs:
+#   1. setup: Install dependencies with caching
+#   2. lint: Run ESLint on all projects
+#   3. test: Run unit tests with coverage
+#   4. build: Build the plugin
+#   5. e2e: Run end-to-end tests
+#
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+# Cancel in-progress runs for the same workflow and branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Set default permissions to read-only for security
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20.x'
+  # Enable Nx caching in CI
+  NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
+  # Coverage threshold (fail if below this percentage)
+  COVERAGE_THRESHOLD: 80
+
+jobs:
+  # ===========================================================================
+  # Job 1: Setup and Cache Dependencies
+  # ===========================================================================
+  # Purpose:
+  #   - Install dependencies using pnpm
+  #   - Cache node_modules and pnpm store for faster subsequent runs
+  #   - Create a reusable cache key based on lock file
+  # ===========================================================================
+  setup:
+    name: Setup & Install Dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            nx-astro/node_modules
+            nx-astro-e2e/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+
+  # ===========================================================================
+  # Job 2: Lint
+  # ===========================================================================
+  # Purpose:
+  #   - Run ESLint on all projects to ensure code quality
+  #   - Fail on any linting errors or warnings
+  #   - Uses Nx affected commands for efficiency in PRs
+  # ===========================================================================
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: setup
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            nx-astro/node_modules
+            nx-astro-e2e/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-lint-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-lint-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Run lint on affected projects
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            npx nx affected -t lint --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3
+          else
+            npx nx run-many -t lint --all --parallel=3
+          fi
+
+  # ===========================================================================
+  # Job 3: Test
+  # ===========================================================================
+  # Purpose:
+  #   - Run unit tests with Jest
+  #   - Generate code coverage reports
+  #   - Upload coverage artifacts
+  #   - Fail if coverage drops below threshold
+  # ===========================================================================
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: setup
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            nx-astro/node_modules
+            nx-astro-e2e/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-test-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-test-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Run tests on affected projects
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            npx nx affected -t test --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3 --configuration=ci
+          else
+            npx nx run-many -t test --all --parallel=3 --configuration=ci
+          fi
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 30
+
+      - name: Check coverage threshold
+        if: always()
+        run: |
+          # Check if coverage directory exists
+          if [ -d "coverage/nx-astro" ]; then
+            # Extract coverage percentage from coverage-summary.json
+            COVERAGE=$(node -pe "
+              const fs = require('fs');
+              const coverageFile = 'coverage/nx-astro/coverage-summary.json';
+              if (fs.existsSync(coverageFile)) {
+                const coverage = JSON.parse(fs.readFileSync(coverageFile, 'utf8'));
+                Math.round(coverage.total.lines.pct);
+              } else {
+                0;
+              }
+            ")
+            echo "Current coverage: ${COVERAGE}%"
+            if [ "$COVERAGE" -lt "${{ env.COVERAGE_THRESHOLD }}" ]; then
+              echo "Coverage ${COVERAGE}% is below threshold ${{ env.COVERAGE_THRESHOLD }}%"
+              exit 1
+            fi
+          else
+            echo "No coverage report found"
+          fi
+
+  # ===========================================================================
+  # Job 4: Build
+  # ===========================================================================
+  # Purpose:
+  #   - Build the nx-astro plugin using Nx
+  #   - Verify build outputs exist and are valid
+  #   - Cache build artifacts for use in subsequent jobs
+  # ===========================================================================
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: setup
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            nx-astro/node_modules
+            nx-astro-e2e/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-build-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-build-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Build nx-astro plugin
+        run: npx nx build nx-astro
+
+      - name: Verify build outputs
+        run: |
+          # Check that the dist directory exists
+          if [ ! -d "dist/nx-astro" ]; then
+            echo "Error: dist/nx-astro directory not found"
+            exit 1
+          fi
+
+          # Check that package.json exists in dist
+          if [ ! -f "dist/nx-astro/package.json" ]; then
+            echo "Error: dist/nx-astro/package.json not found"
+            exit 1
+          fi
+
+          # Check that generators.json and executors.json exist
+          if [ ! -f "dist/nx-astro/generators.json" ]; then
+            echo "Error: dist/nx-astro/generators.json not found"
+            exit 1
+          fi
+
+          if [ ! -f "dist/nx-astro/executors.json" ]; then
+            echo "Error: dist/nx-astro/executors.json not found"
+            exit 1
+          fi
+
+          echo "Build verification successful"
+
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: dist/
+          key: ${{ runner.os }}-build-${{ github.sha }}
+
+  # ===========================================================================
+  # Job 5: E2E Tests
+  # ===========================================================================
+  # Purpose:
+  #   - Run end-to-end tests using Jest
+  #   - Tests the plugin in a realistic environment
+  #   - Uses verdaccio for local npm registry testing
+  # ===========================================================================
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [setup, build]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Restore node_modules cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            nx-astro/node_modules
+            nx-astro-e2e/node_modules
+          key: ${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}
+          fail-on-cache-miss: true
+
+      - name: Restore build artifacts
+        uses: actions/cache@v4
+        with:
+          path: dist/
+          key: ${{ runner.os }}-build-${{ github.sha }}
+          fail-on-cache-miss: true
+
+      - name: Restore Nx cache
+        uses: actions/cache@v4
+        with:
+          path: .nx/cache
+          key: ${{ runner.os }}-nx-cache-e2e-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-nx-cache-e2e-
+            ${{ runner.os }}-nx-cache-
+
+      - name: Run E2E tests
+        run: npx nx e2e nx-astro-e2e
+
+  # ===========================================================================
+  # Job 6: CI Success Check
+  # ===========================================================================
+  # Purpose:
+  #   - Aggregates all job statuses
+  #   - Used as a required status check in branch protection
+  #   - Simplifies branch protection rules (only need to require this job)
+  # ===========================================================================
+  ci-success:
+    name: CI Success
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [lint, test, build, e2e]
+
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" || \
+                "${{ needs.test.result }}" != "success" || \
+                "${{ needs.build.result }}" != "success" || \
+                "${{ needs.e2e.result }}" != "success" ]]; then
+            echo "One or more CI jobs failed"
+            exit 1
+          fi
+          echo "All CI jobs passed successfully"

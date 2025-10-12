@@ -1,0 +1,16 @@
+---
+export interface Props {
+  // Add your props here
+}
+
+const props = Astro.props;
+---
+
+<div>
+  <!-- Add your component content here -->
+  <h2><%= className %> Component</h2>
+</div>
+
+<style>
+  /* Add your styles here */
+</style>
