@@ -19,7 +19,7 @@
   },
   "private": true,
   "dependencies": {
-    "@astrojs/node": "^9.0.0",
+    "@astrojs/node": "^9.4.6",
     "@nx/devkit": "21.6.4",
     "astro": "^5.0.3"
   },
