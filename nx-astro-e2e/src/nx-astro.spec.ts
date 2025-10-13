@@ -22,10 +22,19 @@ describe('nx-astro e2e', () => {
   beforeAll(() => {
     projectDirectory = createTestProject();
 
-    // The plugin has been built and published to a local registry in the jest globalSetup
-    // Install the plugin built with the latest source code into the test repo
-    logStep('Installing @geekvetica/nx-astro plugin...');
-    execSync(`pnpm add -Dw @geekvetica/nx-astro@e2e`, {
+    // The plugin has been built and packaged as a tarball in the jest globalSetup
+    // Install the plugin directly from the tarball
+    logStep('Installing @geekvetica/nx-astro plugin from tarball...');
+
+    // Construct tarball path based on package name and version
+    const tarballPath = join(
+      process.cwd(),
+      'dist',
+      'nx-astro',
+      'geekvetica-nx-astro-0.0.0-e2e.tgz'
+    );
+
+    execSync(`pnpm add -Dw "${tarballPath}"`, {
       cwd: projectDirectory,
       stdio: 'inherit',
       env: process.env,

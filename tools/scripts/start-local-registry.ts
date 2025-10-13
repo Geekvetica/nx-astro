@@ -1,30 +1,25 @@
 /**
- * This script starts a local registry for e2e testing purposes.
+ * This script prepares the plugin for e2e testing purposes.
  * It is meant to be called in jest's globalSetup.
+ *
+ * Instead of publishing to a registry, we create a tarball that can be
+ * installed directly in the test workspace. This approach:
+ * - Avoids npm authentication issues
+ * - Is faster and more reliable
+ * - Still validates packaging (package.json, files, exports)
  */
 
 /// <reference path="registry.d.ts" />
 
-import { startLocalRegistry } from '@nx/js/plugins/jest/local-registry';
-import { releasePublish, releaseVersion } from 'nx/release';
+import { execSync } from 'child_process';
+import { join } from 'path';
+import { releaseVersion } from 'nx/release';
 
 export default async () => {
-  console.log('Starting local registry setup...');
-
-  // local registry target to run
-  const localRegistryTarget = '@geekvetica/source:local-registry';
-  // storage folder for the local registry
-  const storage = './tmp/local-registry/storage';
-
-  console.log('Starting verdaccio registry...');
-  global.stopLocalRegistry = await startLocalRegistry({
-    localRegistryTarget,
-    storage,
-    verbose: true,
-  });
-  console.log('Registry started successfully');
+  console.log('Starting E2E test preparation...');
 
   try {
+    // Update version to a unique e2e version
     console.log('Creating release version 0.0.0-e2e...');
     await releaseVersion({
       specifier: '0.0.0-e2e',
@@ -38,15 +33,19 @@ export default async () => {
     });
     console.log('Release version created');
 
-    console.log('Publishing to local registry...');
-    await releasePublish({
-      tag: 'e2e',
-      firstRelease: true,
-      registry: 'http://localhost:4873',
-    });
-    console.log('Package published successfully');
+    // Create tarball from built package
+    console.log('Creating tarball from built package...');
+    const distPath = join(process.cwd(), 'dist', 'nx-astro');
+    const tarballOutput = execSync('npm pack', {
+      cwd: distPath,
+      encoding: 'utf-8',
+    }).trim();
+
+    const tarballPath = join(distPath, tarballOutput);
+    console.log(`Tarball created: ${tarballOutput}`);
+    console.log(`E2E preparation complete. Tarball available at: ${tarballPath}`);
   } catch (error) {
-    console.error('Error during release:', error);
+    console.error('Error during E2E preparation:', error);
     throw error;
   }
 };
