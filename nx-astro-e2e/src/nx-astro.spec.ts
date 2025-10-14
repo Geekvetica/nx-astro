@@ -79,6 +79,10 @@ describe('nx-astro e2e', () => {
           plugin: '@geekvetica/nx-astro',
         })
       );
+
+      // Reset Nx cache to allow the plugin to be detected
+      logStep('Resetting Nx cache...');
+      runNxCommand('reset', projectDirectory);
     });
 
     it('should add Astro dependencies to package.json', () => {

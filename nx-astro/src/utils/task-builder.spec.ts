@@ -48,7 +48,7 @@ describe('task-builder', () => {
 
       expect(tasks.build).toBeDefined();
       expect(tasks.build.executor).toBe('@geekvetica/nx-astro:build');
-      expect(tasks.build.outputs).toContain(`dist/{projectRoot}`);
+      expect(tasks.build.outputs).toContain(`{workspaceRoot}/dist/{projectRoot}`);
     });
 
     it('should configure preview task to depend on build', () => {
@@ -150,8 +150,8 @@ describe('task-builder', () => {
 
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
-      // Build outputs should be workspace-relative (dist/{projectRoot})
-      expect(tasks.build.outputs).toContain(`dist/{projectRoot}`);
+      // Build outputs should be workspace-relative ({workspaceRoot}/dist/{projectRoot})
+      expect(tasks.build.outputs).toContain(`{workspaceRoot}/dist/{projectRoot}`);
       expect(tasks.build.outputs).toContain(`{projectRoot}/.astro`);
     });
 

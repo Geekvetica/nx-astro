@@ -56,7 +56,7 @@ export function buildAstroTasks(
         externalDependencies: ['astro'],
       },
     ],
-    outputs: [`dist/{projectRoot}`, `{projectRoot}/.astro`],
+    outputs: [`{workspaceRoot}/dist/{projectRoot}`, `{projectRoot}/.astro`],
     cache: true,
     dependsOn: ['^build'],
   };
