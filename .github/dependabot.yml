@@ -101,10 +101,10 @@ updates:
       prefix-development: 'chore(deps-dev)'
       include: 'scope'
 
-    # Labels for PRs
-    labels:
-      - 'dependencies'
-      - 'automated'
+    # Labels for PRs (commented out - create these labels in GitHub if needed)
+    # labels:
+    #   - 'dependencies'
+    #   - 'automated'
 
     # Reviewers (update with actual GitHub usernames if needed)
     # reviewers:
@@ -140,11 +140,11 @@ updates:
       prefix: 'chore(ci)'
       include: 'scope'
 
-    # Labels for PRs
-    labels:
-      - 'ci'
-      - 'dependencies'
-      - 'automated'
+    # Labels for PRs (commented out - create these labels in GitHub if needed)
+    # labels:
+    #   - 'ci'
+    #   - 'dependencies'
+    #   - 'automated'
 
     # Reviewers (update with actual GitHub usernames if needed)
     # reviewers:
