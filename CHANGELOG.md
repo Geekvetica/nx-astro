@@ -1,3 +1,13 @@
+## 0.9.4 (2025-10-14)
+
+### 🩹 Fixes
+
+- release config fixes ([c57af60](https://github.com/Geekvetica/nx-astro/commit/c57af60))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 0.9.3 (2025-10-14)
 
 ### 🩹 Fixes
