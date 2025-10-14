@@ -1,16 +1,13 @@
-import { execSync, ChildProcess } from 'child_process';
-import { join, dirname } from 'path';
-import { mkdirSync, rmSync } from 'fs';
+import {execSync} from 'child_process';
+import {dirname, join} from 'path';
+import {mkdirSync, rmSync} from 'fs';
 import {
-  runNxCommand,
-  runPnpmCommand,
   fileExists,
+  logStep,
   readFile,
   readJsonFile,
-  waitForPort,
-  startProcess,
-  killProcess,
-  logStep,
+  runNxCommand,
+  runPnpmCommand,
   writeFile,
 } from './helpers/test-utils';
 
@@ -93,6 +90,10 @@ describe('nx-astro e2e', () => {
 
       expect(packageJson.devDependencies).toBeDefined();
       expect(packageJson.devDependencies?.['astro']).toBeDefined();
+
+      // Install dependencies after they've been added to package.json
+      logStep('Installing dependencies...');
+      runPnpmCommand('install', projectDirectory, { silent: true });
     });
   });
 
@@ -108,6 +109,13 @@ describe('nx-astro e2e', () => {
       expect(
         fileExists(`${testAppDir}/astro.config.mjs`, projectDirectory)
       ).toBe(true);
+
+      // Reset Nx to force project graph rebuild and plugin detection
+      logStep('Resetting Nx to detect new project...');
+      runNxCommand('reset', projectDirectory);
+
+      // Trigger project graph rebuild by listing projects
+      runNxCommand('show projects', projectDirectory, { silent: true });
     });
 
     it('should generate all required files', () => {
@@ -348,6 +356,16 @@ describe('nx-astro e2e', () => {
 
   describe('test executor', () => {
     beforeAll(() => {
+      // Install vitest as a prerequisite
+      logStep('Installing vitest for testing...');
+      try {
+        runPnpmCommand('add -D vitest', projectDirectory, {
+          silent: true,
+        });
+      } catch (error) {
+        console.warn('Failed to install vitest, test executor test may fail');
+      }
+
       // Create a simple test file
       logStep('Creating test file...');
       const testContent = `
