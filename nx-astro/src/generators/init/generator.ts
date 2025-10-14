@@ -97,22 +97,26 @@ function addPluginToNxJson(tree: Tree): void {
 function addDependencies(tree: Tree): void {
   const packageJson = readJson(tree, 'package.json');
   const existingDependencies = packageJson.dependencies || {};
+  const existingDevDependencies = packageJson.devDependencies || {};
 
-  // Prepare dependencies to add
-  const dependencies: Record<string, string> = {};
+  // Prepare dev dependencies to add
+  const devDependencies: Record<string, string> = {};
 
-  // Only add if not already present
-  if (!existingDependencies['astro']) {
-    dependencies['astro'] = ASTRO_VERSION;
+  // Only add if not already present in either dependencies or devDependencies
+  if (!existingDependencies['astro'] && !existingDevDependencies['astro']) {
+    devDependencies['astro'] = ASTRO_VERSION;
   }
 
-  if (!existingDependencies['@astrojs/node']) {
-    dependencies['@astrojs/node'] = ASTROJS_NODE_VERSION;
+  if (
+    !existingDependencies['@astrojs/node'] &&
+    !existingDevDependencies['@astrojs/node']
+  ) {
+    devDependencies['@astrojs/node'] = ASTROJS_NODE_VERSION;
   }
 
-  // Add dependencies if there are any to add
-  if (Object.keys(dependencies).length > 0) {
-    addDependenciesToPackageJson(tree, dependencies, {});
+  // Add dev dependencies if there are any to add
+  if (Object.keys(devDependencies).length > 0) {
+    addDependenciesToPackageJson(tree, {}, devDependencies);
   }
 }
 

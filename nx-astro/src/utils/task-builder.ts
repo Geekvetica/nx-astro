@@ -40,19 +40,15 @@ export function buildAstroTasks(
 
   // Dev task - runs development server
   tasks[options.devTargetName] = {
-    command: 'astro dev',
-    options: {
-      cwd: projectRoot,
-    },
+    executor: '@geekvetica/nx-astro:dev',
+    options: {},
     cache: false,
   };
 
   // Build task - builds for production
   tasks[options.buildTargetName] = {
-    command: 'astro build',
-    options: {
-      cwd: projectRoot,
-    },
+    executor: '@geekvetica/nx-astro:build',
+    options: {},
     inputs: [
       'production',
       '^production',
@@ -67,20 +63,16 @@ export function buildAstroTasks(
 
   // Preview task - serves built application
   tasks[options.previewTargetName] = {
-    command: 'astro preview',
-    options: {
-      cwd: projectRoot,
-    },
+    executor: '@geekvetica/nx-astro:preview',
+    options: {},
     cache: false,
     dependsOn: ['build'],
   };
 
   // Check task - type checking
   tasks[options.checkTargetName] = {
-    command: 'astro check',
-    options: {
-      cwd: projectRoot,
-    },
+    executor: '@geekvetica/nx-astro:check',
+    options: {},
     inputs: [
       'default',
       '^production',
@@ -94,10 +86,8 @@ export function buildAstroTasks(
 
   // Sync task - generates types for content collections
   tasks[options.syncTargetName] = {
-    command: 'astro sync',
-    options: {
-      cwd: projectRoot,
-    },
+    executor: '@geekvetica/nx-astro:sync',
+    options: {},
     inputs: [
       `{projectRoot}/src/content/**/*`,
       {
@@ -105,6 +95,20 @@ export function buildAstroTasks(
       },
     ],
     outputs: [`{projectRoot}/.astro`],
+    cache: true,
+  };
+
+  // Test task - runs Vitest tests
+  tasks[options.testTargetName] = {
+    executor: '@geekvetica/nx-astro:test',
+    options: {},
+    inputs: [
+      'default',
+      '^production',
+      {
+        externalDependencies: ['vitest'],
+      },
+    ],
     cache: true,
   };
 

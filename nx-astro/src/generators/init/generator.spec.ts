@@ -101,21 +101,21 @@ describe('init generator', () => {
   });
 
   describe('dependency management', () => {
-    it('should add Astro dependencies to package.json', async () => {
+    it('should add Astro dependencies to package.json as devDependencies', async () => {
       await initGenerator(tree, {});
 
       const packageJson = readJson(tree, 'package.json');
-      expect(packageJson.dependencies).toBeDefined();
-      expect(packageJson.dependencies['astro']).toBeDefined();
-      expect(packageJson.dependencies['@astrojs/node']).toBeDefined();
+      expect(packageJson.devDependencies).toBeDefined();
+      expect(packageJson.devDependencies['astro']).toBeDefined();
+      expect(packageJson.devDependencies['@astrojs/node']).toBeDefined();
     });
 
     it('should add dependencies with correct versions', async () => {
       await initGenerator(tree, {});
 
       const packageJson = readJson(tree, 'package.json');
-      expect(packageJson.dependencies['astro']).toMatch(/^\^?\d+\.\d+\.\d+$/);
-      expect(packageJson.dependencies['@astrojs/node']).toMatch(
+      expect(packageJson.devDependencies['astro']).toMatch(/^\^?\d+\.\d+\.\d+$/);
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(
         /^\^?\d+\.\d+\.\d+$/
       );
     });
@@ -126,12 +126,12 @@ describe('init generator', () => {
       await initGenerator(tree, options);
 
       const packageJson = readJson(tree, 'package.json');
-      expect(packageJson.dependencies?.['astro']).toBeUndefined();
-      expect(packageJson.dependencies?.['@astrojs/node']).toBeUndefined();
+      expect(packageJson.devDependencies?.['astro']).toBeUndefined();
+      expect(packageJson.devDependencies?.['@astrojs/node']).toBeUndefined();
     });
 
-    it('should not overwrite existing Astro dependencies', async () => {
-      // Add existing Astro dependency
+    it('should not overwrite existing Astro dependencies in dependencies', async () => {
+      // Add existing Astro dependency in dependencies
       updateJson(tree, 'package.json', (json) => {
         json.dependencies = json.dependencies || {};
         json.dependencies['astro'] = '^4.0.0';
@@ -141,8 +141,24 @@ describe('init generator', () => {
       await initGenerator(tree, {});
 
       const packageJson = readJson(tree, 'package.json');
-      // Should keep existing version
+      // Should keep existing version in dependencies and not add to devDependencies
       expect(packageJson.dependencies['astro']).toBe('^4.0.0');
+      expect(packageJson.devDependencies?.['astro']).toBeUndefined();
+    });
+
+    it('should not overwrite existing Astro dependencies in devDependencies', async () => {
+      // Add existing Astro dependency in devDependencies
+      updateJson(tree, 'package.json', (json) => {
+        json.devDependencies = json.devDependencies || {};
+        json.devDependencies['astro'] = '^4.0.0';
+        return json;
+      });
+
+      await initGenerator(tree, {});
+
+      const packageJson = readJson(tree, 'package.json');
+      // Should keep existing version
+      expect(packageJson.devDependencies['astro']).toBe('^4.0.0');
     });
   });
 

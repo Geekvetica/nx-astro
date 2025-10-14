@@ -24,6 +24,7 @@ describe('task-builder', () => {
       expect(tasks).toHaveProperty('preview');
       expect(tasks).toHaveProperty('check');
       expect(tasks).toHaveProperty('sync');
+      expect(tasks).toHaveProperty('test');
     });
 
     it('should configure dev task correctly', () => {
@@ -34,10 +35,8 @@ describe('task-builder', () => {
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
       expect(tasks.dev).toBeDefined();
-      expect(tasks.dev.command).toContain('astro dev');
-      expect(tasks.dev.options).toEqual({
-        cwd: mockProjectRoot,
-      });
+      expect(tasks.dev.executor).toBe('@geekvetica/nx-astro:dev');
+      expect(tasks.dev.options).toEqual({});
     });
 
     it('should configure build task with correct outputs', () => {
@@ -48,7 +47,7 @@ describe('task-builder', () => {
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
       expect(tasks.build).toBeDefined();
-      expect(tasks.build.command).toContain('astro build');
+      expect(tasks.build.executor).toBe('@geekvetica/nx-astro:build');
       expect(tasks.build.outputs).toContain(`{projectRoot}/dist`);
     });
 
@@ -58,6 +57,7 @@ describe('task-builder', () => {
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
       expect(tasks.preview).toBeDefined();
+      expect(tasks.preview.executor).toBe('@geekvetica/nx-astro:preview');
       expect(tasks.preview.dependsOn).toContain('build');
     });
 
@@ -67,7 +67,7 @@ describe('task-builder', () => {
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
       expect(tasks.check).toBeDefined();
-      expect(tasks.check.command).toContain('astro check');
+      expect(tasks.check.executor).toBe('@geekvetica/nx-astro:check');
     });
 
     it('should configure sync task with correct outputs', () => {
@@ -76,8 +76,18 @@ describe('task-builder', () => {
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
       expect(tasks.sync).toBeDefined();
-      expect(tasks.sync.command).toContain('astro sync');
+      expect(tasks.sync.executor).toBe('@geekvetica/nx-astro:sync');
       expect(tasks.sync.outputs).toContain(`{projectRoot}/.astro`);
+    });
+
+    it('should configure test task', () => {
+      const astroConfig: Partial<AstroConfig> = {};
+
+      const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
+
+      expect(tasks.test).toBeDefined();
+      expect(tasks.test.executor).toBe('@geekvetica/nx-astro:test');
+      expect(tasks.test.cache).toBe(true);
     });
 
     it('should use custom target names from options', () => {
@@ -102,6 +112,7 @@ describe('task-builder', () => {
       expect(tasks).toHaveProperty('compile');
       expect(tasks).toHaveProperty('serve-prod');
       expect(tasks).toHaveProperty('type-check');
+      expect(tasks).toHaveProperty('unit-test');
       expect(tasks).toHaveProperty('generate-types');
     });
 
