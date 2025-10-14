@@ -3,35 +3,26 @@
 # =============================================================================
 #
 # Purpose:
-#   Automated release workflow that handles versioning, changelog generation,
-#   git tagging, npm publishing, and GitHub release creation.
-#
-# Triggers:
-#   - Manual workflow_dispatch with version bump type selection
-#   - Can be extended to trigger on version tags (v*.*.*)
+#   Automated npm publishing with provenance after local versioning.
 #
 # Workflow:
-#   1. Validate trigger conditions (main branch, all tests pass)
-#   2. Install dependencies and run full test suite
-#   3. Build the plugin
-#   4. Use Nx release to:
-#      - Bump version according to selected type
-#      - Generate changelog from git commits
-#      - Create git tag
-#      - Push changes to repository
-#   5. Publish to npm registry
-#   6. Create GitHub release with changelog
+#   1. Developer runs `pnpx nx release` locally to version and create git tag
+#   2. Developer pushes tag to GitHub: `git push --tags`
+#   3. This workflow automatically triggers on tag push
+#   4. Workflow builds, tests, and publishes to npm with provenance
+#   5. Workflow creates GitHub release
+#
+# Triggers:
+#   - Automatic: Push of version tags (v*.*.*)
 #
 # Required Secrets:
 #   - NPM_TOKEN: Automation token for npm registry (required for provenance)
 #     - Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-#     - Create a new "Automation" token (granular or classic)
+#     - Create a new "Automation" token (not Classic)
 #     - Add it to GitHub repository secrets as NPM_TOKEN
 #   - GITHUB_TOKEN: Automatically provided by GitHub Actions
 #
 # Security:
-#   - Only runs on main branch
-#   - Requires all CI checks to pass
 #   - Uses OIDC for npm provenance attestations
 #   - Minimal permissions with id-token for OIDC
 #   - Secrets are never exposed in logs
@@ -47,23 +38,9 @@
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version bump type'
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-          - prerelease
-        default: 'patch'
-      preid:
-        description: 'Prerelease identifier (only for prerelease)'
-        required: false
-        type: string
-        default: 'beta'
+  push:
+    tags:
+      - 'v*.*.*'
 
 # Only allow one release at a time
 concurrency:
@@ -72,9 +49,8 @@ concurrency:
 
 # Permissions required for npm provenance with OIDC
 permissions:
-  contents: write        # Create releases and push tags
+  contents: write        # Create releases
   packages: write        # Publish packages
-  pull-requests: write   # Create/update PRs for changelog
   id-token: write        # OIDC token for npm provenance
 
 env:
@@ -82,39 +58,10 @@ env:
 
 jobs:
   # ===========================================================================
-  # Job 1: Validate Release Conditions
+  # Job 1: Run Full Test Suite
   # ===========================================================================
   # Purpose:
-  #   - Ensure we're on the main branch
-  #   - Verify all tests pass before releasing
-  #   - Prevent accidental releases from feature branches
-  # ===========================================================================
-  validate:
-    name: Validate Release Conditions
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Verify main branch
-        run: |
-          CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-          if [ "$CURRENT_BRANCH" != "main" ]; then
-            echo "Error: Releases can only be created from the main branch"
-            echo "Current branch: $CURRENT_BRANCH"
-            exit 1
-          fi
-          echo "Branch validation passed: on main branch"
-
-  # ===========================================================================
-  # Job 2: Run Full Test Suite
-  # ===========================================================================
-  # Purpose:
-  #   - Run all tests before releasing
+  #   - Run all tests before publishing
   #   - Ensure the plugin is in a releasable state
   #   - Fail fast if any tests fail
   # ===========================================================================
@@ -122,7 +69,6 @@ jobs:
     name: Run Full Test Suite
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    needs: validate
 
     steps:
       - name: Checkout repository
@@ -143,41 +89,40 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run lint
-        run: npx nx run-many -t lint --all --parallel=3
+        run: pnpx nx run-many -t lint --all --parallel=3
 
       - name: Run tests
-        run: npx nx run-many -t test --all --parallel=3 --configuration=ci
+        run: pnpx nx run-many -t test --all --parallel=3 --configuration=ci
 
       - name: Build plugin
-        run: npx nx build nx-astro
+        run: pnpx nx build nx-astro
 
       - name: Run E2E tests
-        run: npx nx e2e nx-astro-e2e
+        run: pnpx nx e2e nx-astro-e2e
+
+      # Cache the built package for the publish job
+      - name: Cache build artifacts
+        uses: actions/cache@v4
+        with:
+          path: dist/nx-astro
+          key: build-${{ github.sha }}
 
   # ===========================================================================
-  # Job 3: Release and Publish
+  # Job 2: Publish to npm
   # ===========================================================================
   # Purpose:
-  #   - Use Nx release to manage versioning
-  #   - Generate changelog from git history
-  #   - Create git tag
-  #   - Publish to npm registry
-  #   - Create GitHub release
+  #   - Publish to npm registry with provenance
+  #   - Verify package is available
   # ===========================================================================
-  release:
-    name: Release and Publish
+  publish:
+    name: Publish to npm
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     needs: test
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          # Need full history for changelog generation
-          fetch-depth: 0
-          # Use a PAT or GITHUB_TOKEN with appropriate permissions
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -189,43 +134,27 @@ jobs:
           cache: 'pnpm'
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build plugin
-        run: npx nx build nx-astro
+      # Restore cached build or rebuild if cache miss
+      - name: Restore build artifacts
+        id: cache-restore
+        uses: actions/cache@v4
+        with:
+          path: dist/nx-astro
+          key: build-${{ github.sha }}
 
-      - name: Determine version bump
+      - name: Build plugin (if cache miss)
+        if: steps.cache-restore.outputs.cache-hit != 'true'
+        run: pnpx nx build nx-astro
+
+      - name: Get version from tag
         id: version
         run: |
-          VERSION_TYPE="${{ github.event.inputs.version }}"
-          PREID="${{ github.event.inputs.preid }}"
-
-          if [ "$VERSION_TYPE" = "prerelease" ] && [ -n "$PREID" ]; then
-            echo "VERSION_ARG=--specifier=prerelease --preid=$PREID" >> $GITHUB_OUTPUT
-          else
-            echo "VERSION_ARG=--specifier=$VERSION_TYPE" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Version and Changelog
-        id: release
-        run: |
-          # Run Nx release version to bump version and generate changelog
-          npx nx release version ${{ steps.version.outputs.VERSION_ARG }} --verbose
-
-          # Get the new version from package.json in dist
-          NEW_VERSION=$(node -pe "require('./dist/nx-astro/package.json').version")
-          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
-          echo "Released version: $NEW_VERSION"
-
-      - name: Push changes and tags
-        run: |
-          git push origin main --follow-tags
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Publishing version: $VERSION"
 
       - name: Publish to npm with provenance
         run: |
@@ -243,119 +172,118 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Wait for npm registry propagation
+        run: sleep 30
+
+      - name: Verify npm package
+        run: |
+          PACKAGE_NAME="@geekvetica/nx-astro"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Verify the package is available
+          PUBLISHED_VERSION=$(npm view $PACKAGE_NAME version)
+          echo "Published version on npm: $PUBLISHED_VERSION"
+
+          if [ "$PUBLISHED_VERSION" = "$VERSION" ]; then
+            echo "✓ Package successfully published to npm"
+          else
+            echo "✗ Version mismatch: expected $VERSION, got $PUBLISHED_VERSION"
+            exit 1
+          fi
+
+      - name: Notify on success
+        if: success()
+        run: |
+          echo "✓ Successfully published version ${{ steps.version.outputs.version }}"
+          echo "NPM: https://www.npmjs.com/package/@geekvetica/nx-astro"
+          echo "Verify provenance: npm audit signatures"
+
+  # ===========================================================================
+  # Job 3: Create GitHub Release
+  # ===========================================================================
+  # Purpose:
+  #   - Create GitHub release with changelog
+  #   - Link to npm package
+  # ===========================================================================
+  github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: publish
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
       - name: Extract changelog
         id: changelog
         run: |
-          # Extract the changelog for the current version
-          VERSION="${{ steps.release.outputs.new_version }}"
+          VERSION="${{ steps.version.outputs.version }}"
 
           # Check if CHANGELOG.md exists
           if [ -f "CHANGELOG.md" ]; then
-            # Extract changelog section for this version
-            CHANGELOG=$(node -e "
-              const fs = require('fs');
-              const content = fs.readFileSync('CHANGELOG.md', 'utf8');
-              const versionRegex = new RegExp('## ' + '${{ steps.release.outputs.new_version }}' + '[\\s\\S]*?(?=## |$)');
-              const match = content.match(versionRegex);
-              console.log(match ? match[0] : 'No changelog found for this version');
-            ")
-            echo "changelog<<EOF" >> $GITHUB_OUTPUT
-            echo "$CHANGELOG" >> $GITHUB_OUTPUT
-            echo "EOF" >> $GITHUB_OUTPUT
+            # Extract changelog section for this version using awk
+            CHANGELOG=$(awk -v ver="$VERSION" '
+              /^## / {
+                if (found) exit;
+                if ($0 ~ ver) found=1;
+                next;
+              }
+              found { print }
+            ' CHANGELOG.md)
+
+            if [ -n "$CHANGELOG" ]; then
+              echo "changelog<<EOF" >> $GITHUB_OUTPUT
+              echo "$CHANGELOG" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "changelog=Release $VERSION" >> $GITHUB_OUTPUT
+            fi
           else
             echo "changelog=Release $VERSION" >> $GITHUB_OUTPUT
           fi
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.release.outputs.new_version }}
-          release_name: Release v${{ steps.release.outputs.new_version }}
+          name: Release v${{ steps.version.outputs.version }}
           body: |
-            # nx-astro v${{ steps.release.outputs.new_version }}
+            # nx-astro v${{ steps.version.outputs.version }}
 
             ${{ steps.changelog.outputs.changelog }}
 
             ## Installation
 
             ```bash
-            npm install @geekvetica/nx-astro@${{ steps.release.outputs.new_version }}
+            npm install @geekvetica/nx-astro@${{ steps.version.outputs.version }}
             # or
-            pnpm add @geekvetica/nx-astro@${{ steps.release.outputs.new_version }}
+            pnpm add @geekvetica/nx-astro@${{ steps.version.outputs.version }}
+            ```
+
+            ## Provenance
+
+            This package was published with npm provenance. Verify with:
+            ```bash
+            npm audit signatures
             ```
 
             ## Documentation
 
             See the [README](https://github.com/${{ github.repository }}) for usage instructions.
           draft: false
-          prerelease: ${{ github.event.inputs.version == 'prerelease' }}
+          prerelease: ${{ contains(steps.version.outputs.version, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Notify on success
-        if: success()
         run: |
-          echo "Successfully released version ${{ steps.release.outputs.new_version }}"
-          echo "NPM: https://www.npmjs.com/package/@geekvetica/nx-astro"
-          echo "GitHub: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.release.outputs.new_version }}"
-
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "Release failed. Please check the logs and try again."
-          echo "You may need to:"
-          echo "  1. Verify NPM_TOKEN secret is set correctly"
-          echo "  2. Check that all tests passed"
-          echo "  3. Ensure you're on the main branch"
-          exit 1
-
-  # ===========================================================================
-  # Job 4: Post-Release Validation
-  # ===========================================================================
-  # Purpose:
-  #   - Verify the package is available on npm
-  #   - Validate the published package integrity
-  #   - Confirm GitHub release was created
-  # ===========================================================================
-  validate-release:
-    name: Validate Release
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: release
-
-    steps:
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
-      - name: Wait for npm registry propagation
-        run: sleep 30
-
-      - name: Verify npm package
-        run: |
-          # Get the released version from the previous job
-          PACKAGE_NAME="@geekvetica/nx-astro"
-
-          # Try to install the package to verify it's available
-          npm view $PACKAGE_NAME version
-
-          echo "Package successfully published to npm"
-
-      - name: Verify GitHub release
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const { data: releases } = await github.rest.repos.listReleases({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              per_page: 1
-            });
-
-            if (releases.length === 0) {
-              core.setFailed('No GitHub releases found');
-              return;
-            }
-
-            console.log(`Latest release: ${releases[0].tag_name}`);
-            console.log(`Release URL: ${releases[0].html_url}`);
+          echo "✓ Successfully created GitHub release"
+          echo "Release URL: https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }}"

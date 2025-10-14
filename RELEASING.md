@@ -4,153 +4,150 @@ This document describes how to release new versions of `@geekvetica/nx-astro` to
 
 ## Overview
 
-We use [Nx Release](https://nx.dev/recipes/nx-release/get-started-with-nx-release) for automated version management, changelog generation, and publishing to npm. Releases can be triggered either manually via command line or automatically through GitHub Actions.
+We use a hybrid release process that combines local control with automated CI/CD publishing:
+
+1. **Local versioning**: Run `nx release` locally to create version, changelog, and git tag
+2. **Automated publishing**: Push the tag to GitHub, and GitHub Actions automatically publishes to npm with provenance
+
+This approach gives you:
+
+- ✅ Control over version numbers and changelog locally
+- ✅ Automated npm publishing with cryptographic provenance from CI/CD
+- ✅ Supply chain security through verifiable build attestations
 
 ## Prerequisites
 
-### For Manual Releases
-
-Before creating a release, ensure:
+Before creating a release:
 
 1. You're on the `main` branch
 2. Your working directory is clean (no uncommitted changes)
-3. All tests pass: `pnpm test:all`
-4. You have npm publish permissions for `@geekvetica/nx-astro`
-5. You're logged in to npm: `npm whoami`
+3. All tests pass locally: `pnpm test`
+4. Build succeeds: `pnpm build`
+5. GitHub repository has `NPM_TOKEN` secret configured
 
-### For Automated Releases (GitHub Actions)
+### Setting up NPM_TOKEN (One-time setup)
 
-Required secrets must be configured in your GitHub repository:
+The GitHub Actions workflow requires an npm Automation token:
 
-- `NPM_TOKEN`: npm authentication token with publish permissions
-  - Create at: https://www.npmjs.com/settings/[username]/tokens
-  - **IMPORTANT**: Select "Automation" token type (required for provenance)
-  - Add to: Repository Settings → Secrets and variables → Actions
+1. Create token at: https://www.npmjs.com/settings/[username]/tokens
+2. **IMPORTANT**: Select **"Automation"** token type (Classic tokens don't support provenance)
+3. Add to GitHub: Repository Settings → Secrets and variables → Actions → New repository secret
+   - Name: `NPM_TOKEN`
+   - Value: [paste your automation token]
 
-**Why Automation Token?** The automated release workflow publishes with npm provenance, which requires:
+**Why Automation Token?** Publishing with npm provenance requires:
 
 - An Automation token (Classic tokens don't support provenance)
 - OIDC authentication from GitHub Actions
 - `id-token: write` permission (already configured in the workflow)
 
-## Release Methods
+## Release Process
 
-### Method 1: Automated Release via GitHub Actions (Recommended)
+### Step 1: Create Version and Tag Locally
 
-This is the easiest and safest method. The workflow handles everything automatically.
-
-1. Navigate to the **Actions** tab in your GitHub repository
-2. Select the **"Release"** workflow
-3. Click **"Run workflow"**
-4. Select:
-   - Branch: `main`
-   - Version bump type: `patch`, `minor`, `major`, or `prerelease`
-   - (Optional) Prerelease identifier: `beta`, `alpha`, `rc`, etc.
-5. Click **"Run workflow"**
-
-The workflow will:
-
-- ✅ Validate you're on the main branch
-- ✅ Run full test suite (lint, test, build, e2e)
-- ✅ Bump version in package.json
-- ✅ Generate CHANGELOG.md
-- ✅ Create git commit and tag
-- ✅ Push changes to GitHub
-- ✅ **Publish to npm with provenance** (cryptographic attestation)
-- ✅ Create GitHub release
-- ✅ Validate the published package
-
-**What is Provenance?** When published via GitHub Actions, the package includes:
-
-- Cryptographic attestation linking it to source code
-- Build environment details (workflow, commit SHA, repository)
-- Verification badge on npm package page
-- Supply chain security and transparency for users
-
-### Method 2: Manual Release via Command Line
-
-Use this method for local testing or when you need more control.
-
-**⚠️ Important:** Manual releases from your local machine **do not include provenance attestations**. Only releases published from GitHub Actions can include provenance. For production releases, always use Method 1 (GitHub Actions).
-
-#### Step 1: Run the Release Command
-
-Choose one of the following based on the type of release:
+Run `nx release` locally to version the package and create a git tag:
 
 ```bash
-# Patch release (0.0.1 → 0.0.2)
-npx nx release --specifier=patch
+# For patch version (0.9.0 → 0.9.1)
+pnpx nx release version patch
 
-# Minor release (0.1.0 → 0.2.0)
-npx nx release --specifier=minor
+# For minor version (0.9.0 → 0.10.0)
+pnpx nx release version minor
 
-# Major release (1.0.0 → 2.0.0)
-npx nx release --specifier=major
+# For major version (0.9.0 → 1.0.0)
+pnpx nx release version major
 
-# Prerelease (1.0.0 → 1.0.1-beta.0)
-npx nx release --specifier=prerelease --preid=beta
+# For specific version
+pnpx nx release version 1.0.0
 
-# Custom version
-npx nx release --specifier=1.2.3
+# For prerelease version
+pnpx nx release version prerelease --preid=beta
 ```
 
-#### Step 2: What Happens
+This command will:
 
-The `nx release` command will:
+- ✅ Update `package.json` version
+- ✅ Generate `CHANGELOG.md` from git commits
+- ✅ Create a git commit: `chore(release): publish X.X.X`
+- ✅ Create a git tag: `vX.X.X`
 
-1. **Build** - Run `pnpm dlx nx run-many -t build` (pre-version command)
-2. **Version** - Bump version in:
-   - `nx-astro/package.json`
-   - `dist/nx-astro/package.json`
-3. **Changelog** - Generate `CHANGELOG.md` from git commits
-4. **Git** - Create commit and tag:
-   - Commit message: `chore(release): publish [version]`
-   - Tag: `v[version]`
-5. **Prompt** - Ask if you want to publish to npm
-6. **Publish** - If confirmed, publish `dist/nx-astro` to npm
-7. **Push** - Push commit and tags to GitHub
+**Important:** This does NOT publish to npm. Publishing happens automatically in the next step.
 
-#### Step 3: Verify the Release
+### Step 2: Push Tag to GitHub
+
+Push the tag to GitHub to trigger automated publishing:
+
+```bash
+# Push the commit and tags
+git push && git push --tags
+
+# Or push everything at once
+git push --follow-tags
+```
+
+### Step 3: GitHub Actions Publishes Automatically
+
+Once you push the tag, GitHub Actions will automatically:
+
+1. ✅ Run all tests (lint, unit tests, build, E2E tests)
+2. ✅ Build the package
+3. ✅ **Publish to npm with provenance**
+4. ✅ Verify the package is available on npm
+5. ✅ Create GitHub release with changelog
+
+**Monitor the workflow:** https://github.com/geekvetica/nx-astro/actions
+
+**What is Provenance?** The package includes a cryptographic attestation that:
+
+- Links the package to its source repository and specific commit
+- Records the GitHub Actions workflow that built it
+- Provides transparency and supply chain security
+- Displays a "Provenance" badge on the npm package page
+
+**Note:** Provenance can ONLY be generated when publishing from GitHub Actions. Local publishing cannot create provenance attestations.
+
+### Step 4: Verify the Release
+
+After the GitHub Actions workflow completes (usually 5-10 minutes):
 
 ```bash
 # Check the package on npm
 npm view @geekvetica/nx-astro
 
-# Verify provenance (only if published via GitHub Actions)
+# Verify provenance attestation
 npm audit signatures
 
-# Install the new version in a test project
-npm install @geekvetica/nx-astro@latest
+# Check GitHub release
+# Visit: https://github.com/geekvetica/nx-astro/releases
+
+# Verify provenance badge on npm
+# Visit: https://www.npmjs.com/package/@geekvetica/nx-astro
 ```
 
-**Note:** Packages published via GitHub Actions will display a "Provenance" badge on the npm package page.
+## First Release
 
-### Method 3: Step-by-Step Manual Process
-
-For maximum control, run each step separately:
-
-**⚠️ Important:** This method also does not include provenance. Use GitHub Actions for production releases.
+For the very first release (0.9.0), use the `--first-release` flag:
 
 ```bash
-# 1. Build the package
-pnpm build
-
-# 2. Run tests
-pnpm test:all
-
-# 3. Version bump and changelog (but don't publish)
-npx nx release version [patch|minor|major]
-
-# 4. Review changes
-git log --oneline -5
-cat CHANGELOG.md
-
-# 5. Publish to npm
-npx nx release publish
-
-# 6. Push to GitHub
-git push origin main --follow-tags
+pnpx nx release version 0.9.0 --first-release
+git push && git push --tags
 ```
+
+The `--first-release` flag tells `nx release` that there are no previous git tags to compare against.
+
+## Prerelease Versions
+
+To release a prerelease version (e.g., beta, alpha):
+
+```bash
+# Create a beta prerelease
+pnpx nx release version prerelease --preid=beta
+
+# This creates version like: 0.9.1-beta.0
+git push && git push --tags
+```
+
+GitHub Actions will automatically mark it as a prerelease on GitHub.
 
 ## Version Bump Guidelines
 
@@ -190,17 +187,40 @@ git commit -m "refactor: simplify generator logic"
 
 ## Troubleshooting
 
-### "You are not logged in to npm"
+### GitHub Actions workflow doesn't trigger
+
+**Cause:** The tag might not have been pushed correctly.
+
+**Solution:**
 
 ```bash
-npm login
+# Check local tags
+git tag
+
+# Push all tags
+git push --tags
+
+# Or push specific tag
+git push origin v0.9.0
 ```
 
-### "You do not have permission to publish"
+### "Unable to generate provenance" error in GitHub Actions
 
-Ensure you're a collaborator on the `@geekvetica/nx-astro` package on npm.
+**Cause:** NPM_TOKEN secret is not configured or is a Classic token.
 
-### "Tag already exists"
+**Solution:**
+
+1. Create an **Automation token** (not Classic) at https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+2. Add it to GitHub repository secrets as `NPM_TOKEN`
+3. Verify the token type is "Automation"
+
+### Package publishes to wrong registry
+
+**Cause:** Your `.npmrc` has a scoped registry for `@geekvetica`.
+
+**Solution:** The workflow overrides the registry to `https://registry.npmjs.org` automatically. This is working as designed - your other `@geekvetica` packages will still use your private registry, but this package goes to npm central.
+
+### "Tag already exists" error
 
 If a release failed midway, you may need to delete the tag:
 
@@ -210,33 +230,23 @@ git tag -d v1.0.0
 
 # Delete remote tag
 git push origin :refs/tags/v1.0.0
+
+# Then retry the release
+pnpx nx release version 1.0.0
+git push && git push --tags
 ```
 
-### "Nothing to commit"
+### GitHub Actions workflow fails during tests
 
-If version files weren't updated, check:
+**Cause:** Tests or linting failures.
 
-```bash
-# Verify the release configuration
-cat nx.json | jq .release
+**Solution:**
 
-# Check project release config
-cat nx-astro/project.json | jq .release
-```
-
-### Publishing Failed
-
-If the publish step failed but version was bumped:
-
-```bash
-# Manually publish the dist folder
-cd dist/nx-astro
-npm publish --access public
-cd ../..
-
-# Push the version commit and tag
-git push origin main --follow-tags
-```
+1. Run tests locally first: `pnpm test`
+2. Fix any failures
+3. Commit and push fixes
+4. Delete the failed release tag
+5. Create a new release
 
 ## Rollback
 
@@ -252,38 +262,51 @@ npm unpublish @geekvetica/nx-astro@1.0.0
 
 ## Release Checklist
 
-Use this checklist before releasing:
+Before creating a release, verify:
 
-- [ ] All tests passing (`pnpm test:all`)
+- [ ] All tests passing locally (`pnpm test`)
+- [ ] Build succeeds (`pnpm build`)
 - [ ] No uncommitted changes (`git status`)
 - [ ] On main branch (`git branch --show-current`)
 - [ ] Up to date with remote (`git pull`)
-- [ ] CHANGELOG entries look correct
-- [ ] Version bump type is appropriate
+- [ ] Version bump type decided (patch/minor/major)
 - [ ] README is up to date
-- [ ] Breaking changes are documented
+- [ ] Breaking changes are documented (if any)
+- [ ] NPM_TOKEN secret configured in GitHub
+
+After pushing tag:
+
+- [ ] GitHub Actions workflow succeeded
+- [ ] Package published to npm: `npm view @geekvetica/nx-astro`
+- [ ] Provenance attestation present: `npm audit signatures`
+- [ ] GitHub release created
+- [ ] Provenance badge visible on npm package page
 
 ## Post-Release Tasks
 
-After a successful release:
+After a successful automated release:
 
 1. **Verify npm**: Visit https://www.npmjs.com/package/@geekvetica/nx-astro
-2. **Check provenance**: Verify the "Provenance" badge appears (GitHub Actions releases only)
-3. **Test installation**: Install in a test project
-4. **Verify signatures**: Run `npm audit signatures` to verify package attestations
-5. **Update documentation**: If API changed, update docs
-6. **Announce**: Share release on social media, Discord, etc.
-7. **Monitor**: Watch for issues or bug reports
+2. **Check provenance badge**: Should appear on the npm package page
+3. **Verify signatures**: Run `npm audit signatures`
+4. **Check GitHub release**: Visit https://github.com/geekvetica/nx-astro/releases
+5. **Test installation**: Install in a test project: `pnpm add @geekvetica/nx-astro@latest`
+6. **Update documentation**: If API changed, update docs
+7. **Announce**: Share release on social media, Discord, etc.
+8. **Monitor**: Watch for issues or bug reports
 
 ## Best Practices
 
-1. **Test First**: Always run the full test suite before releasing
-2. **Use Semantic Versioning**: Follow semver principles strictly
-3. **Write Good Commit Messages**: They become your changelog
-4. **Preview Changes**: Use `--dry-run` to preview without making changes
-5. **Automate**: Prefer GitHub Actions for consistent, auditable releases with provenance
-6. **Communicate**: Announce breaking changes prominently
-7. **Verify Provenance**: Always check that provenance attestations are generated for production releases
+1. **Test locally first**: Always run tests and build before creating a release
+2. **Use semantic versioning**: Follow semver principles strictly
+   - Patch: Bug fixes (0.9.0 → 0.9.1)
+   - Minor: New features, backward compatible (0.9.0 → 0.10.0)
+   - Major: Breaking changes (0.9.0 → 1.0.0)
+3. **Write meaningful commit messages**: They become your changelog (use conventional commits)
+4. **Let GitHub Actions publish**: Always push tags to trigger automated publishing with provenance
+5. **Verify provenance**: Check that provenance attestations are generated after each release
+6. **Monitor the workflow**: Watch GitHub Actions to ensure successful publishing
+7. **Communicate breaking changes**: Announce prominently in changelog and docs
 
 ## Support
 
