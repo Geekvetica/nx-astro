@@ -1,3 +1,13 @@
+## 0.9.5 (2025-10-14)
+
+### 🩹 Fixes
+
+- e2e tests isolation ([f3d0b03](https://github.com/Geekvetica/nx-astro/commit/f3d0b03))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 0.9.4 (2025-10-14)
 
 ### 🩹 Fixes
