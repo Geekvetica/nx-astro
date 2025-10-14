@@ -89,11 +89,13 @@ git push --follow-tags
 
 Once you push the tag, GitHub Actions will automatically:
 
-1. ✅ Run all tests (lint, unit tests, build, E2E tests)
+1. ✅ Run linting and unit tests
 2. ✅ Build the package
 3. ✅ **Publish to npm with provenance**
 4. ✅ Verify the package is available on npm
 5. ✅ Create GitHub release with changelog
+
+**Note:** E2E tests are not run in the release workflow (they run in your regular CI/PR checks).
 
 **Monitor the workflow:** https://github.com/geekvetica/nx-astro/actions
 

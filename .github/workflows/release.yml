@@ -58,17 +58,17 @@ env:
 
 jobs:
   # ===========================================================================
-  # Job 1: Run Full Test Suite
+  # Job 1: Run Tests and Lint
   # ===========================================================================
   # Purpose:
-  #   - Run all tests before publishing
-  #   - Ensure the plugin is in a releasable state
+  #   - Run linting and unit tests before publishing
+  #   - E2E tests are skipped in release workflow (they run in CI)
   #   - Fail fast if any tests fail
   # ===========================================================================
   test:
-    name: Run Full Test Suite
+    name: Run Tests and Lint
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -91,22 +91,8 @@ jobs:
       - name: Run lint
         run: pnpx nx run-many -t lint --all --parallel=3
 
-      - name: Run tests
+      - name: Run unit tests
         run: pnpx nx run-many -t test --all --parallel=3 --configuration=ci
-
-      - name: Build plugin
-        run: pnpx nx build nx-astro
-
-      # Cache the built package for the publish job BEFORE E2E tests
-      # E2E tests modify dist folder with version 0.0.0-e2e for testing
-      - name: Cache build artifacts
-        uses: actions/cache@v4
-        with:
-          path: dist/nx-astro
-          key: build-${{ github.sha }}
-
-      - name: Run E2E tests
-        run: pnpx nx e2e nx-astro-e2e
 
   # ===========================================================================
   # Job 2: Publish to npm
@@ -138,16 +124,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Restore cached build or rebuild if cache miss
-      - name: Restore build artifacts
-        id: cache-restore
-        uses: actions/cache@v4
-        with:
-          path: dist/nx-astro
-          key: build-${{ github.sha }}
-
-      - name: Build plugin (if cache miss)
-        if: steps.cache-restore.outputs.cache-hit != 'true'
+      - name: Build plugin
         run: pnpx nx build nx-astro
 
       - name: Get version from tag
