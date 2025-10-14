@@ -1,3 +1,13 @@
+## 0.9.2 (2025-10-14)
+
+### 🚀 Features
+
+- automatic publish after release ([0ec70bd](https://github.com/Geekvetica/nx-astro/commit/0ec70bd))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 0.9.1 (2025-10-14)
 
 ### 🚀 Features
