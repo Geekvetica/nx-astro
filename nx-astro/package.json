@@ -1,12 +1,42 @@
 {
   "name": "@geekvetica/nx-astro",
   "version": "0.0.1",
+  "description": "An Nx plugin for Astro that provides generators and executors for seamless integration of Astro applications in Nx monorepos",
+  "keywords": [
+    "nx",
+    "nx-plugin",
+    "astro",
+    "astrojs",
+    "monorepo",
+    "generator",
+    "executor",
+    "build-tool",
+    "static-site",
+    "ssr"
+  ],
+  "homepage": "https://github.com/geekvetica/nx-astro#readme",
+  "bugs": {
+    "url": "https://github.com/geekvetica/nx-astro/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/geekvetica/nx-astro.git",
+    "directory": "nx-astro"
+  },
+  "license": "MIT",
+  "author": "Geekvetica Paweł Wojciechowski",
   "type": "commonjs",
   "main": "./src/index.js",
   "types": "./src/index.d.ts",
   "generators": "./generators.json",
   "executors": "./executors.json",
-  "author": "Geekvetica Paweł Wojciechowski",
+  "files": [
+    "src",
+    "generators.json",
+    "executors.json",
+    "README.md",
+    "LICENSE"
+  ],
   "publishConfig": {
     "registry": "https://registry.npmjs.org",
     "access": "public"
@@ -14,5 +44,14 @@
   "dependencies": {
     "@nx/devkit": "21.6.4",
     "tslib": "^2.3.0"
+  },
+  "peerDependencies": {
+    "nx": ">=21.0.0",
+    "astro": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "astro": {
+      "optional": true
+    }
   }
 }

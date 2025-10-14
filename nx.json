@@ -72,7 +72,8 @@
       "tag": true,
       "tagMessage": "v{version}",
       "tagArgs": "--force"
-    }
+    },
+    "projects": ["nx-astro"]
   },
   "plugins": [
     {

@@ -22,6 +22,11 @@
         "assets": [
           "nx-astro/*.md",
           {
+            "input": ".",
+            "glob": "LICENSE",
+            "output": "."
+          },
+          {
             "input": "./nx-astro/src",
             "glob": "**/!(*.ts)",
             "output": "./src"
