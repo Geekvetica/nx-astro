@@ -1,3 +1,13 @@
+## 0.9.1 (2025-10-14)
+
+### 🚀 Features
+
+- release to npm registry with provenance ([5232eb2](https://github.com/Geekvetica/nx-astro/commit/5232eb2))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 0.9.0 (2025-10-14)
 
 ### 🚀 Features
