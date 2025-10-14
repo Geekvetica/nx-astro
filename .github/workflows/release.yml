@@ -23,14 +23,24 @@
 #   6. Create GitHub release with changelog
 #
 # Required Secrets:
-#   - NPM_TOKEN: Authentication token for npm registry
+#   - NPM_TOKEN: Automation token for npm registry (required for provenance)
+#     - Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
+#     - Create a new "Automation" token (granular or classic)
+#     - Add it to GitHub repository secrets as NPM_TOKEN
 #   - GITHUB_TOKEN: Automatically provided by GitHub Actions
 #
 # Security:
 #   - Only runs on main branch
 #   - Requires all CI checks to pass
-#   - Uses minimal permissions (contents: write, packages: write)
+#   - Uses OIDC for npm provenance attestations
+#   - Minimal permissions with id-token for OIDC
 #   - Secrets are never exposed in logs
+#
+# Provenance:
+#   - Publishes with npm provenance statements
+#   - Creates cryptographically verifiable attestations
+#   - Links published package to source code and build process
+#   - Only available when publishing from GitHub Actions
 #
 # =============================================================================
 
@@ -60,10 +70,12 @@ concurrency:
   group: release
   cancel-in-progress: false
 
+# Permissions required for npm provenance with OIDC
 permissions:
-  contents: write
-  packages: write
-  pull-requests: write
+  contents: write        # Create releases and push tags
+  packages: write        # Publish packages
+  pull-requests: write   # Create/update PRs for changelog
+  id-token: write        # OIDC token for npm provenance
 
 env:
   NODE_VERSION: '20.x'
@@ -215,11 +227,19 @@ jobs:
         run: |
           git push origin main --follow-tags
 
-      - name: Publish to npm
+      - name: Publish to npm with provenance
         run: |
-          # Publish the built package from dist directory
+          # Publish the built package from dist directory with provenance
+          # The --provenance flag generates a signed attestation that:
+          #   - Links the package to its source repository
+          #   - Records the GitHub Actions workflow that built it
+          #   - Creates a verifiable chain of custody
+          # This requires:
+          #   - Publishing from GitHub Actions (OIDC authentication)
+          #   - id-token: write permission (set above)
+          #   - An automation token in NPM_TOKEN secret
           cd dist/nx-astro
-          npm publish --access public
+          npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 

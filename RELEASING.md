@@ -24,8 +24,14 @@ Required secrets must be configured in your GitHub repository:
 
 - `NPM_TOKEN`: npm authentication token with publish permissions
   - Create at: https://www.npmjs.com/settings/[username]/tokens
-  - Select "Automation" token type
+  - **IMPORTANT**: Select "Automation" token type (required for provenance)
   - Add to: Repository Settings → Secrets and variables → Actions
+
+**Why Automation Token?** The automated release workflow publishes with npm provenance, which requires:
+
+- An Automation token (Classic tokens don't support provenance)
+- OIDC authentication from GitHub Actions
+- `id-token: write` permission (already configured in the workflow)
 
 ## Release Methods
 
@@ -43,19 +49,29 @@ This is the easiest and safest method. The workflow handles everything automatic
 5. Click **"Run workflow"**
 
 The workflow will:
+
 - ✅ Validate you're on the main branch
 - ✅ Run full test suite (lint, test, build, e2e)
 - ✅ Bump version in package.json
 - ✅ Generate CHANGELOG.md
 - ✅ Create git commit and tag
 - ✅ Push changes to GitHub
-- ✅ Publish to npm
+- ✅ **Publish to npm with provenance** (cryptographic attestation)
 - ✅ Create GitHub release
 - ✅ Validate the published package
+
+**What is Provenance?** When published via GitHub Actions, the package includes:
+
+- Cryptographic attestation linking it to source code
+- Build environment details (workflow, commit SHA, repository)
+- Verification badge on npm package page
+- Supply chain security and transparency for users
 
 ### Method 2: Manual Release via Command Line
 
 Use this method for local testing or when you need more control.
+
+**⚠️ Important:** Manual releases from your local machine **do not include provenance attestations**. Only releases published from GitHub Actions can include provenance. For production releases, always use Method 1 (GitHub Actions).
 
 #### Step 1: Run the Release Command
 
@@ -100,13 +116,20 @@ The `nx release` command will:
 # Check the package on npm
 npm view @geekvetica/nx-astro
 
+# Verify provenance (only if published via GitHub Actions)
+npm audit signatures
+
 # Install the new version in a test project
 npm install @geekvetica/nx-astro@latest
 ```
 
+**Note:** Packages published via GitHub Actions will display a "Provenance" badge on the npm package page.
+
 ### Method 3: Step-by-Step Manual Process
 
 For maximum control, run each step separately:
+
+**⚠️ Important:** This method also does not include provenance. Use GitHub Actions for production releases.
 
 ```bash
 # 1. Build the package
@@ -133,12 +156,12 @@ git push origin main --follow-tags
 
 Choose the appropriate version bump based on the changes:
 
-| Bump Type | When to Use | Example |
-|-----------|-------------|---------|
-| **patch** | Bug fixes, minor tweaks | 1.0.0 → 1.0.1 |
-| **minor** | New features (backwards compatible) | 1.0.0 → 1.1.0 |
-| **major** | Breaking changes | 1.0.0 → 2.0.0 |
-| **prerelease** | Beta/alpha releases | 1.0.0 → 1.0.1-beta.0 |
+| Bump Type      | When to Use                         | Example              |
+| -------------- | ----------------------------------- | -------------------- |
+| **patch**      | Bug fixes, minor tweaks             | 1.0.0 → 1.0.1        |
+| **minor**      | New features (backwards compatible) | 1.0.0 → 1.1.0        |
+| **major**      | Breaking changes                    | 1.0.0 → 2.0.0        |
+| **prerelease** | Beta/alpha releases                 | 1.0.0 → 1.0.1-beta.0 |
 
 ## Changelog
 
@@ -245,10 +268,12 @@ Use this checklist before releasing:
 After a successful release:
 
 1. **Verify npm**: Visit https://www.npmjs.com/package/@geekvetica/nx-astro
-2. **Test installation**: Install in a test project
-3. **Update documentation**: If API changed, update docs
-4. **Announce**: Share release on social media, Discord, etc.
-5. **Monitor**: Watch for issues or bug reports
+2. **Check provenance**: Verify the "Provenance" badge appears (GitHub Actions releases only)
+3. **Test installation**: Install in a test project
+4. **Verify signatures**: Run `npm audit signatures` to verify package attestations
+5. **Update documentation**: If API changed, update docs
+6. **Announce**: Share release on social media, Discord, etc.
+7. **Monitor**: Watch for issues or bug reports
 
 ## Best Practices
 
@@ -256,8 +281,9 @@ After a successful release:
 2. **Use Semantic Versioning**: Follow semver principles strictly
 3. **Write Good Commit Messages**: They become your changelog
 4. **Preview Changes**: Use `--dry-run` to preview without making changes
-5. **Automate**: Prefer GitHub Actions for consistent, auditable releases
+5. **Automate**: Prefer GitHub Actions for consistent, auditable releases with provenance
 6. **Communicate**: Announce breaking changes prominently
+7. **Verify Provenance**: Always check that provenance attestations are generated for production releases
 
 ## Support
 
@@ -265,8 +291,15 @@ If you encounter issues with the release process:
 
 1. Check this document for troubleshooting steps
 2. Review [Nx Release documentation](https://nx.dev/recipes/nx-release)
-3. Open an issue on GitHub with details about the problem
-4. Contact the maintainers if secrets/permissions are needed
+3. See [.github/workflows/RELEASE_SETUP.md](.github/workflows/RELEASE_SETUP.md) for detailed GitHub Actions setup
+4. Open an issue on GitHub with details about the problem
+5. Contact the maintainers if secrets/permissions are needed
+
+## Additional Resources
+
+- [npm Provenance Documentation](https://docs.npmjs.com/generating-provenance-statements)
+- [GitHub Actions OIDC](https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect)
+- [Detailed Release Workflow Setup](.github/workflows/RELEASE_SETUP.md)
 
 ---
 

@@ -140,3 +140,4 @@ This workspace uses **pnpm**. Always use `pnpm` commands, not `npm` or `yarn`.
 - Base config: `tsconfig.base.json`
 - Library-specific configs in each project directory
 - Path alias: `"nx-astro"` maps to `"nx-astro/src/index.ts"`
+- always use pnpx and pnpm instead of npx and npm

@@ -51,7 +51,8 @@
     },
     "nx-release-publish": {
       "options": {
-        "packageRoot": "dist/{projectRoot}"
+        "packageRoot": "dist/{projectRoot}",
+        "registry": "https://registry.npmjs.org"
       }
     },
     "lint": {
@@ -67,7 +68,13 @@
         "ci": {
           "ci": true,
           "coverage": true,
-          "coverageReporters": ["json", "lcov", "text", "clover", "json-summary"]
+          "coverageReporters": [
+            "json",
+            "lcov",
+            "text",
+            "clover",
+            "json-summary"
+          ]
         }
       }
     }

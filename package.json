@@ -68,5 +68,8 @@
     "*.{ts,tsx,js,jsx,mjs,cjs,json,md}": [
       "prettier --write"
     ]
+  },
+  "publishConfig": {
+    "provenance": "true"
   }
 }

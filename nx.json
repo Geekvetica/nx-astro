@@ -52,6 +52,7 @@
         "specifierSource": "prompt"
       }
     },
+    "releaseTagPattern": "v{version}",
     "changelog": {
       "workspaceChangelog": {
         "createRelease": "github",
