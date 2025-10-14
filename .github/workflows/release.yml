@@ -97,15 +97,16 @@ jobs:
       - name: Build plugin
         run: pnpx nx build nx-astro
 
-      - name: Run E2E tests
-        run: pnpx nx e2e nx-astro-e2e
-
-      # Cache the built package for the publish job
+      # Cache the built package for the publish job BEFORE E2E tests
+      # E2E tests modify dist folder with version 0.0.0-e2e for testing
       - name: Cache build artifacts
         uses: actions/cache@v4
         with:
           path: dist/nx-astro
           key: build-${{ github.sha }}
+
+      - name: Run E2E tests
+        run: pnpx nx e2e nx-astro-e2e
 
   # ===========================================================================
   # Job 2: Publish to npm
