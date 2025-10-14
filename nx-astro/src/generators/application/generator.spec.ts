@@ -49,8 +49,8 @@ describe('application generator', () => {
 
       const packageJson = readJson(tree, 'apps/test-app/package.json');
       expect(packageJson.name).toBe('test-app');
-      expect(packageJson.scripts.dev).toBe('astro dev');
-      expect(packageJson.scripts.build).toBe('astro build');
+      expect(packageJson.type).toBe('module');
+      expect(packageJson.private).toBe(true);
     });
 
     it('should use provided directory', async () => {

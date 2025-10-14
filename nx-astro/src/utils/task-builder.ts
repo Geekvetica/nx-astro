@@ -56,7 +56,7 @@ export function buildAstroTasks(
         externalDependencies: ['astro'],
       },
     ],
-    outputs: [`{projectRoot}/${outDir}`, `{projectRoot}/.astro`],
+    outputs: [`dist/{projectRoot}`, `{projectRoot}/.astro`],
     cache: true,
     dependsOn: ['^build'],
   };
@@ -102,13 +102,7 @@ export function buildAstroTasks(
   tasks[options.testTargetName] = {
     executor: '@geekvetica/nx-astro:test',
     options: {},
-    inputs: [
-      'default',
-      '^production',
-      {
-        externalDependencies: ['vitest'],
-      },
-    ],
+    inputs: ['default', '^production'],
     cache: true,
   };
 

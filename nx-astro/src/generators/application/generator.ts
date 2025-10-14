@@ -5,6 +5,7 @@ import {
   formatFiles,
   joinPathFragments,
   readProjectConfiguration,
+  offsetFromRoot,
 } from '@nx/devkit';
 import { join } from 'path';
 import { ApplicationGeneratorSchema } from './schema';
@@ -97,9 +98,14 @@ function addProjectToWorkspace(
   });
 }
 
-function getTemplateSubstitutions(projectName: string): Record<string, string> {
+function getTemplateSubstitutions(
+  projectName: string,
+  projectRoot: string
+): Record<string, string> {
   return {
     projectName,
+    projectRoot,
+    offsetFromRoot: offsetFromRoot(projectRoot),
     className: projectName
       .split('-')
       .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -119,7 +125,10 @@ async function createNewProject(
   }
 
   const templatePath = join(__dirname, 'files');
-  const substitutions = getTemplateSubstitutions(options.projectName);
+  const substitutions = getTemplateSubstitutions(
+    options.projectName,
+    options.projectRoot
+  );
 
   generateFiles(tree, templatePath, options.projectRoot, substitutions);
 }
