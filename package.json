@@ -16,7 +16,8 @@
     "typecheck": "nx run-many -t build --all",
     "clean": "nx reset && rm -rf dist node_modules/.cache",
     "release": "nx release",
-    "verify": "npm run format:check && npm run lint && npm run test && npm run build"
+    "verify": "npm run format:check && npm run lint && npm run test && npm run build",
+    "prepare": "husky"
   },
   "private": true,
   "dependencies": {
@@ -40,11 +41,13 @@
     "@types/node": "20.19.9",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
+    "husky": "^9.1.7",
     "jest": "^30.0.2",
     "jest-environment-jsdom": "^30.0.2",
     "jest-environment-node": "^30.0.2",
     "jest-util": "^30.0.2",
     "jsonc-eslint-parser": "^2.1.0",
+    "lint-staged": "^16.2.4",
     "memfs": "^4.49.0",
     "nx": "21.6.4",
     "prettier": "^2.6.2",
@@ -57,5 +60,13 @@
   },
   "nx": {
     "includedScripts": []
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,mjs,cjs}": [
+      "eslint --fix"
+    ],
+    "*.{ts,tsx,js,jsx,mjs,cjs,json,md}": [
+      "prettier --write"
+    ]
   }
 }

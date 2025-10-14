@@ -36,7 +36,7 @@ export function buildAstroTasks(
   const tasks: AstroTasks = {};
 
   // Determine output directory (normalize by removing leading ./)
-  const outDir = (astroConfig.outDir || './dist').replace(/^\.\//, '');
+  // const outDir = (astroConfig.outDir || './dist').replace(/^\.\//, '');
 
   // Dev task - runs development server
   tasks[options.devTargetName] = {

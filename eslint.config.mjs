@@ -47,4 +47,12 @@ export default [
     // Override or add rules here
     rules: {},
   },
+  {
+    // Disable @typescript-eslint/no-explicit-any for test files
+    // Test files often use 'any' for mocking and testing purposes
+    files: ['**/*.spec.ts', '**/*.spec.tsx', '**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
 ];

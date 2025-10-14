@@ -1,6 +1,6 @@
-import {execSync} from 'child_process';
-import {dirname, join} from 'path';
-import {mkdirSync, rmSync} from 'fs';
+import { execSync } from 'child_process';
+import { dirname, join } from 'path';
+import { mkdirSync, rmSync } from 'fs';
 import {
   fileExists,
   logStep,
@@ -223,7 +223,9 @@ describe('nx-astro e2e', () => {
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets).toBeDefined();
       expect(projectConfig.targets.build).toBeDefined();
-      expect(projectConfig.targets.build.executor).toBe('@geekvetica/nx-astro:build');
+      expect(projectConfig.targets.build.executor).toBe(
+        '@geekvetica/nx-astro:build'
+      );
     });
 
     it('should infer dev target', () => {
@@ -236,7 +238,9 @@ describe('nx-astro e2e', () => {
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.dev).toBeDefined();
-      expect(projectConfig.targets.dev.executor).toBe('@geekvetica/nx-astro:dev');
+      expect(projectConfig.targets.dev.executor).toBe(
+        '@geekvetica/nx-astro:dev'
+      );
     });
 
     it('should infer check target', () => {
@@ -249,7 +253,9 @@ describe('nx-astro e2e', () => {
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.check).toBeDefined();
-      expect(projectConfig.targets.check.executor).toBe('@geekvetica/nx-astro:check');
+      expect(projectConfig.targets.check.executor).toBe(
+        '@geekvetica/nx-astro:check'
+      );
     });
 
     it('should infer sync target', () => {
@@ -262,7 +268,9 @@ describe('nx-astro e2e', () => {
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.sync).toBeDefined();
-      expect(projectConfig.targets.sync.executor).toBe('@geekvetica/nx-astro:sync');
+      expect(projectConfig.targets.sync.executor).toBe(
+        '@geekvetica/nx-astro:sync'
+      );
     });
 
     it('should infer preview target', () => {
@@ -275,7 +283,9 @@ describe('nx-astro e2e', () => {
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.preview).toBeDefined();
-      expect(projectConfig.targets.preview.executor).toBe('@geekvetica/nx-astro:preview');
+      expect(projectConfig.targets.preview.executor).toBe(
+        '@geekvetica/nx-astro:preview'
+      );
     });
 
     it('should infer test target', () => {
@@ -288,7 +298,9 @@ describe('nx-astro e2e', () => {
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.test).toBeDefined();
-      expect(projectConfig.targets.test.executor).toBe('@geekvetica/nx-astro:test');
+      expect(projectConfig.targets.test.executor).toBe(
+        '@geekvetica/nx-astro:test'
+      );
     });
   });
 
@@ -311,7 +323,7 @@ describe('nx-astro e2e', () => {
         runPnpmCommand('add -D @astrojs/check typescript', projectDirectory, {
           silent: true,
         });
-      } catch (error) {
+      } catch {
         // If installation fails, we'll skip the check test
         console.warn('Failed to install @astrojs/check, check test may fail');
       }
@@ -361,7 +373,7 @@ describe('nx-astro e2e', () => {
         runPnpmCommand('add -D vitest', projectDirectory, {
           silent: true,
         });
-      } catch (error) {
+      } catch {
         console.warn('Failed to install vitest, test executor test may fail');
       }
 
@@ -403,7 +415,9 @@ describe('Sample test', () => {
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.dev).toBeDefined();
-      expect(projectConfig.targets.dev.executor).toBe('@geekvetica/nx-astro:dev');
+      expect(projectConfig.targets.dev.executor).toBe(
+        '@geekvetica/nx-astro:dev'
+      );
 
       logStep('Dev server configuration verified');
     });
@@ -420,7 +434,9 @@ describe('Sample test', () => {
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.preview).toBeDefined();
-      expect(projectConfig.targets.preview.executor).toBe('@geekvetica/nx-astro:preview');
+      expect(projectConfig.targets.preview.executor).toBe(
+        '@geekvetica/nx-astro:preview'
+      );
 
       logStep('Preview server configuration verified');
     });

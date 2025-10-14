@@ -9,6 +9,9 @@ export default [
         'error',
         {
           ignoredFiles: ['{projectRoot}/eslint.config.{js,cjs,mjs,ts,cts,mts}'],
+          // Ignore peer dependencies - nx and astro are intentionally peer dependencies of this plugin
+          // They should not be in regular dependencies to avoid version conflicts in consuming projects
+          ignoredDependencies: ['nx', 'astro'],
         },
       ],
     },
