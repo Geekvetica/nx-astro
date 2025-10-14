@@ -1,3 +1,13 @@
+## 0.9.6 (2025-10-14)
+
+### 🩹 Fixes
+
+- hopefully final version fix ([d37a60f](https://github.com/Geekvetica/nx-astro/commit/d37a60f))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 0.9.5 (2025-10-14)
 
 ### 🩹 Fixes

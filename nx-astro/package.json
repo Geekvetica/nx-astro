@@ -1,6 +1,6 @@
 {
   "name": "@geekvetica/nx-astro",
-  "version": "0.0.1",
+  "version": "0.9.6",
   "description": "An Nx plugin for Astro that provides generators and executors for seamless integration of Astro applications in Nx monorepos",
   "keywords": [
     "nx",
