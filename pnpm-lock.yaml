@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@astrojs/node':
-        specifier: ^9.0.0
-        version: 9.4.6(astro@5.14.4(@types/node@20.19.9)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
+        specifier: ^9.5.0
+        version: 9.5.0(astro@5.14.4(@types/node@20.19.9)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       '@nx/devkit':
         specifier: 21.6.4
         version: 21.6.4(nx@21.6.4(@swc-node/register@1.9.2(@swc/core@1.5.29(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.5.29(@swc/helpers@0.5.17)))
@@ -126,8 +126,8 @@ packages:
   '@astrojs/markdown-remark@6.3.8':
     resolution: {integrity: sha512-uFNyFWadnULWK2cOw4n0hLKeu+xaVWeuECdP10cQ3K2fkybtTlhb7J7TcScdjmS8Yps7oje9S/ehYMfZrhrgCg==}
 
-  '@astrojs/node@9.4.6':
-    resolution: {integrity: sha512-vyl+GaT20CjullFghaO5/g3ygpzfjQdxjRJev8r33Vi831nCe3yyy4G/V1z6wpq4FHDEduMtT2jdXfJVx1th+A==}
+  '@astrojs/node@9.5.0':
+    resolution: {integrity: sha512-x1whLIatmCefaqJA8FjfI+P6FStF+bqmmrib0OUGM1M3cZhAXKLgPx6UF2AzQ3JgpXgCWYM24MHtraPvZhhyLQ==}
     peerDependencies:
       astro: ^5.14.3
 
@@ -5000,6 +5000,10 @@ packages:
     resolution: {integrity: sha512-RwNA9Z/7PrK06rYLIzFMlaF+l73iwpzsqRIFgbMLbTcLD6cOao82TaWefPXQvB2fOC4AjuYSEndS7N/mTCbkdQ==}
     engines: {node: '>= 0.8'}
 
+  statuses@2.0.2:
+    resolution: {integrity: sha512-DvEy55V3DB7uknRo+4iOGT5fP1slR8wQohVdknigZPMpMstaKJQWhwiYBACJE3Ul2pTnATihhBYnRhZQHGBiRw==}
+    engines: {node: '>= 0.8'}
+
   steno@0.4.4:
     resolution: {integrity: sha512-EEHMVYHNXFHfGtgjNITnka0aHhiAlo93F7z2/Pwd+g0teG9CnM3JIINM7hVVB5/rhw9voufD7Wukwgtw2uqh6w==}
 
@@ -5758,7 +5762,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@astrojs/node@9.4.6(astro@5.14.4(@types/node@20.19.9)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
+  '@astrojs/node@9.5.0(astro@5.14.4(@types/node@20.19.9)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))':
     dependencies:
       '@astrojs/internal-helpers': 0.7.4
       astro: 5.14.4(@types/node@20.19.9)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
@@ -9245,7 +9249,7 @@ snapshots:
 
   ext-list@2.2.2:
     dependencies:
-      mime-db: 1.52.0
+      mime-db: 1.54.0
 
   ext-name@5.0.0:
     dependencies:
@@ -11515,7 +11519,7 @@ snapshots:
       ms: 2.1.3
       on-finished: 2.4.1
       range-parser: 1.2.1
-      statuses: 2.0.1
+      statuses: 2.0.2
     transitivePeerDependencies:
       - supports-color
 
@@ -11682,6 +11686,8 @@ snapshots:
       escape-string-regexp: 2.0.0
 
   statuses@2.0.1: {}
+
+  statuses@2.0.2: {}
 
   steno@0.4.4:
     dependencies:
