@@ -109,6 +109,16 @@ describe('nx-astro e2e', () => {
         fileExists(`${testAppDir}/astro.config.mjs`, projectDirectory)
       ).toBe(true);
 
+      // Install vitest early so it's detected during task inference
+      logStep('Installing vitest for testing...');
+      try {
+        runPnpmCommand('add -D vitest', projectDirectory, {
+          silent: true,
+        });
+      } catch {
+        console.warn('Failed to install vitest');
+      }
+
       // Reset Nx to force project graph rebuild and plugin detection
       logStep('Resetting Nx to detect new project...');
       runNxCommand('reset', projectDirectory);
@@ -367,17 +377,8 @@ describe('nx-astro e2e', () => {
 
   describe('test executor', () => {
     beforeAll(() => {
-      // Install vitest as a prerequisite
-      logStep('Installing vitest for testing...');
-      try {
-        runPnpmCommand('add -D vitest', projectDirectory, {
-          silent: true,
-        });
-      } catch {
-        console.warn('Failed to install vitest, test executor test may fail');
-      }
-
       // Create a simple test file
+      // Note: vitest is already installed in the application generator test
       logStep('Creating test file...');
       const testContent = `
 import { describe, it, expect } from 'vitest';
