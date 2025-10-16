@@ -441,6 +441,132 @@ describe('Sample test', () => {
       logStep('Preview server configuration verified');
     });
   });
+
+  describe('import generator', () => {
+    const importedAppName = 'imported-app';
+    const importedAppDir = `apps/${importedAppName}`;
+    const fixtureSourcePath = join(
+      process.cwd(),
+      'nx-astro-e2e/fixtures/sample-astro-import'
+    );
+
+    it('should import an existing Astro project', () => {
+      logStep('Importing existing Astro project from fixture...');
+      runNxCommand(
+        `g @geekvetica/nx-astro:import --source="${fixtureSourcePath}" --name=${importedAppName} --directory=${importedAppDir} --no-interactive`,
+        projectDirectory
+      );
+
+      logStep('Verifying imported project was created...');
+      expect(
+        fileExists(`${importedAppDir}/astro.config.mjs`, projectDirectory)
+      ).toBe(true);
+
+      // Reset Nx to force project graph rebuild
+      logStep('Resetting Nx to detect imported project...');
+      runNxCommand('reset', projectDirectory);
+
+      // Trigger project graph rebuild by listing projects
+      runNxCommand('show projects', projectDirectory, { silent: true });
+    }, 120000);
+
+    it('should have copied all fixture files', () => {
+      logStep('Checking that all files were copied...');
+      const requiredFiles = [
+        `${importedAppDir}/astro.config.mjs`,
+        `${importedAppDir}/package.json`,
+        `${importedAppDir}/tsconfig.json`,
+        `${importedAppDir}/src/pages/index.astro`,
+        `${importedAppDir}/src/env.d.ts`,
+        `${importedAppDir}/public/favicon.svg`,
+        `${importedAppDir}/README.md`,
+      ];
+
+      requiredFiles.forEach((file) => {
+        expect(fileExists(file, projectDirectory)).toBe(true);
+      });
+    });
+
+    it('should have valid project.json', () => {
+      logStep('Verifying project.json...');
+      expect(
+        fileExists(`${importedAppDir}/project.json`, projectDirectory)
+      ).toBe(true);
+
+      const projectJson = readJsonFile<{
+        name: string;
+        tags?: string[];
+        sourceRoot?: string;
+      }>(`${importedAppDir}/project.json`, projectDirectory);
+
+      expect(projectJson.name).toBe(importedAppName);
+      expect(projectJson.sourceRoot).toBe(`${importedAppDir}/src`);
+    });
+
+    it('should be buildable', () => {
+      logStep('Building imported project...');
+      runNxCommand(`build ${importedAppName}`, projectDirectory);
+
+      logStep('Verifying build output...');
+      // Imported projects build to their own dist directory (as defined in their astro.config.mjs)
+      // This is expected behavior - they retain their original build configuration
+      expect(
+        fileExists(`${importedAppDir}/dist/index.html`, projectDirectory)
+      ).toBe(true);
+    }, 120000);
+
+    it('should handle custom directory and tags', () => {
+      const customAppName = 'custom-imported';
+      const customDir = 'apps/websites/custom-site';
+      const customTags = 'astro,web,imported';
+
+      logStep('Importing with custom directory and tags...');
+      runNxCommand(
+        `g @geekvetica/nx-astro:import --source="${fixtureSourcePath}" --name=${customAppName} --directory=${customDir} --tags=${customTags} --no-interactive`,
+        projectDirectory
+      );
+
+      logStep('Verifying custom location...');
+      expect(
+        fileExists(`${customDir}/astro.config.mjs`, projectDirectory)
+      ).toBe(true);
+
+      logStep('Verifying tags were applied...');
+      const projectJson = readJsonFile<{
+        tags?: string[];
+      }>(`${customDir}/project.json`, projectDirectory);
+
+      expect(projectJson.tags).toBeDefined();
+      expect(projectJson.tags).toEqual(['astro', 'web', 'imported']);
+
+      // Reset Nx cache
+      runNxCommand('reset', projectDirectory);
+    }, 120000);
+
+    it('should reject invalid source paths', () => {
+      logStep('Testing with non-existent source path...');
+      const invalidPath = '/path/that/does/not/exist';
+
+      expect(() => {
+        runNxCommand(
+          `g @geekvetica/nx-astro:import --source="${invalidPath}" --name=invalid-import --no-interactive`,
+          projectDirectory
+        );
+      }).toThrow();
+    }, 60000);
+
+    it('should reject duplicate project names', () => {
+      logStep('Testing duplicate project name...');
+
+      // Try to import again with same name as first imported project
+      expect(() => {
+        runNxCommand(
+          `g @geekvetica/nx-astro:import --source="${fixtureSourcePath}" --name=${importedAppName} --directory=${importedAppDir} --no-interactive`,
+          projectDirectory
+        );
+      }).toThrow();
+    }, 120000);
+  });
 });
 
 /**

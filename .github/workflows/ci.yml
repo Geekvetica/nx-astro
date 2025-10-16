@@ -229,6 +229,17 @@ jobs:
           path: coverage/
           retention-days: 30
 
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./coverage/nx-astro/coverage-final.json
+          flags: unittests
+          name: nx-astro-coverage
+          fail_ci_if_error: false
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
       - name: Check coverage threshold
         if: always()
         run: |

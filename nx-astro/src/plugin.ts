@@ -116,7 +116,12 @@ async function createNodesForConfigFile(
   }
 
   // Build task configurations
-  const tasks = buildAstroTasks(projectRoot, astroConfig, options);
+  const tasks = buildAstroTasks(
+    projectRoot,
+    astroConfig,
+    options,
+    context.workspaceRoot
+  );
 
   // Determine source root from config or use default
   const srcDir = astroConfig.srcDir

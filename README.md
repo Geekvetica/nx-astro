@@ -1,6 +1,7 @@
 # nx-astro
 
 [![CI](https://github.com/geekvetica/nx-astro/actions/workflows/ci.yml/badge.svg)](https://github.com/geekvetica/nx-astro/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/geekvetica/nx-astro/branch/main/graph/badge.svg)](https://codecov.io/gh/geekvetica/nx-astro)
 [![npm version](https://badge.fury.io/js/%40geekvetica%2Fnx-astro.svg)](https://www.npmjs.com/package/@geekvetica/nx-astro)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -9,12 +10,14 @@ An Nx plugin for [Astro](https://astro.build) that provides generators and execu
 ## Features
 
 - **Project Generators**: Scaffold new Astro applications and libraries with best practices
+- **Import Generator**: Import existing Astro projects into your Nx workspace
 - **Configuration Generator**: Add Astro to existing projects
 - **Build Executor**: Build Astro sites with Nx caching
 - **Dev Server Executor**: Run Astro dev server with hot reload
 - **Preview Executor**: Preview production builds locally
 - **Sync Executor**: Generate Astro TypeScript definitions
 - **Check Executor**: Type-check Astro components and pages
+- **Test Executor**: Run Vitest tests (automatically configured when vitest is detected)
 - **Full Nx Integration**: Leverage Nx's task caching, affected commands, and dependency graph
 
 ## Installation
@@ -71,6 +74,41 @@ Options:
 - `--tags`: Tags for the project
 - `--unitTestRunner`: Unit test runner (vitest, none)
 - `--buildable`: Generate a buildable library
+
+### Import an Existing Astro Project
+
+Import an existing standalone Astro project into your Nx workspace:
+
+```bash
+nx g @geekvetica/nx-astro:import --source=/path/to/astro-project --name=my-app
+```
+
+Options:
+
+- `--source`: Path to the existing Astro project directory (required)
+- `--name`: Name for the imported project in the workspace (required)
+- `--directory`: Destination directory in the workspace (e.g., `apps/my-app`)
+- `--tags`: Tags for the project (comma-separated)
+
+The import generator will:
+
+- Copy all project files to the workspace
+- Create a `project.json` with inferred Nx targets (build, dev, preview, check, sync)
+- Update TypeScript path mappings in `tsconfig.base.json`
+- Preserve the original project structure and configuration
+- Automatically detect and configure available targets based on dependencies (e.g., test target only if vitest is installed)
+
+Example:
+
+```bash
+# Import a standalone Astro blog into apps/blog
+nx g @geekvetica/nx-astro:import --source=../my-astro-blog --name=blog --directory=apps/blog
+
+# After import, you can use all Nx commands
+nx dev blog
+nx build blog
+nx test blog  # Only available if vitest is installed
+```
 
 ### Add Astro Configuration to Existing Project
 
@@ -367,6 +405,17 @@ nx g @geekvetica/nx-astro:library ui-components --buildable
 nx g @geekvetica/nx-astro:configuration existing-project
 ```
 
+### Import an Existing Astro Project
+
+```bash
+# Import your standalone Astro portfolio site
+nx g @geekvetica/nx-astro:import --source=~/projects/my-portfolio --name=portfolio --directory=apps/portfolio --tags=web,public
+
+# Build and preview the imported project
+nx build portfolio
+nx preview portfolio
+```
+
 ## Contributing
 
 Contributions are welcome! Please read our [Contributing Guide](./CONTRIBUTING.md) for details.
@@ -443,10 +492,23 @@ Yes! Use the `--adapter` flag when generating projects:
 
 ### Can I migrate existing Astro projects?
 
-Yes! Use the configuration generator:
+Yes! Use the import generator to bring existing Astro projects into your Nx workspace:
 
 ```bash
-nx g @geekvetica/nx-astro:configuration my-existing-astro-project
+nx g @geekvetica/nx-astro:import --source=/path/to/your/astro-project --name=my-app --directory=apps/my-app
+```
+
+This will:
+
+- Copy your entire project into the workspace
+- Set up Nx targets automatically
+- Preserve your existing configuration
+- Enable Nx caching and task orchestration
+
+Alternatively, for projects already in the workspace, use the configuration generator:
+
+```bash
+nx g @geekvetica/nx-astro:configuration my-existing-project
 ```
 
 ### How do I share components between Astro apps?

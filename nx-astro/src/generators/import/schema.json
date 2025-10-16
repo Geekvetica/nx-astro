@@ -1,0 +1,55 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "$id": "NxAstroImport",
+  "title": "Import an existing Astro application",
+  "description": "Import an existing Astro application into the Nx workspace",
+  "type": "object",
+  "cli": "nx",
+  "properties": {
+    "source": {
+      "type": "string",
+      "description": "Path to the existing Astro project to import",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      },
+      "x-prompt": "What is the path to the existing Astro project?",
+      "x-priority": "important"
+    },
+    "name": {
+      "type": "string",
+      "description": "Name for the project in the Nx workspace",
+      "pattern": "^[a-zA-Z][a-zA-Z0-9-]*$",
+      "x-prompt": "What name would you like to use for the project?"
+    },
+    "directory": {
+      "type": "string",
+      "description": "Directory where the project will be placed (relative to workspace root)",
+      "x-prompt": "Where should the project be placed? (e.g., apps/my-app)"
+    },
+    "tags": {
+      "type": "string",
+      "description": "Comma-separated tags to apply to the project",
+      "x-prompt": "What tags would you like to add to the project? (comma-separated)"
+    },
+    "skipFormat": {
+      "type": "boolean",
+      "description": "Skip formatting files after generation",
+      "default": false,
+      "x-priority": "internal"
+    },
+    "skipInstall": {
+      "type": "boolean",
+      "description": "Skip installing dependencies after import",
+      "default": false,
+      "x-priority": "internal"
+    },
+    "importPath": {
+      "type": "string",
+      "description": "Custom TypeScript path alias for importing from this project",
+      "x-prompt": "What TypeScript path alias would you like to use? (optional, press Enter to auto-generate)"
+    }
+  },
+  "required": ["source"],
+  "additionalProperties": false
+}

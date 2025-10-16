@@ -17,6 +17,12 @@
       "schema": "./src/generators/component/schema.json",
       "aliases": ["c", "comp"],
       "description": "Create an Astro component"
+    },
+    "import": {
+      "factory": "./src/generators/import/generator",
+      "schema": "./src/generators/import/schema.json",
+      "aliases": ["imp"],
+      "description": "Import an existing Astro application into the Nx workspace"
     }
   }
 }

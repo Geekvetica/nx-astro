@@ -115,17 +115,41 @@ nx g @geekvetica/nx-astro:application my-portfolio --template=portfolio
 
 ## Importing Existing Projects
 
-Migrate existing Astro projects into your Nx workspace:
+Migrate existing Astro projects into your Nx workspace with the `import` generator:
 
 ```bash
-# Copy project to workspace
-cp -r /path/to/my-astro-site apps/my-site
+# Import from a local path
+nx g @geekvetica/nx-astro:import --source=../my-astro-app
 
-# Import it
-nx g @geekvetica/nx-astro:application my-site --importExisting
+# Import with custom name and directory
+nx g @geekvetica/nx-astro:import --source=./external/astro-site --name=my-site --directory=apps/websites
 
-# Start using it
+# Import with tags for organization
+nx g @geekvetica/nx-astro:import --source=/path/to/app --tags=astro,web,public-facing
+
+# Import with custom TypeScript path alias
+nx g @geekvetica/nx-astro:import --source=../app --name=my-app --importPath=@myorg/my-app
+```
+
+The import generator automatically:
+
+- Validates the source is a valid Astro project
+- Copies all project files (excluding node_modules, build outputs, etc.)
+- Creates Nx project configuration with all standard targets (dev, build, preview, check, sync)
+- Updates TypeScript path mappings in tsconfig.base.json
+- Registers the project in your workspace
+
+After importing:
+
+```bash
+# Install dependencies
+pnpm install
+
+# Start development
 nx dev my-site
+
+# Build for production
+nx build my-site
 ```
 
 ## Configuration
@@ -327,11 +351,12 @@ Optimize your CI pipeline with affected detection:
 
 ## Generators
 
-| Generator     | Description                           |
-| ------------- | ------------------------------------- |
-| `init`        | Initialize the nx-astro plugin        |
-| `application` | Create or import an Astro application |
-| `component`   | Generate an Astro component           |
+| Generator     | Description                                     |
+| ------------- | ----------------------------------------------- |
+| `init`        | Initialize the nx-astro plugin                  |
+| `application` | Create a new Astro application from a template  |
+| `import`      | Import an existing Astro project into workspace |
+| `component`   | Generate an Astro component                     |
 
 ## Executors
 

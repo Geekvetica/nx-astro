@@ -1,5 +1,6 @@
 import { buildAstroTasks, NormalizedOptions } from './task-builder';
 import { AstroConfig } from '../types/astro-config';
+import * as fs from 'fs';
 
 describe('task-builder', () => {
   const mockOptions: NormalizedOptions = {
@@ -14,8 +15,29 @@ describe('task-builder', () => {
   const mockProjectRoot = 'apps/my-app';
 
   describe('buildAstroTasks', () => {
-    it('should build all default tasks', () => {
+    let existsSyncSpy: jest.SpyInstance;
+    let readFileSyncSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      existsSyncSpy = jest.spyOn(fs, 'existsSync');
+      readFileSyncSpy = jest.spyOn(fs, 'readFileSync');
+    });
+
+    afterEach(() => {
+      existsSyncSpy.mockRestore();
+      readFileSyncSpy.mockRestore();
+    });
+
+    it('should build all default tasks when vitest is installed', () => {
       const astroConfig: Partial<AstroConfig> = {};
+
+      // Mock vitest being in project package.json
+      existsSyncSpy.mockReturnValue(true);
+      readFileSyncSpy.mockReturnValue(
+        JSON.stringify({
+          devDependencies: { vitest: '^1.0.0' },
+        })
+      );
 
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
@@ -25,6 +47,27 @@ describe('task-builder', () => {
       expect(tasks).toHaveProperty('check');
       expect(tasks).toHaveProperty('sync');
       expect(tasks).toHaveProperty('test');
+    });
+
+    it('should not include test task when vitest is not installed', () => {
+      const astroConfig: Partial<AstroConfig> = {};
+
+      // Mock no vitest in package.json
+      existsSyncSpy.mockReturnValue(true);
+      readFileSyncSpy.mockReturnValue(
+        JSON.stringify({
+          devDependencies: { typescript: '^5.0.0' },
+        })
+      );
+
+      const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
+
+      expect(tasks).toHaveProperty('dev');
+      expect(tasks).toHaveProperty('build');
+      expect(tasks).toHaveProperty('preview');
+      expect(tasks).toHaveProperty('check');
+      expect(tasks).toHaveProperty('sync');
+      expect(tasks).not.toHaveProperty('test');
     });
 
     it('should configure dev task correctly', () => {
@@ -48,7 +91,9 @@ describe('task-builder', () => {
 
       expect(tasks.build).toBeDefined();
       expect(tasks.build.executor).toBe('@geekvetica/nx-astro:build');
-      expect(tasks.build.outputs).toContain(`{workspaceRoot}/dist/{projectRoot}`);
+      expect(tasks.build.outputs).toContain(
+        `{workspaceRoot}/dist/{projectRoot}`
+      );
     });
 
     it('should configure preview task to depend on build', () => {
@@ -80,14 +125,48 @@ describe('task-builder', () => {
       expect(tasks.sync.outputs).toContain(`{projectRoot}/.astro`);
     });
 
-    it('should configure test task', () => {
+    it('should configure test task when vitest is installed', () => {
       const astroConfig: Partial<AstroConfig> = {};
+
+      // Mock vitest being in project package.json
+      existsSyncSpy.mockReturnValue(true);
+      readFileSyncSpy.mockReturnValue(
+        JSON.stringify({
+          devDependencies: { vitest: '^1.0.0' },
+        })
+      );
 
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
       expect(tasks.test).toBeDefined();
       expect(tasks.test.executor).toBe('@geekvetica/nx-astro:test');
       expect(tasks.test.cache).toBe(true);
+    });
+
+    it('should detect vitest in workspace package.json', () => {
+      const astroConfig: Partial<AstroConfig> = {};
+      const workspaceRoot = '/workspace/root';
+
+      // Mock no vitest in project, but vitest in workspace
+      existsSyncSpy.mockImplementation(() => {
+        return true; // Both files exist
+      });
+      readFileSyncSpy.mockImplementation((path: string) => {
+        if (path.includes(mockProjectRoot)) {
+          return JSON.stringify({ devDependencies: {} });
+        } else {
+          return JSON.stringify({ devDependencies: { vitest: '^1.0.0' } });
+        }
+      });
+
+      const tasks = buildAstroTasks(
+        mockProjectRoot,
+        astroConfig,
+        mockOptions,
+        workspaceRoot
+      );
+
+      expect(tasks.test).toBeDefined();
     });
 
     it('should use custom target names from options', () => {
@@ -101,6 +180,14 @@ describe('task-builder', () => {
       };
 
       const astroConfig: Partial<AstroConfig> = {};
+
+      // Mock vitest being in project package.json
+      existsSyncSpy.mockReturnValue(true);
+      readFileSyncSpy.mockReturnValue(
+        JSON.stringify({
+          devDependencies: { vitest: '^1.0.0' },
+        })
+      );
 
       const tasks = buildAstroTasks(
         mockProjectRoot,
@@ -151,7 +238,9 @@ describe('task-builder', () => {
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
 
       // Build outputs should be workspace-relative ({workspaceRoot}/dist/{projectRoot})
-      expect(tasks.build.outputs).toContain(`{workspaceRoot}/dist/{projectRoot}`);
+      expect(tasks.build.outputs).toContain(
+        `{workspaceRoot}/dist/{projectRoot}`
+      );
       expect(tasks.build.outputs).toContain(`{projectRoot}/.astro`);
     });
 
