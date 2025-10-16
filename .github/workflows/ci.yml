@@ -233,10 +233,11 @@ jobs:
         uses: codecov/codecov-action@v4
         if: always()
         with:
-          files: ./coverage/nx-astro/coverage-final.json
+          files: ./coverage/nx-astro/lcov.info
           flags: unittests
           name: nx-astro-coverage
           fail_ci_if_error: false
+          disable_search: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
