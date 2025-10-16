@@ -34,6 +34,9 @@ yarn-error.log
 testem.log
 /typings
 
+# Astro generated files
+**/.astro/
+
 # System Files
 .DS_Store
 Thumbs.db
