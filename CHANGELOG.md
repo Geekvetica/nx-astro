@@ -1,3 +1,18 @@
+# 1.0.0 (2025-10-16)
+
+### 🚀 Features
+
+- import generator ([da768cf](https://github.com/Geekvetica/nx-astro/commit/da768cf))
+
+### 🩹 Fixes
+
+- pipeline ([997e040](https://github.com/Geekvetica/nx-astro/commit/997e040))
+- tuning code coverage ([8b43039](https://github.com/Geekvetica/nx-astro/commit/8b43039))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 0.9.6 (2025-10-14)
 
 ### 🩹 Fixes
