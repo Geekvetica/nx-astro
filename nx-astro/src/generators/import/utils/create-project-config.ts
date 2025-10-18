@@ -1,5 +1,36 @@
-import { ProjectConfiguration, joinPathFragments } from '@nx/devkit';
+import { ProjectConfiguration, joinPathFragments, Tree } from '@nx/devkit';
 import { NormalizedImportOptions } from './normalize-options';
+
+/**
+ * Detects the package manager used in the workspace.
+ *
+ * Checks package.json's packageManager field first, falls back to
+ * detecting lock files if not specified.
+ *
+ * @param tree - Nx virtual file system
+ * @returns Package manager name: 'bun', 'pnpm', 'yarn', or 'npm'
+ */
+function detectPackageManager(tree: Tree): 'bun' | 'pnpm' | 'yarn' | 'npm' {
+  // Check package.json packageManager field (most reliable)
+  if (tree.exists('package.json')) {
+    const packageJsonContent = tree.read('package.json', 'utf-8');
+    if (packageJsonContent) {
+      const packageJson = JSON.parse(packageJsonContent);
+      if (packageJson.packageManager) {
+        const manager = packageJson.packageManager.split('@')[0];
+        if (['bun', 'pnpm', 'yarn', 'npm'].includes(manager)) {
+          return manager as 'bun' | 'pnpm' | 'yarn' | 'npm';
+        }
+      }
+    }
+  }
+
+  // Fallback: detect by lock file
+  if (tree.exists('bun.lockb')) return 'bun';
+  if (tree.exists('pnpm-lock.yaml')) return 'pnpm';
+  if (tree.exists('yarn.lock')) return 'yarn';
+  return 'npm'; // Default fallback
+}
 
 /**
  * Creates a ProjectConfiguration object for an imported Astro project.
@@ -19,7 +50,16 @@ import { NormalizedImportOptions } from './normalize-options';
  * - Cached targets: build, check, sync (for fast rebuilds)
  * - Non-cached targets: dev, preview (interactive commands)
  *
+ * ## Package Manager Compatibility
+ * The configuration automatically detects the package manager:
+ * - **Bun**: Uses `bun.lockb` for cache invalidation (workaround for Nx hasher limitation)
+ * - **npm/pnpm/yarn**: Uses `externalDependencies` for precise version tracking
+ *
+ * This ensures optimal caching behavior across all package managers while
+ * maintaining compatibility with Bun's unique module resolution.
+ *
  * @param options - Normalized import generator options
+ * @param tree - Optional Nx virtual file system (for package manager detection)
  * @returns ProjectConfiguration with all targets, caching, and dependencies configured
  *
  * @example Basic usage
@@ -79,12 +119,44 @@ import { NormalizedImportOptions } from './normalize-options';
  * //   → Then runs: nx check my-app (type checks with generated types)
  * ```
  *
+ * @example With Bun package manager
+ * ```typescript
+ * // package.json has "packageManager": "bun@latest"
+ * const config = createProjectConfig(options, tree);
+ * // Returns config with inputs: [..., '{workspaceRoot}/bun.lockb']
+ * // Cache invalidates when any dependency changes
+ * ```
+ *
+ * @example With npm/pnpm package manager
+ * ```typescript
+ * // package.json has "packageManager": "pnpm@8.0.0"
+ * const config = createProjectConfig(options, tree);
+ * // Returns config with inputs: [..., {externalDependencies: ['astro']}]
+ * // Cache invalidates only when astro version changes
+ * ```
+ *
  * @see {@link NormalizedImportOptions} for the input type
  */
 export function createProjectConfig(
-  options: NormalizedImportOptions
+  options: NormalizedImportOptions,
+  tree?: Tree,
 ): ProjectConfiguration {
   const { projectRoot, parsedTags } = options;
+
+  // Detect package manager (only if tree is provided)
+  const packageManager = tree ? detectPackageManager(tree) : 'npm';
+  const isBun = packageManager === 'bun';
+
+  // Helper to create inputs array based on package manager
+  const createInputs = (base: any[], externalDeps: string[]): any[] => {
+    if (isBun) {
+      // For Bun: use lockfile instead of externalDependencies
+      return [...base, '{workspaceRoot}/bun.lockb'];
+    } else {
+      // For npm/pnpm/yarn: use externalDependencies (precise)
+      return [...base, { externalDependencies: externalDeps }];
+    }
+  };
 
   return {
     root: projectRoot,
@@ -100,13 +172,7 @@ export function createProjectConfig(
       build: {
         executor: '@geekvetica/nx-astro:build',
         options: {},
-        inputs: [
-          'production',
-          '^production',
-          {
-            externalDependencies: ['astro'],
-          },
-        ],
+        inputs: createInputs(['production', '^production'], ['astro']),
         outputs: [`{workspaceRoot}/dist/{projectRoot}`, `{projectRoot}/.astro`],
         cache: true,
         dependsOn: ['^build'],
@@ -120,25 +186,17 @@ export function createProjectConfig(
       check: {
         executor: '@geekvetica/nx-astro:check',
         options: {},
-        inputs: [
-          'default',
-          '^production',
-          {
-            externalDependencies: ['astro', 'typescript'],
-          },
-        ],
+        inputs: createInputs(
+          ['default', '^production'],
+          ['astro', 'typescript'],
+        ),
         cache: true,
         dependsOn: ['sync'],
       },
       sync: {
         executor: '@geekvetica/nx-astro:sync',
         options: {},
-        inputs: [
-          `{projectRoot}/src/content/**/*`,
-          {
-            externalDependencies: ['astro'],
-          },
-        ],
+        inputs: createInputs([`{projectRoot}/src/content/**/*`], ['astro']),
         outputs: [`{projectRoot}/.astro`],
         cache: true,
       },

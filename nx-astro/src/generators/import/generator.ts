@@ -142,7 +142,7 @@ export async function importGenerator(
 
   // Step 6: Create project configuration
   logger.info('⚙️  Creating project configuration...');
-  const projectConfig = createProjectConfig(normalizedOptions);
+  const projectConfig = createProjectConfig(normalizedOptions, tree);
   addProjectConfiguration(tree, normalizedOptions.projectName, projectConfig);
 
   // Step 6.5: Add dependencies to workspace package.json
