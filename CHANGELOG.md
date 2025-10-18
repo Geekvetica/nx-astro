@@ -1,3 +1,14 @@
+## 1.0.4 (2025-10-18)
+
+### 🩹 Fixes
+
+- astro check dependencies checking while importing ([65f1153](https://github.com/Geekvetica/nx-astro/commit/65f1153))
+- tests timing ([33a5ad0](https://github.com/Geekvetica/nx-astro/commit/33a5ad0))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## [Unreleased]
 
 ### Fixed
