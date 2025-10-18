@@ -72,7 +72,7 @@ describe('Dev Executor', () => {
       // Simulate clean exit
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -95,7 +95,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -122,7 +122,7 @@ describe('Dev Executor', () => {
       const resultPromise = devExecutor(options, context);
 
       // Let it run for a bit
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setImmediate(resolve));
 
       // Simulate server still running
       expect(mockSpawn).toHaveBeenCalled();
@@ -141,7 +141,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -160,7 +160,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -179,7 +179,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -201,7 +201,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -220,7 +220,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -241,7 +241,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -261,7 +261,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -279,7 +279,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -298,7 +298,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -318,7 +318,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -337,7 +337,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -356,7 +356,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -374,7 +374,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -393,7 +393,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -412,7 +412,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'error') {
-          setTimeout(() => callback(new Error('Server startup failed')), 10);
+          callback(new Error('Server startup failed'));
         }
         return mockChildProcess;
       });
@@ -428,7 +428,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'error') {
-          setTimeout(() => callback(new Error('Process error')), 10);
+          callback(new Error('Process error'));
         }
         return mockChildProcess;
       });
@@ -443,7 +443,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(1), 10);
+          callback(1);
         }
         return mockChildProcess;
       });
@@ -471,7 +471,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 50);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -479,7 +479,7 @@ describe('Dev Executor', () => {
       const resultPromise = devExecutor(options, context);
 
       // Wait a bit
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setImmediate(resolve));
 
       // Simulate SIGINT
       if (signalCallback) {
@@ -507,7 +507,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 50);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -515,7 +515,7 @@ describe('Dev Executor', () => {
       const resultPromise = devExecutor(options, context);
 
       // Wait a bit
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setImmediate(resolve));
 
       // Simulate SIGTERM
       if (signalCallback) {
@@ -537,7 +537,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -554,7 +554,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -578,7 +578,7 @@ describe('Dev Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });

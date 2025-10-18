@@ -72,7 +72,7 @@ describe('Preview Executor', () => {
       // Simulate clean exit
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -95,7 +95,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -114,7 +114,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -135,7 +135,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -154,7 +154,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -172,7 +172,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'error') {
-          setTimeout(() => callback(new Error('Server failed')), 10);
+          callback(new Error('Server failed'));
         }
         return mockChildProcess;
       });
@@ -187,7 +187,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(1), 10);
+          callback(1);
         }
         return mockChildProcess;
       });
@@ -206,7 +206,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -225,7 +225,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -244,7 +244,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -262,7 +262,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -280,7 +280,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -308,7 +308,7 @@ describe('Preview Executor', () => {
       const resultPromise = previewExecutor(options, context);
 
       // Let it run for a bit
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setImmediate(resolve));
 
       // Simulate server still running
       expect(mockSpawn).toHaveBeenCalled();
@@ -338,7 +338,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 50);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -346,7 +346,7 @@ describe('Preview Executor', () => {
       const resultPromise = previewExecutor(options, context);
 
       // Wait a bit
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await new Promise((resolve) => setImmediate(resolve));
 
       // Simulate SIGINT
       if (signalCallback) {
@@ -368,7 +368,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -385,7 +385,7 @@ describe('Preview Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });

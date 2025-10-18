@@ -150,7 +150,7 @@ describe('Test Executor', () => {
         stderr: { on: jest.fn() },
         on: jest.fn((event: string, handler: any) => {
           if (event === 'close') {
-            setTimeout(() => handler(0), 10);
+            setImmediate(() => handler(0));
           }
         }),
         kill: jest.fn(),
@@ -160,8 +160,8 @@ describe('Test Executor', () => {
 
       const resultPromise = executor(options, context);
 
-      // Wait a bit then trigger close
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      // Wait for async operations to complete
+      await new Promise((resolve) => setImmediate(resolve));
 
       const result = await resultPromise;
 
@@ -189,13 +189,13 @@ describe('Test Executor', () => {
       // Start executor but don't await (it should keep running)
       const resultPromise = executor(options, context);
 
-      await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockSpawn).toHaveBeenCalled();
 
       // Trigger close to clean up
       const onHandler = mockProcess.on.mock.calls.find(
-        (call: any) => call[0] === 'close'
+        (call: any) => call[0] === 'close',
       );
       if (onHandler) {
         onHandler[1](0);
@@ -223,7 +223,7 @@ describe('Test Executor', () => {
         stderr: { on: jest.fn() },
         on: jest.fn((event: string, handler: any) => {
           if (event === 'close') {
-            setTimeout(() => handler(0), 10);
+            setImmediate(() => handler(0));
           }
         }),
         kill: jest.fn(),
@@ -238,7 +238,7 @@ describe('Test Executor', () => {
         sigintHandler();
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 20));
+      await new Promise((resolve) => setImmediate(resolve));
       await resultPromise;
 
       expect(mockProcess.kill).toHaveBeenCalled();
@@ -601,7 +601,7 @@ describe('Test Executor', () => {
         stderr: { on: jest.fn() },
         on: jest.fn((event: string, handler: any) => {
           if (event === 'close') {
-            setTimeout(() => handler(0), 10);
+            setImmediate(() => handler(0));
           }
         }),
         kill: jest.fn(),
@@ -613,7 +613,7 @@ describe('Test Executor', () => {
 
       expect(mockProcess.stdout.on).toHaveBeenCalledWith(
         'data',
-        expect.any(Function)
+        expect.any(Function),
       );
       expect(stdoutWriteSpy).toHaveBeenCalled();
 
@@ -637,7 +637,7 @@ describe('Test Executor', () => {
         },
         on: jest.fn((event: string, handler: any) => {
           if (event === 'close') {
-            setTimeout(() => handler(0), 10);
+            setImmediate(() => handler(0));
           }
         }),
         kill: jest.fn(),
@@ -649,7 +649,7 @@ describe('Test Executor', () => {
 
       expect(mockProcess.stderr.on).toHaveBeenCalledWith(
         'data',
-        expect.any(Function)
+        expect.any(Function),
       );
       expect(stderrWriteSpy).toHaveBeenCalled();
 

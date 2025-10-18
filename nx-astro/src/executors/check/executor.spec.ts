@@ -196,7 +196,7 @@ describe('Check Executor', () => {
       mockSpawn.mockReturnValue(mockChildProcess);
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -261,7 +261,7 @@ describe('Check Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 50);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -530,7 +530,7 @@ describe('Check Executor', () => {
       mockSpawn.mockReturnValue(mockChildProcess);
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -567,7 +567,7 @@ describe('Check Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 50);
+          callback(0);
         }
         return mockChildProcess;
       });
@@ -597,7 +597,7 @@ describe('Check Executor', () => {
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
-          setTimeout(() => callback(0), 10);
+          callback(0);
         }
         return mockChildProcess;
       });
