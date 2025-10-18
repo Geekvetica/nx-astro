@@ -1,3 +1,13 @@
+## 1.0.3 (2025-10-18)
+
+### 🩹 Fixes
+
+- bun incompability ([a010227](https://github.com/Geekvetica/nx-astro/commit/a010227))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 1.0.2 (2025-10-18)
 
 ### 🩹 Fixes
