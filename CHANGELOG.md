@@ -1,3 +1,13 @@
+## 1.0.2 (2025-10-18)
+
+### 🩹 Fixes
+
+- import generator ([78590b6](https://github.com/Geekvetica/nx-astro/commit/78590b6))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 1.0.1 (2025-10-16)
 
 ### 🩹 Fixes
