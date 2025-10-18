@@ -31,4 +31,10 @@ export interface CheckExecutorSchema {
    * Additional CLI arguments to pass to Astro
    */
   additionalArgs?: string[];
+
+  /**
+   * Automatically install @astrojs/check if missing
+   * @default false
+   */
+  autoInstall?: boolean;
 }

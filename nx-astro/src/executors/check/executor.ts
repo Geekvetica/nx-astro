@@ -3,6 +3,11 @@ import { exec, spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
 import { CheckExecutorSchema } from './schema';
+import {
+  isPackageInstalled,
+  detectPackageManager,
+  getInstallCommand,
+} from '../../utils/dependency-checker';
 
 const execAsync = promisify(exec);
 
@@ -11,9 +16,124 @@ export interface CheckExecutorOutput {
   error?: string;
 }
 
+/**
+ * Validates that @astrojs/check package is installed in the workspace.
+ *
+ * This function checks if the @astrojs/check package is available. If not installed:
+ * - When autoInstall is true: Automatically installs the package using the detected package manager
+ * - When autoInstall is false: Returns an error with installation instructions
+ *
+ * @param context - Nx executor context containing workspace root and configuration
+ * @param options - Executor options containing the autoInstall flag
+ * @returns Error result if validation fails or auto-install fails, undefined if validation passes
+ *
+ * @example
+ * ```typescript
+ * // Check without auto-install
+ * const error = await validateCheckDependency(context, { autoInstall: false });
+ * if (error) {
+ *   return error; // Package not installed, user must install manually
+ * }
+ *
+ * // Check with auto-install enabled
+ * const error = await validateCheckDependency(context, { autoInstall: true });
+ * if (error) {
+ *   return error; // Auto-install failed
+ * }
+ * // Package is now installed and ready to use
+ * ```
+ */
+async function validateCheckDependency(
+  context: ExecutorContext,
+  options: CheckExecutorSchema,
+): Promise<CheckExecutorOutput | undefined> {
+  const isCheckInstalled = isPackageInstalled('@astrojs/check', context.root);
+
+  if (isCheckInstalled) {
+    return undefined; // Validation passed
+  }
+
+  // Package is not installed
+  const packageManager = detectPackageManager(context.root);
+  const installCommand = getInstallCommand(
+    '@astrojs/check',
+    packageManager,
+    true,
+  );
+
+  // Auto-install if enabled
+  if (options.autoInstall) {
+    logger.info('Installing @astrojs/check...');
+    try {
+      await execAsync(installCommand, {
+        cwd: context.root,
+        env: process.env,
+      });
+      logger.info('@astrojs/check installed successfully');
+      return undefined; // Installation successful, validation passed
+    } catch (error) {
+      const installError = error as { message?: string; stderr?: string };
+      const errorMessage = installError.message || String(error);
+      logger.error('Failed to install @astrojs/check automatically');
+      if (installError.stderr) {
+        logger.error(installError.stderr);
+      }
+      return {
+        success: false,
+        error: `Auto-install failed: ${errorMessage}`,
+      };
+    }
+  }
+
+  // Auto-install disabled, show installation instructions
+  const errorMessage = [
+    'The @astrojs/check package is required to run type checking.',
+    '',
+    'Install it by running:',
+    `  ${installCommand}`,
+    '',
+    'Alternatively, add it to your package.json devDependencies and run install:',
+    '  "@astrojs/check": "latest"',
+  ].join('\n');
+
+  logger.error(errorMessage);
+
+  return {
+    success: false,
+    error: `@astrojs/check is not installed. Run: ${installCommand}`,
+  };
+}
+
+/**
+ * Executes the Astro type checking command for a project.
+ *
+ * This executor runs the `astro check` command to perform TypeScript type checking
+ * on an Astro project. It supports both one-time checks and watch mode for continuous
+ * type checking during development.
+ *
+ * The executor automatically validates that @astrojs/check is installed and can
+ * optionally auto-install it if the autoInstall option is enabled.
+ *
+ * @param options - Executor options including watch mode, tsconfig path, and autoInstall
+ * @param context - Nx executor context containing workspace and project information
+ * @returns Result object indicating success or failure with optional error message
+ *
+ * @example
+ * ```typescript
+ * // One-time type check
+ * await checkExecutor({ autoInstall: true }, context);
+ *
+ * // Watch mode with custom tsconfig
+ * await checkExecutor({
+ *   watch: true,
+ *   tsconfig: './tsconfig.custom.json',
+ *   autoInstall: true
+ * }, context);
+ * ```
+ */
 export default async function checkExecutor(
   options: CheckExecutorSchema,
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<CheckExecutorOutput> {
   try {
     // Get project configuration
@@ -31,6 +151,12 @@ export default async function checkExecutor(
     // Determine project root
     const projectRoot =
       options.root || path.join(context.root, projectConfig.root);
+
+    // Validate @astrojs/check is installed (with optional auto-install)
+    const validationError = await validateCheckDependency(context, options);
+    if (validationError) {
+      return validationError;
+    }
 
     // Build the astro check command arguments
     const args: string[] = ['check'];
@@ -83,7 +209,7 @@ export default async function checkExecutor(
  */
 async function runCheckMode(
   args: string[],
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<CheckExecutorOutput> {
   const command = ['astro', ...args].join(' ');
 
@@ -140,7 +266,7 @@ async function runCheckMode(
  */
 async function runWatchMode(
   args: string[],
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<CheckExecutorOutput> {
   return new Promise<CheckExecutorOutput>((resolve) => {
     logger.info(`Executing: astro ${args.join(' ')}`);

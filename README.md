@@ -165,6 +165,47 @@ Run Astro's type checker:
 nx check my-app
 ```
 
+**Requirements:**
+
+- The `@astrojs/check` package must be installed as a devDependency
+- If missing, the executor will display an error with installation instructions
+- The install command shown will match your package manager (bun, pnpm, yarn, or npm)
+
+**Manual installation**:
+
+```bash
+# Bun
+bun add -d @astrojs/check
+
+# pnpm
+pnpm add -D @astrojs/check
+
+# Yarn
+yarn add -D @astrojs/check
+
+# npm
+npm install --save-dev @astrojs/check
+```
+
+**Auto-install option**:
+
+You can enable automatic installation of `@astrojs/check` by adding the `autoInstall` option to your project configuration:
+
+```json
+{
+  "targets": {
+    "check": {
+      "executor": "@geekvetica/nx-astro:check",
+      "options": {
+        "autoInstall": true
+      }
+    }
+  }
+}
+```
+
+When `autoInstall: true`, the plugin will automatically install `@astrojs/check` if it's missing, then proceed with type checking.
+
 ## Nx Integration
 
 ### Affected Commands

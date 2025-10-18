@@ -34,6 +34,11 @@
       "items": {
         "type": "string"
       }
+    },
+    "autoInstall": {
+      "type": "boolean",
+      "description": "Automatically install @astrojs/check if missing",
+      "default": false
     }
   },
   "required": []

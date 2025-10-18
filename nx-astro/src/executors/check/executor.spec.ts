@@ -17,6 +17,19 @@ jest.mock('child_process', () => {
   };
 });
 
+// Mock fs module for dependency checker
+const mockExistsSync = jest.fn();
+const mockReadFileSync = jest.fn();
+
+jest.mock('fs', () => {
+  const actual = jest.requireActual('fs');
+  return {
+    ...actual,
+    existsSync: mockExistsSync,
+    readFileSync: mockReadFileSync,
+  };
+});
+
 jest.mock('util', () => {
   const actual = jest.requireActual('util');
   return {
@@ -89,6 +102,25 @@ describe('Check Executor', () => {
     mockSpawn.mockClear();
     mockOn.mockClear();
     mockKill.mockClear();
+
+    // Default: Mock @astrojs/check as INSTALLED for all tests
+    // Individual test suites can override this behavior
+    mockExistsSync.mockImplementation((path: string) => {
+      // By default, package is installed
+      if (path.includes('node_modules/@astrojs/check')) return true;
+      if (path.includes('package.json')) return true;
+      return false;
+    });
+
+    mockReadFileSync.mockReturnValue(
+      JSON.stringify({
+        dependencies: {},
+        devDependencies: {
+          astro: '^4.0.0',
+          '@astrojs/check': '^0.3.0',
+        },
+      }),
+    );
   });
 
   describe('basic functionality', () => {
@@ -573,6 +605,261 @@ describe('Check Executor', () => {
       const result = await checkExecutor(options, context);
 
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('Missing @astrojs/check Dependency', () => {
+    beforeEach(() => {
+      // Reset mocks before each test
+      mockExistsSync.mockReset();
+      mockReadFileSync.mockReset();
+    });
+
+    it('should fail with helpful error when @astrojs/check is missing', async () => {
+      const options: CheckExecutorSchema = {};
+
+      // Mock @astrojs/check not in node_modules, but package.json exists
+      mockExistsSync.mockImplementation((path: string) => {
+        if (path.includes('node_modules/@astrojs/check')) return false;
+        if (path.includes('package.json')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+          },
+        }),
+      );
+
+      const result = await checkExecutor(options, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('@astrojs/check');
+      expect(result.error).toContain('install');
+    });
+
+    it('should detect Bun package manager from bun.lockb', async () => {
+      const options: CheckExecutorSchema = {};
+
+      // Mock bun.lockb exists, @astrojs/check not in node_modules
+      mockExistsSync.mockImplementation((path: string) => {
+        if (path.includes('node_modules/@astrojs/check')) return false;
+        if (path.includes('bun.lockb')) return true;
+        if (path.includes('package.json')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+          },
+        }),
+      );
+
+      const result = await checkExecutor(options, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('bun add -d @astrojs/check');
+    });
+
+    it('should detect pnpm package manager from pnpm-lock.yaml', async () => {
+      const options: CheckExecutorSchema = {};
+
+      // Mock pnpm-lock.yaml exists, @astrojs/check not in node_modules
+      mockExistsSync.mockImplementation((path: string) => {
+        if (path.includes('node_modules/@astrojs/check')) return false;
+        if (path.includes('pnpm-lock.yaml')) return true;
+        if (path.includes('package.json')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+          },
+        }),
+      );
+
+      const result = await checkExecutor(options, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('pnpm add -D @astrojs/check');
+    });
+
+    it('should detect yarn package manager from yarn.lock', async () => {
+      const options: CheckExecutorSchema = {};
+
+      // Mock yarn.lock exists, @astrojs/check not in node_modules
+      mockExistsSync.mockImplementation((path: string) => {
+        if (path.includes('node_modules/@astrojs/check')) return false;
+        if (path.includes('yarn.lock')) return true;
+        if (path.includes('package.json')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+          },
+        }),
+      );
+
+      const result = await checkExecutor(options, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('yarn add -D @astrojs/check');
+    });
+
+    it('should default to npm when no lock files', async () => {
+      const options: CheckExecutorSchema = {};
+
+      // Mock no lock files, only package.json, @astrojs/check not in node_modules
+      mockExistsSync.mockImplementation((path: string) => {
+        if (path.includes('node_modules/@astrojs/check')) return false;
+        if (path.includes('package.json')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+          },
+        }),
+      );
+
+      const result = await checkExecutor(options, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('npm install --save-dev @astrojs/check');
+    });
+
+    it('should succeed when @astrojs/check is installed', async () => {
+      const options: CheckExecutorSchema = {};
+
+      // Mock @astrojs/check EXISTS in node_modules
+      mockExistsSync.mockImplementation((path: string) => {
+        // Package is installed in node_modules
+        if (path.includes('node_modules/@astrojs/check')) return true;
+        if (path.includes('package.json')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+            '@astrojs/check': '^0.3.0',
+          },
+        }),
+      );
+
+      mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+        callback(null, { stdout: 'No errors', stderr: '' });
+        return {} as any;
+      });
+
+      const result = await checkExecutor(options, context);
+
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('Auto-Install Feature', () => {
+    beforeEach(() => {
+      // Reset mocks before each test
+      mockExistsSync.mockReset();
+      mockReadFileSync.mockReset();
+    });
+
+    it('should auto-install when autoInstall: true', async () => {
+      const options: CheckExecutorSchema = {
+        autoInstall: true,
+      };
+
+      // Mock missing @astrojs/check in node_modules
+      mockExistsSync.mockImplementation((path: string) => {
+        if (path.includes('node_modules/@astrojs/check')) return false;
+        if (path.includes('package.json')) return true;
+        if (path.includes('bun.lockb')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+          },
+        }),
+      );
+
+      // Mock successful installation
+      let installCalled = false;
+      mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+        if (cmd.includes('bun add')) {
+          installCalled = true;
+          callback(null, { stdout: 'Package installed', stderr: '' });
+        } else if (cmd.includes('astro check')) {
+          callback(null, { stdout: 'No errors', stderr: '' });
+        }
+        return {} as any;
+      });
+
+      const result = await checkExecutor(options, context);
+
+      expect(installCalled).toBe(true);
+      expect(result.success).toBe(true);
+    });
+
+    it('should handle auto-install failures gracefully', async () => {
+      const options: CheckExecutorSchema = {
+        autoInstall: true,
+      };
+
+      // Mock missing @astrojs/check in node_modules
+      mockExistsSync.mockImplementation((path: string) => {
+        if (path.includes('node_modules/@astrojs/check')) return false;
+        if (path.includes('package.json')) return true;
+        if (path.includes('npm-shrinkwrap.json')) return true;
+        return false;
+      });
+
+      mockReadFileSync.mockReturnValue(
+        JSON.stringify({
+          dependencies: {},
+          devDependencies: {
+            astro: '^4.0.0',
+          },
+        }),
+      );
+
+      // Mock installation failure
+      mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+        if (cmd.includes('npm install')) {
+          const error: any = new Error('Installation failed');
+          error.code = 1;
+          callback(error, { stdout: '', stderr: 'Network error' });
+        }
+        return {} as any;
+      });
+
+      const result = await checkExecutor(options, context);
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('install');
+      expect(result.error).toContain('fail');
     });
   });
 });

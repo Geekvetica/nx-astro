@@ -1,3 +1,32 @@
+## [Unreleased]
+
+### Fixed
+
+- **check executor**: Prevents hanging when `@astrojs/check` is not installed
+  - Added validation to check if `@astrojs/check` package is installed before running type checking
+  - Provides clear error messages with package-manager-specific installation instructions
+  - Automatically detects package manager from lock files and `package.json`
+  - Shows correct install command for detected package manager (bun, pnpm, yarn, or npm)
+  - Resolves issue where Astro CLI would show interactive prompt in CI/non-interactive environments
+
+### Added
+
+- **check executor**: New `autoInstall` option for automatic dependency installation
+  - When enabled (`autoInstall: true`), automatically installs `@astrojs/check` if missing
+  - Gracefully handles installation failures with helpful error messages
+  - Disabled by default to maintain backward compatibility
+- **utils**: New `dependency-checker` utility module
+  - `isPackageInstalled()`: Checks if a package exists in node_modules
+  - `detectPackageManager()`: Detects package manager from lock files and package.json
+  - `getInstallCommand()`: Generates correct install command for each package manager
+
+### Technical Details
+
+- Follows Tidy First principles: structural changes separated from behavioral changes
+- Implements TDD methodology: tests written first (Red), implementation second (Green), refactored third
+- 100% test coverage on new functionality
+- No breaking changes to existing functionality
+
 ## 1.0.3 (2025-10-18)
 
 ### 🩹 Fixes
