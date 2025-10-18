@@ -1,4 +1,11 @@
-import { Tree, formatFiles, addProjectConfiguration, logger } from '@nx/devkit';
+import {
+  Tree,
+  formatFiles,
+  addProjectConfiguration,
+  logger,
+  addDependenciesToPackageJson,
+  GeneratorCallback,
+} from '@nx/devkit';
 import { ImportGeneratorSchema } from './schema';
 import { normalizeOptions } from './utils/normalize-options';
 import { validateSource } from './utils/validate-source';
@@ -7,6 +14,7 @@ import { validateTargetDirectory } from './utils/validate-target-directory';
 import { copyProjectFiles } from './utils/copy-project-files';
 import { createProjectConfig } from './utils/create-project-config';
 import { updateTsconfigPaths } from './utils/update-tsconfig-paths';
+import { extractDependencies } from './utils/extract-dependencies';
 
 /**
  * Import an existing Astro application into the Nx workspace.
@@ -17,10 +25,13 @@ import { updateTsconfigPaths } from './utils/update-tsconfig-paths';
  * ## What it does
  * 1. Validates the source is a valid Astro project (checks for astro.config, package.json, astro dependency)
  * 2. Copies project files while excluding generated content (node_modules, dist, .astro, lock files, etc.)
- * 3. Generates Nx project configuration with all standard targets (build, dev, preview, check, sync)
- * 4. Registers the project in the workspace configuration
- * 5. Updates TypeScript path mappings in tsconfig.base.json for type-safe imports
- * 6. Optionally formats all generated files
+ * 3. Extracts all dependencies from the source project's package.json
+ * 4. Merges dependencies into workspace root package.json (filters out workspace protocols, file links)
+ * 5. Generates Nx project configuration with all standard targets (build, dev, preview, check, sync)
+ * 6. Registers the project in the workspace configuration
+ * 7. Updates TypeScript path mappings in tsconfig.base.json for type-safe imports
+ * 8. Optionally formats all generated files
+ * 9. Optionally installs packages (unless skipInstall is true)
  *
  * ## Use cases
  * - Migrating existing Astro projects into a new Nx monorepo
@@ -60,6 +71,16 @@ import { updateTsconfigPaths } from './utils/update-tsconfig-paths';
  *   --importPath=@myorg/blog
  * ```
  *
+ * @example Import without automatic package installation
+ * ```bash
+ * # Skip automatic package installation (useful for CI/custom workflows)
+ * nx g @geekvetica/nx-astro:import \
+ *   --source=./my-astro-site \
+ *   --skipInstall
+ * # Dependencies are added to package.json but not installed
+ * # Run: bun install (or npm/pnpm install) when ready
+ * ```
+ *
  * @example Programmatic usage
  * ```typescript
  * import { importGenerator } from '@geekvetica/nx-astro';
@@ -82,8 +103,8 @@ import { updateTsconfigPaths } from './utils/update-tsconfig-paths';
  */
 export async function importGenerator(
   tree: Tree,
-  options: ImportGeneratorSchema
-): Promise<void> {
+  options: ImportGeneratorSchema,
+): Promise<GeneratorCallback | void> {
   // Step 1: Normalize options
   logger.info('📋 Normalizing options...');
   const normalizedOptions = normalizeOptions(tree, options);
@@ -105,13 +126,32 @@ export async function importGenerator(
   copyProjectFiles(
     normalizedOptions.sourcePath,
     normalizedOptions.projectRoot,
-    tree
+    tree,
+  );
+
+  // Step 5.5: Extract dependencies from source package.json
+  logger.info('📦 Extracting dependencies...');
+  const { dependencies, devDependencies } = extractDependencies(
+    normalizedOptions.sourcePath,
+  );
+  const totalDeps =
+    Object.keys(dependencies).length + Object.keys(devDependencies).length;
+  logger.info(
+    `   Found ${totalDeps} dependencies (${Object.keys(dependencies).length} runtime, ${Object.keys(devDependencies).length} dev)`,
   );
 
   // Step 6: Create project configuration
   logger.info('⚙️  Creating project configuration...');
   const projectConfig = createProjectConfig(normalizedOptions);
   addProjectConfiguration(tree, normalizedOptions.projectName, projectConfig);
+
+  // Step 6.5: Add dependencies to workspace package.json
+  logger.info('📝 Adding dependencies to workspace...');
+  const installTask = addDependenciesToPackageJson(
+    tree,
+    dependencies,
+    devDependencies,
+  );
 
   // Step 7: Update TypeScript paths
   if (normalizedOptions.importPath) {
@@ -129,15 +169,31 @@ export async function importGenerator(
   logger.info('');
   logger.info('✅ Successfully imported Astro project!');
   logger.info('');
+  logger.info('Dependencies added to workspace package.json:');
+  logger.info(`  - ${Object.keys(dependencies).length} runtime dependencies`);
+  logger.info(`  - ${Object.keys(devDependencies).length} dev dependencies`);
+  logger.info('');
   logger.info('Next steps:');
   logger.info(
-    `  1. Review the imported project in ${normalizedOptions.projectRoot}`
+    `  1. Review the imported project in ${normalizedOptions.projectRoot}`,
   );
-  logger.info(`  2. Install dependencies: pnpm install`);
-  logger.info(
-    `  3. Run the dev server: nx dev ${normalizedOptions.projectName}`
-  );
+  if (normalizedOptions.skipInstall) {
+    logger.info(`  2. Install dependencies: bun install`);
+    logger.info(
+      `  3. Run the dev server: nx dev ${normalizedOptions.projectName}`,
+    );
+  } else {
+    logger.info(
+      `  2. Run the dev server: nx dev ${normalizedOptions.projectName}`,
+    );
+    logger.info('     (dependencies will be installed automatically)');
+  }
   logger.info('');
+
+  // Step 9: Install packages unless skipInstall is true
+  if (!normalizedOptions.skipInstall) {
+    return installTask;
+  }
 }
 
 export default importGenerator;

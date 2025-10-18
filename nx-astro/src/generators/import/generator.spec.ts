@@ -8,10 +8,13 @@ import { ImportGeneratorSchema } from './schema';
 jest.mock('fs', () => require('memfs').fs);
 jest.mock('fs/promises', () => require('memfs').fs.promises);
 
-// Mock formatFiles since we don't need to test Nx's formatting
+// Mock formatFiles and addDependenciesToPackageJson since we don't need to test Nx's formatting and package installation
 jest.mock('@nx/devkit', () => ({
   ...jest.requireActual('@nx/devkit'),
   formatFiles: jest.fn().mockResolvedValue(undefined),
+  addDependenciesToPackageJson: jest
+    .fn()
+    .mockReturnValue(() => Promise.resolve()),
 }));
 
 describe('importGenerator', () => {
@@ -64,7 +67,7 @@ describe('importGenerator', () => {
       expect(tree.exists('apps/imported-app/package.json')).toBe(true);
       expect(tree.exists('apps/imported-app/src/pages/index.astro')).toBe(true);
       expect(tree.exists('apps/imported-app/src/components/Button.astro')).toBe(
-        true
+        true,
       );
       expect(tree.exists('apps/imported-app/tsconfig.json')).toBe(true);
       expect(tree.exists('apps/imported-app/README.md')).toBe(true);
@@ -109,7 +112,7 @@ describe('importGenerator', () => {
           compilerOptions: {
             paths: {},
           },
-        })
+        }),
       );
 
       const options: ImportGeneratorSchema = {
@@ -161,7 +164,7 @@ describe('importGenerator', () => {
       };
 
       await expect(importGenerator(tree, options)).rejects.toThrow(
-        /does not exist/i
+        /does not exist/i,
       );
     });
 
@@ -178,7 +181,7 @@ describe('importGenerator', () => {
       };
 
       await expect(importGenerator(tree, options)).rejects.toThrow(
-        /no Astro configuration file found/i
+        /no Astro configuration file found/i,
       );
     });
 
@@ -189,7 +192,7 @@ describe('importGenerator', () => {
         JSON.stringify({
           name: 'existing-app',
           root: 'apps/existing-app',
-        })
+        }),
       );
 
       const options: ImportGeneratorSchema = {
@@ -198,7 +201,7 @@ describe('importGenerator', () => {
       };
 
       await expect(importGenerator(tree, options)).rejects.toThrow(
-        /project.*existing-app.*already exists/i
+        /project.*existing-app.*already exists/i,
       );
     });
 
@@ -209,7 +212,7 @@ describe('importGenerator', () => {
       };
 
       await expect(importGenerator(tree, options)).rejects.toThrow(
-        /invalid project name/i
+        /invalid project name/i,
       );
     });
 
@@ -222,7 +225,7 @@ describe('importGenerator', () => {
       };
 
       await expect(importGenerator(tree, options)).rejects.toThrow(
-        /target directory.*already exists/i
+        /target directory.*already exists/i,
       );
     });
   });
@@ -253,7 +256,7 @@ describe('importGenerator', () => {
       const projectConfig = readProjectConfiguration(tree, 'my-app');
       expect(projectConfig.root).toBe('packages/websites/my-app');
       expect(tree.exists('packages/websites/my-app/astro.config.mjs')).toBe(
-        true
+        true,
       );
     });
 
@@ -291,7 +294,7 @@ describe('importGenerator', () => {
           compilerOptions: {
             paths: {},
           },
-        })
+        }),
       );
 
       const options: ImportGeneratorSchema = {
@@ -304,7 +307,7 @@ describe('importGenerator', () => {
 
       const tsConfig = readJson(tree, 'tsconfig.base.json');
       expect(
-        tsConfig.compilerOptions.paths['@custom/import-path']
+        tsConfig.compilerOptions.paths['@custom/import-path'],
       ).toBeDefined();
     });
 
@@ -331,7 +334,7 @@ describe('importGenerator', () => {
       await importGenerator(tree, options);
 
       expect(
-        tree.exists('apps/my-astro-app/node_modules/some-package/index.js')
+        tree.exists('apps/my-astro-app/node_modules/some-package/index.js'),
       ).toBe(false);
     });
 
@@ -377,13 +380,13 @@ describe('importGenerator', () => {
       await importGenerator(tree, options);
 
       expect(tree.exists('apps/my-astro-app/src/pages/blog/post-1.astro')).toBe(
-        true
+        true,
       );
       expect(tree.exists('apps/my-astro-app/src/pages/blog/post-2.astro')).toBe(
-        true
+        true,
       );
       expect(
-        tree.exists('apps/my-astro-app/src/layouts/MainLayout.astro')
+        tree.exists('apps/my-astro-app/src/layouts/MainLayout.astro'),
       ).toBe(true);
     });
 
@@ -401,7 +404,7 @@ describe('importGenerator', () => {
 
       const actualContent = tree.read(
         'apps/my-astro-app/src/pages/test.astro',
-        'utf-8'
+        'utf-8',
       );
       expect(actualContent).toBe(expectedContent);
     });
@@ -415,7 +418,7 @@ describe('importGenerator', () => {
           compilerOptions: {
             paths: {},
           },
-        })
+        }),
       );
 
       const options: ImportGeneratorSchema = {
@@ -437,7 +440,7 @@ describe('importGenerator', () => {
 
       // Verify files were copied
       expect(tree.exists('apps/websites/my-website/astro.config.mjs')).toBe(
-        true
+        true,
       );
       expect(tree.exists('apps/websites/my-website/package.json')).toBe(true);
 
@@ -473,7 +476,7 @@ describe('importGenerator', () => {
       };
 
       await expect(importGenerator(tree, options)).rejects.toThrow(
-        /does not exist/i
+        /does not exist/i,
       );
     });
 
@@ -483,7 +486,7 @@ describe('importGenerator', () => {
         JSON.stringify({
           name: 'conflict-app',
           root: 'apps/conflict-app',
-        })
+        }),
       );
 
       const options: ImportGeneratorSchema = {
@@ -492,7 +495,7 @@ describe('importGenerator', () => {
       };
 
       await expect(importGenerator(tree, options)).rejects.toThrow(
-        /conflict-app/i
+        /conflict-app/i,
       );
     });
   });
