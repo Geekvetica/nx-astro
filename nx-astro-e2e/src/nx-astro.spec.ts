@@ -28,7 +28,7 @@ describe('nx-astro e2e', () => {
       process.cwd(),
       'dist',
       'nx-astro',
-      'geekvetica-nx-astro-0.0.0-e2e.tgz'
+      'geekvetica-nx-astro-0.0.0-e2e.tgz',
     );
 
     execSync(`pnpm add -Dw "${tarballPath}"`, {
@@ -74,7 +74,7 @@ describe('nx-astro e2e', () => {
       expect(nxJson.plugins).toContainEqual(
         expect.objectContaining({
           plugin: '@geekvetica/nx-astro',
-        })
+        }),
       );
 
       // Reset Nx cache to allow the plugin to be detected
@@ -101,12 +101,12 @@ describe('nx-astro e2e', () => {
       logStep('Generating Astro application...');
       runNxCommand(
         `g @geekvetica/nx-astro:app ${testAppName} --directory=${testAppDir} --unitTestRunner=vitest --no-interactive`,
-        projectDirectory
+        projectDirectory,
       );
 
       logStep('Verifying application was created...');
       expect(
-        fileExists(`${testAppDir}/astro.config.mjs`, projectDirectory)
+        fileExists(`${testAppDir}/astro.config.mjs`, projectDirectory),
       ).toBe(true);
 
       // Install vitest early so it's detected during task inference
@@ -147,7 +147,7 @@ describe('nx-astro e2e', () => {
       logStep('Verifying Astro config...');
       const astroConfig = readFile(
         `${testAppDir}/astro.config.mjs`,
-        projectDirectory
+        projectDirectory,
       );
 
       expect(astroConfig).toContain('defineConfig');
@@ -184,15 +184,15 @@ describe('nx-astro e2e', () => {
       logStep(`Generating ${componentName} component...`);
       runNxCommand(
         `g @geekvetica/nx-astro:component ${componentName} --project=${testAppName} --no-interactive`,
-        projectDirectory
+        projectDirectory,
       );
 
       logStep('Verifying component was created...');
       expect(
         fileExists(
           `${testAppDir}/src/components/${componentName}.astro`,
-          projectDirectory
-        )
+          projectDirectory,
+        ),
       ).toBe(true);
     });
 
@@ -200,7 +200,7 @@ describe('nx-astro e2e', () => {
       logStep('Verifying component content...');
       const componentContent = readFile(
         `${testAppDir}/src/components/${componentName}.astro`,
-        projectDirectory
+        projectDirectory,
       );
 
       expect(componentContent).toContain('---');
@@ -214,7 +214,7 @@ describe('nx-astro e2e', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
@@ -227,14 +227,14 @@ describe('nx-astro e2e', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets).toBeDefined();
       expect(projectConfig.targets.build).toBeDefined();
       expect(projectConfig.targets.build.executor).toBe(
-        '@geekvetica/nx-astro:build'
+        '@geekvetica/nx-astro:build',
       );
     });
 
@@ -243,13 +243,13 @@ describe('nx-astro e2e', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.dev).toBeDefined();
       expect(projectConfig.targets.dev.executor).toBe(
-        '@geekvetica/nx-astro:dev'
+        '@geekvetica/nx-astro:dev',
       );
     });
 
@@ -258,13 +258,13 @@ describe('nx-astro e2e', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.check).toBeDefined();
       expect(projectConfig.targets.check.executor).toBe(
-        '@geekvetica/nx-astro:check'
+        '@geekvetica/nx-astro:check',
       );
     });
 
@@ -273,13 +273,13 @@ describe('nx-astro e2e', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.sync).toBeDefined();
       expect(projectConfig.targets.sync.executor).toBe(
-        '@geekvetica/nx-astro:sync'
+        '@geekvetica/nx-astro:sync',
       );
     });
 
@@ -288,13 +288,13 @@ describe('nx-astro e2e', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.preview).toBeDefined();
       expect(projectConfig.targets.preview.executor).toBe(
-        '@geekvetica/nx-astro:preview'
+        '@geekvetica/nx-astro:preview',
       );
     });
 
@@ -303,13 +303,13 @@ describe('nx-astro e2e', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.test).toBeDefined();
       expect(projectConfig.targets.test.executor).toBe(
-        '@geekvetica/nx-astro:test'
+        '@geekvetica/nx-astro:test',
       );
     });
   });
@@ -360,7 +360,7 @@ describe('nx-astro e2e', () => {
     it('should generate dist output directory', () => {
       logStep('Checking dist output...');
       expect(
-        fileExists(`dist/${testAppDir}/index.html`, projectDirectory)
+        fileExists(`dist/${testAppDir}/index.html`, projectDirectory),
       ).toBe(true);
     });
 
@@ -392,7 +392,7 @@ describe('Sample test', () => {
       writeFile(
         `${testAppDir}/src/components/Button.spec.ts`,
         testContent,
-        projectDirectory
+        projectDirectory,
       );
     });
 
@@ -411,13 +411,13 @@ describe('Sample test', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.dev).toBeDefined();
       expect(projectConfig.targets.dev.executor).toBe(
-        '@geekvetica/nx-astro:dev'
+        '@geekvetica/nx-astro:dev',
       );
 
       logStep('Dev server configuration verified');
@@ -430,13 +430,13 @@ describe('Sample test', () => {
       const showOutput = runNxCommand(
         `show project ${testAppName} --json`,
         projectDirectory,
-        { silent: true }
+        { silent: true },
       );
 
       const projectConfig = JSON.parse(showOutput);
       expect(projectConfig.targets.preview).toBeDefined();
       expect(projectConfig.targets.preview.executor).toBe(
-        '@geekvetica/nx-astro:preview'
+        '@geekvetica/nx-astro:preview',
       );
 
       logStep('Preview server configuration verified');
@@ -448,19 +448,19 @@ describe('Sample test', () => {
     const importedAppDir = `apps/${importedAppName}`;
     const fixtureSourcePath = join(
       process.cwd(),
-      'nx-astro-e2e/fixtures/sample-astro-import'
+      'nx-astro-e2e/fixtures/sample-astro-import',
     );
 
     it('should import an existing Astro project', () => {
       logStep('Importing existing Astro project from fixture...');
       runNxCommand(
         `g @geekvetica/nx-astro:import --source="${fixtureSourcePath}" --name=${importedAppName} --directory=${importedAppDir} --no-interactive`,
-        projectDirectory
+        projectDirectory,
       );
 
       logStep('Verifying imported project was created...');
       expect(
-        fileExists(`${importedAppDir}/astro.config.mjs`, projectDirectory)
+        fileExists(`${importedAppDir}/astro.config.mjs`, projectDirectory),
       ).toBe(true);
 
       // Reset Nx to force project graph rebuild
@@ -491,7 +491,7 @@ describe('Sample test', () => {
     it('should have valid project.json', () => {
       logStep('Verifying project.json...');
       expect(
-        fileExists(`${importedAppDir}/project.json`, projectDirectory)
+        fileExists(`${importedAppDir}/project.json`, projectDirectory),
       ).toBe(true);
 
       const projectJson = readJsonFile<{
@@ -509,10 +509,10 @@ describe('Sample test', () => {
       runNxCommand(`build ${importedAppName}`, projectDirectory);
 
       logStep('Verifying build output...');
-      // Imported projects build to their own dist directory (as defined in their astro.config.mjs)
-      // This is expected behavior - they retain their original build configuration
+      // Imported projects are automatically configured to build to the Nx workspace dist directory
+      // The modifyAstroConfig utility injects outDir configuration during import
       expect(
-        fileExists(`${importedAppDir}/dist/index.html`, projectDirectory)
+        fileExists(`dist/${importedAppDir}/index.html`, projectDirectory),
       ).toBe(true);
     }, 120000);
 
@@ -524,12 +524,12 @@ describe('Sample test', () => {
       logStep('Importing with custom directory and tags...');
       runNxCommand(
         `g @geekvetica/nx-astro:import --source="${fixtureSourcePath}" --name=${customAppName} --directory=${customDir} --tags=${customTags} --no-interactive`,
-        projectDirectory
+        projectDirectory,
       );
 
       logStep('Verifying custom location...');
       expect(
-        fileExists(`${customDir}/astro.config.mjs`, projectDirectory)
+        fileExists(`${customDir}/astro.config.mjs`, projectDirectory),
       ).toBe(true);
 
       logStep('Verifying tags were applied...');
@@ -551,7 +551,7 @@ describe('Sample test', () => {
       expect(() => {
         runNxCommand(
           `g @geekvetica/nx-astro:import --source="${invalidPath}" --name=invalid-import --no-interactive`,
-          projectDirectory
+          projectDirectory,
         );
       }).toThrow();
     }, 60000);
@@ -563,7 +563,7 @@ describe('Sample test', () => {
       expect(() => {
         runNxCommand(
           `g @geekvetica/nx-astro:import --source="${fixtureSourcePath}" --name=${importedAppName} --directory=${importedAppDir} --no-interactive`,
-          projectDirectory
+          projectDirectory,
         );
       }).toThrow();
     }, 120000);
@@ -593,7 +593,7 @@ function createTestProject() {
       cwd: dirname(projectDirectory),
       stdio: 'inherit',
       env: process.env,
-    }
+    },
   );
   console.log(`Created test project in "${projectDirectory}"`);
 
