@@ -1,3 +1,13 @@
+## 1.0.5 (2025-10-19)
+
+### 🩹 Fixes
+
+- check task fix ([5833518](https://github.com/Geekvetica/nx-astro/commit/5833518))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 1.0.4 (2025-10-18)
 
 ### 🩹 Fixes
