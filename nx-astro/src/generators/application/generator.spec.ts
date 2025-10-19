@@ -27,7 +27,7 @@ describe('application generator', () => {
       expect(tree.exists('apps/my-app/src/env.d.ts')).toBe(true);
       expect(tree.exists('apps/my-app/src/pages/index.astro')).toBe(true);
       expect(tree.exists('apps/my-app/src/components/Welcome.astro')).toBe(
-        true
+        true,
       );
       expect(tree.exists('apps/my-app/src/layouts/Layout.astro')).toBe(true);
     });
@@ -160,13 +160,13 @@ describe('application generator', () => {
 
       const indexPage = tree.read(
         'apps/template-test/src/pages/index.astro',
-        'utf-8'
+        'utf-8',
       );
       expect(indexPage).toContain('Welcome to template-test');
 
       const welcomeComponent = tree.read(
         'apps/template-test/src/components/Welcome.astro',
-        'utf-8'
+        'utf-8',
       );
       expect(welcomeComponent).toContain('template-test');
 
@@ -211,7 +211,7 @@ describe('application generator', () => {
         export default defineConfig({
           output: 'static',
         });
-      `
+      `,
       );
       tree.write('existing-project/package.json', '{"name": "existing"}');
       tree.write('existing-project/src/pages/index.astro', '<h1>Hello</h1>');
@@ -251,7 +251,7 @@ describe('application generator', () => {
       // Create project with custom structure
       tree.write(
         'custom-project/astro.config.js',
-        'export default { output: "static" };'
+        'export default { output: "static" };',
       );
       tree.write('custom-project/package.json', '{"name": "custom"}');
 
@@ -377,6 +377,121 @@ describe('application generator', () => {
     });
   });
 
+  describe('project configuration - targets', () => {
+    it('should create project with all standard targets', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'my-app',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const projectConfig = readProjectConfiguration(tree, 'my-app');
+      expect(projectConfig.targets).toBeDefined();
+      expect(projectConfig.targets?.dev).toBeDefined();
+      expect(projectConfig.targets?.build).toBeDefined();
+      expect(projectConfig.targets?.preview).toBeDefined();
+      expect(projectConfig.targets?.check).toBeDefined();
+      expect(projectConfig.targets?.sync).toBeDefined();
+    });
+
+    it('should create sync target with astro metadata', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'my-app',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const projectConfig = readProjectConfiguration(tree, 'my-app');
+      const syncTarget = projectConfig.targets?.sync;
+
+      expect(syncTarget).toBeDefined();
+      expect(syncTarget?.metadata).toBeDefined();
+      expect(syncTarget?.metadata?.technologies).toEqual(['astro']);
+      expect(syncTarget?.metadata?.description).toContain('astro sync');
+    });
+
+    it('should create sync target without syncGenerators property', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'my-app',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const projectConfig = readProjectConfiguration(tree, 'my-app');
+      const syncTarget = projectConfig.targets?.sync;
+
+      expect(syncTarget).toBeDefined();
+      expect(syncTarget).not.toHaveProperty('syncGenerators');
+    });
+
+    it('should create targets with proper executors', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'my-app',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const projectConfig = readProjectConfiguration(tree, 'my-app');
+
+      expect(projectConfig.targets?.dev?.executor).toBe(
+        '@geekvetica/nx-astro:dev',
+      );
+      expect(projectConfig.targets?.build?.executor).toBe(
+        '@geekvetica/nx-astro:build',
+      );
+      expect(projectConfig.targets?.preview?.executor).toBe(
+        '@geekvetica/nx-astro:preview',
+      );
+      expect(projectConfig.targets?.check?.executor).toBe(
+        '@geekvetica/nx-astro:check',
+      );
+      expect(projectConfig.targets?.sync?.executor).toBe(
+        '@geekvetica/nx-astro:sync',
+      );
+    });
+
+    it('should create build target with caching enabled', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'my-app',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const projectConfig = readProjectConfiguration(tree, 'my-app');
+
+      expect(projectConfig.targets?.build?.cache).toBe(true);
+      expect(projectConfig.targets?.check?.cache).toBe(true);
+      expect(projectConfig.targets?.sync?.cache).toBe(true);
+    });
+
+    it('should create dev target with caching disabled', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'my-app',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const projectConfig = readProjectConfiguration(tree, 'my-app');
+
+      expect(projectConfig.targets?.dev?.cache).toBe(false);
+      expect(projectConfig.targets?.preview?.cache).toBe(false);
+    });
+
+    it('should create targets with proper dependencies', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'my-app',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const projectConfig = readProjectConfiguration(tree, 'my-app');
+
+      expect(projectConfig.targets?.build?.dependsOn).toEqual(['^build']);
+      expect(projectConfig.targets?.preview?.dependsOn).toEqual(['build']);
+      expect(projectConfig.targets?.check?.dependsOn).toEqual(['sync']);
+    });
+  });
+
   describe('template option', () => {
     it('should use minimal template by default', async () => {
       const options: ApplicationGeneratorSchema = {
@@ -386,7 +501,7 @@ describe('application generator', () => {
       await applicationGenerator(tree, options);
 
       expect(
-        tree.exists('apps/minimal-default/src/components/Welcome.astro')
+        tree.exists('apps/minimal-default/src/components/Welcome.astro'),
       ).toBe(true);
     });
 
@@ -399,7 +514,7 @@ describe('application generator', () => {
       await applicationGenerator(tree, options);
 
       expect(
-        tree.exists('apps/minimal-explicit/src/components/Welcome.astro')
+        tree.exists('apps/minimal-explicit/src/components/Welcome.astro'),
       ).toBe(true);
     });
 
@@ -424,7 +539,7 @@ describe('application generator', () => {
       await applicationGenerator(tree, options);
 
       expect(tree.exists('apps/portfolio-app/src/pages/projects.astro')).toBe(
-        true
+        true,
       );
     });
   });

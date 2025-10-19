@@ -50,6 +50,22 @@ function detectPackageManager(tree: Tree): 'bun' | 'pnpm' | 'yarn' | 'npm' {
  * - Cached targets: build, check, sync (for fast rebuilds)
  * - Non-cached targets: dev, preview (interactive commands)
  *
+ * ## Astro Sync vs Nx TypeScript Sync
+ * The `sync` target uses Astro's native type generation (`astro sync`) and includes
+ * metadata to prevent conflicts with Nx TypeScript sync:
+ * - **Astro sync**: Generates types to `.astro/types.d.ts` for content collections and modules
+ * - **Nx TypeScript sync**: Updates TypeScript project references in `tsconfig.json`
+ * - **Metadata purpose**: Explicitly marks sync as Astro-specific, preventing `@nx/js/typescript`
+ *   plugin from auto-detecting this project and requiring a root `tsconfig.json`
+ *
+ * The metadata structure:
+ * ```typescript
+ * metadata: {
+ *   technologies: ['astro'],
+ *   description: 'Generate TypeScript types for Astro Content Collections and modules (via astro sync)'
+ * }
+ * ```
+ *
  * ## Package Manager Compatibility
  * The configuration automatically detects the package manager:
  * - **Bun**: Uses `bun.lockb` for cache invalidation (workaround for Nx hasher limitation)
@@ -193,12 +209,20 @@ export function createProjectConfig(
         cache: true,
         dependsOn: ['sync'],
       },
+      // Astro sync generates types via 'astro sync' command, not Nx TypeScript sync.
+      // The metadata explicitly marks this as Astro-specific to prevent @nx/js/typescript
+      // plugin from adding its sync generator (which requires root tsconfig.json).
       sync: {
         executor: '@geekvetica/nx-astro:sync',
         options: {},
         inputs: createInputs([`{projectRoot}/src/content/**/*`], ['astro']),
         outputs: [`{projectRoot}/.astro`],
         cache: true,
+        metadata: {
+          technologies: ['astro'],
+          description:
+            'Generate TypeScript types for Astro Content Collections and modules (via astro sync)',
+        },
       },
     },
   };

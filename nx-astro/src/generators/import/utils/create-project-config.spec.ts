@@ -65,7 +65,7 @@ describe('createProjectConfig', () => {
     expect(config.targets!.build.executor).toBe('@geekvetica/nx-astro:build');
     expect(config.targets!.dev.executor).toBe('@geekvetica/nx-astro:dev');
     expect(config.targets!.preview.executor).toBe(
-      '@geekvetica/nx-astro:preview'
+      '@geekvetica/nx-astro:preview',
     );
     expect(config.targets!.check.executor).toBe('@geekvetica/nx-astro:check');
     expect(config.targets!.sync.executor).toBe('@geekvetica/nx-astro:sync');
@@ -118,6 +118,37 @@ describe('createProjectConfig', () => {
     const syncTarget = config.targets!.sync;
     expect(syncTarget.cache).toBe(true);
     expect(syncTarget.outputs).toContain('{projectRoot}/.astro');
+  });
+
+  it('should configure sync target with Astro-specific metadata', () => {
+    const config = createProjectConfig(options);
+
+    const syncTarget = config.targets!.sync;
+    expect(syncTarget.metadata).toBeDefined();
+    expect(syncTarget.metadata).toHaveProperty('technologies');
+    expect(syncTarget.metadata).toHaveProperty('description');
+  });
+
+  it('should mark sync target with astro technology in metadata', () => {
+    const config = createProjectConfig(options);
+
+    const syncTarget = config.targets!.sync;
+    expect(syncTarget.metadata?.technologies).toContain('astro');
+  });
+
+  it('should include description about Astro sync in metadata', () => {
+    const config = createProjectConfig(options);
+
+    const syncTarget = config.targets!.sync;
+    expect(syncTarget.metadata?.description).toMatch(/astro/i);
+    expect(syncTarget.metadata?.description).toMatch(/sync/i);
+  });
+
+  it('should NOT include syncGenerators property in sync target', () => {
+    const config = createProjectConfig(options);
+
+    const syncTarget = config.targets!.sync;
+    expect(syncTarget).not.toHaveProperty('syncGenerators');
   });
 
   it('should handle options with empty tags', () => {

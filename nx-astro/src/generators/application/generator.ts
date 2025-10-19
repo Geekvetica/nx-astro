@@ -3,7 +3,6 @@ import {
   generateFiles,
   addProjectConfiguration,
   formatFiles,
-  joinPathFragments,
   readProjectConfiguration,
   offsetFromRoot,
 } from '@nx/devkit';
@@ -11,6 +10,8 @@ import { join } from 'path';
 import { ApplicationGeneratorSchema } from './schema';
 import { normalizeOptions } from './utils/normalize-options';
 import { validateExistingProject } from './utils/validate-project';
+import { createProjectConfig } from '../import/utils/create-project-config';
+import { NormalizedImportOptions } from '../import/utils/normalize-options';
 
 /**
  * Generates a new Astro application in an Nx workspace.
@@ -42,7 +43,7 @@ import { validateExistingProject } from './utils/validate-project';
  */
 export async function applicationGenerator(
   tree: Tree,
-  options: ApplicationGeneratorSchema
+  options: ApplicationGeneratorSchema,
 ) {
   const normalizedOptions = normalizeOptions(options);
 
@@ -63,7 +64,7 @@ export async function applicationGenerator(
 
 async function importExistingProject(
   tree: Tree,
-  options: ReturnType<typeof normalizeOptions>
+  options: ReturnType<typeof normalizeOptions>,
 ): Promise<void> {
   // Validate that the project exists and has an Astro config
   validateExistingProject(tree, options.projectRoot);
@@ -76,7 +77,7 @@ function ensureProjectDoesNotExist(tree: Tree, projectName: string): void {
   try {
     readProjectConfiguration(tree, projectName);
     throw new Error(
-      `Project "${projectName}" already exists in the workspace.`
+      `Project "${projectName}" already exists in the workspace.`,
     );
   } catch (error) {
     if (error instanceof Error && error.message.includes('already exists')) {
@@ -86,21 +87,50 @@ function ensureProjectDoesNotExist(tree: Tree, projectName: string): void {
   }
 }
 
+/**
+ * Adds project configuration to the workspace using the shared createProjectConfig utility.
+ *
+ * This ensures consistency between generated and imported projects by reusing the same
+ * configuration logic. The generated project will have all standard Astro targets (dev, build,
+ * preview, check, sync) with proper caching, dependencies, and metadata.
+ *
+ * The sync target includes metadata to prevent conflicts with Nx TypeScript sync:
+ * - Explicitly marks the sync target as Astro-specific (technologies: ['astro'])
+ * - Prevents @nx/js/typescript plugin from auto-detecting and adding its sync generator
+ * - Ensures the sync target uses 'astro sync' command, not Nx TypeScript project references
+ *
+ * @param tree - The Nx virtual file system tree
+ * @param options - Normalized application generator options
+ */
 function addProjectToWorkspace(
   tree: Tree,
-  options: ReturnType<typeof normalizeOptions>
+  options: ReturnType<typeof normalizeOptions>,
 ): void {
-  addProjectConfiguration(tree, options.projectName, {
-    root: options.projectRoot,
-    sourceRoot: joinPathFragments(options.projectRoot, 'src'),
-    projectType: 'application',
-    tags: options.parsedTags,
-  });
+  // Convert application generator options to import generator options format
+  // createProjectConfig expects NormalizedImportOptions, but we have NormalizedOptions
+  // Map the common fields and set defaults for fields that don't exist in application options
+  const importOptions: NormalizedImportOptions = {
+    projectName: options.projectName,
+    projectRoot: options.projectRoot,
+    projectDirectory: options.projectDirectory,
+    parsedTags: options.parsedTags,
+    skipFormat: options.skipFormat,
+    // Fields that don't exist in application options - set safe defaults
+    sourcePath: '', // Not used by createProjectConfig
+    sourceProjectName: options.projectName,
+    skipInstall: false,
+    importPath: undefined,
+  };
+
+  // Use the shared utility to create project configuration with all targets
+  const projectConfig = createProjectConfig(importOptions, tree);
+
+  addProjectConfiguration(tree, options.projectName, projectConfig);
 }
 
 function getTemplateSubstitutions(
   projectName: string,
-  projectRoot: string
+  projectRoot: string,
 ): Record<string, string> {
   return {
     projectName,
@@ -116,18 +146,18 @@ function getTemplateSubstitutions(
 
 async function createNewProject(
   tree: Tree,
-  options: ReturnType<typeof normalizeOptions>
+  options: ReturnType<typeof normalizeOptions>,
 ): Promise<void> {
   if (options.template !== 'minimal') {
     throw new Error(
-      `Template "${options.template}" is not yet implemented. Only "minimal" template is currently supported.`
+      `Template "${options.template}" is not yet implemented. Only "minimal" template is currently supported.`,
     );
   }
 
   const templatePath = join(__dirname, 'files');
   const substitutions = getTemplateSubstitutions(
     options.projectName,
-    options.projectRoot
+    options.projectRoot,
   );
 
   generateFiles(tree, templatePath, options.projectRoot, substitutions);

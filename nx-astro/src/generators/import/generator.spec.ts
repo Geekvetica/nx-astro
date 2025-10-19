@@ -322,6 +322,21 @@ describe('importGenerator', () => {
   });
 
   describe('file operations', () => {
+    it('should modify astro.config.mjs to inject correct outDir', async () => {
+      const options: ImportGeneratorSchema = {
+        source: sourcePath,
+        name: 'imported-app',
+      };
+
+      await importGenerator(tree, options);
+
+      const configContent = tree.read(
+        'apps/imported-app/astro.config.mjs',
+        'utf-8',
+      );
+      expect(configContent).toContain("outDir: '../../dist/apps/imported-app'");
+    });
+
     it('should exclude node_modules from copying', async () => {
       vol.fromJSON({
         [`${sourcePath}/node_modules/some-package/index.js`]: 'content',

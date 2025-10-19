@@ -5,6 +5,7 @@ import {
   logger,
   addDependenciesToPackageJson,
   GeneratorCallback,
+  offsetFromRoot,
 } from '@nx/devkit';
 import { ImportGeneratorSchema } from './schema';
 import { normalizeOptions } from './utils/normalize-options';
@@ -15,6 +16,7 @@ import { copyProjectFiles } from './utils/copy-project-files';
 import { createProjectConfig } from './utils/create-project-config';
 import { updateTsconfigPaths } from './utils/update-tsconfig-paths';
 import { extractDependencies } from './utils/extract-dependencies';
+import { modifyAstroConfig } from './utils/modify-astro-config';
 
 /**
  * Import an existing Astro application into the Nx workspace.
@@ -25,13 +27,14 @@ import { extractDependencies } from './utils/extract-dependencies';
  * ## What it does
  * 1. Validates the source is a valid Astro project (checks for astro.config, package.json, astro dependency)
  * 2. Copies project files while excluding generated content (node_modules, dist, .astro, lock files, etc.)
- * 3. Extracts all dependencies from the source project's package.json
- * 4. Merges dependencies into workspace root package.json (filters out workspace protocols, file links)
- * 5. Generates Nx project configuration with all standard targets (build, dev, preview, check, sync)
- * 6. Registers the project in the workspace configuration
- * 7. Updates TypeScript path mappings in tsconfig.base.json for type-safe imports
- * 8. Optionally formats all generated files
- * 9. Optionally installs packages (unless skipInstall is true)
+ * 3. Configures Astro output directory to align with Nx workspace structure
+ * 4. Extracts all dependencies from the source project's package.json
+ * 5. Merges dependencies into workspace root package.json (filters out workspace protocols, file links)
+ * 6. Generates Nx project configuration with all standard targets (build, dev, preview, check, sync)
+ * 7. Registers the project in the workspace configuration
+ * 8. Updates TypeScript path mappings in tsconfig.base.json for type-safe imports
+ * 9. Optionally formats all generated files
+ * 10. Optionally installs packages (unless skipInstall is true)
  *
  * ## Use cases
  * - Migrating existing Astro projects into a new Nx monorepo
@@ -129,7 +132,15 @@ export async function importGenerator(
     tree,
   );
 
-  // Step 5.5: Extract dependencies from source package.json
+  // Step 5.5: Configure Astro output directory for Nx
+  logger.info('🔧 Configuring Astro output directory...');
+  modifyAstroConfig(
+    tree,
+    normalizedOptions.projectRoot,
+    offsetFromRoot(normalizedOptions.projectRoot),
+  );
+
+  // Step 5.6: Extract dependencies from source package.json
   logger.info('📦 Extracting dependencies...');
   const { dependencies, devDependencies } = extractDependencies(
     normalizedOptions.sourcePath,

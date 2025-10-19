@@ -1,3 +1,131 @@
+## [1.0.6] - 2025-10-19
+
+### Fixed
+
+- **Import generator now automatically configures `outDir`** in `astro.config.mjs` to align with Nx output structure (`dist/{projectRoot}`)
+  - Fixes issue where preview command couldn't find build output after importing projects
+  - Injects `outDir` configuration pointing to `{workspaceRoot}/dist/{projectRoot}`
+  - Works for projects at any nesting depth (e.g., `apps/my-app`, `apps/websites/marketing`)
+  - Preserves all existing Astro configuration properties
+  - Skips injection if `outDir` is already configured
+
+- **Fixed TypeScript sync conflicts** for Astro projects
+  - Added metadata to sync target to prevent `@nx/js:typescript-sync` auto-detection
+  - Astro projects use their own sync (`astro sync`) for content collection types
+  - Prevents errors when workspace uses `tsconfig.base.json` convention (no root `tsconfig.json`)
+  - Application and import generators create projects with Astro-specific metadata
+
+### Changed
+
+- Import generator now modifies imported `astro.config.mjs` files
+  - Automatically injects `outDir` configuration during import process
+  - Configuration is workspace-structure-aware (uses `offsetFromRoot` for correct paths)
+
+- Sync target includes explicit metadata to identify technology and prevent conflicts:
+  ```json
+  {
+    "metadata": {
+      "technologies": ["astro"],
+      "description": "Generate TypeScript types for Astro Content Collections and modules (via astro sync)"
+    }
+  }
+  ```
+
+### Documentation
+
+- **Added comprehensive troubleshooting guide** ([TROUBLESHOOTING.md](./TROUBLESHOOTING.md))
+  - Preview command can't find build output
+  - TypeScript sync errors ("Missing root tsconfig.json")
+  - Migration guide for existing projects
+  - Common issues and solutions
+
+- **Updated README** with:
+  - Link to troubleshooting guide
+  - Nx compliance information
+  - TypeScript sync behavior explanation
+  - Automatic outDir configuration feature
+
+### Migration Notes
+
+**For existing projects (imported before v1.0.6):**
+
+#### 1. To fix preview command:
+
+Add `outDir` to your `astro.config.mjs`:
+
+```javascript
+import { defineConfig } from 'astro/config';
+
+export default defineConfig({
+  outDir: '../../dist/apps/my-app', // Adjust path based on your project depth
+  // ... rest of your config
+});
+```
+
+Path formula: `{offset-to-workspace-root}/dist/{project-path}`
+
+Examples:
+
+- `apps/my-app/` → `../../dist/apps/my-app`
+- `apps/websites/marketing/` → `../../../dist/apps/websites/marketing`
+- `projects/blog/` → `../../dist/projects/blog`
+
+#### 2. To fix sync errors:
+
+Add to workspace `nx.json`:
+
+```json
+{
+  "sync": {
+    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
+  }
+}
+```
+
+This prevents Nx TypeScript sync from conflicting with Astro sync.
+
+#### 3. Optional - Add metadata for clarity:
+
+Update your project's `sync` target in `project.json`:
+
+```json
+"sync": {
+  "executor": "@geekvetica/nx-astro:sync",
+  "metadata": {
+    "technologies": ["astro"],
+    "description": "Generate TypeScript types for Astro Content Collections and modules (via astro sync)"
+  }
+}
+```
+
+**For new projects (v1.0.6+):**
+
+✅ All fixes are applied automatically during project generation/import!
+
+You still need to add the `nx.json` configuration once per workspace:
+
+```json
+{
+  "sync": {
+    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
+  }
+}
+```
+
+### Technical Details
+
+- Follows Tidy First principles: structural changes separated from behavioral changes
+- Implements TDD methodology: tests written first (Red), implementation second (Green)
+- `modifyAstroConfig()` utility handles both `defineConfig({})` and plain object formats
+- Package manager detection used for correct path offset calculation
+- No breaking changes to existing functionality
+
+### Breaking Changes
+
+None. Existing projects will continue to work but may need manual updates to benefit from fixes.
+
+---
+
 ## 1.0.5 (2025-10-19)
 
 ### 🩹 Fixes

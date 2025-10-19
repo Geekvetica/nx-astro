@@ -11,11 +11,16 @@ An Nx plugin for [Astro](https://astro.build) that provides generators and execu
 
 - **Project Generators**: Scaffold new Astro applications and libraries with best practices
 - **Import Generator**: Import existing Astro projects into your Nx workspace
+  - **Automatic `outDir` Configuration**: Imported projects are automatically configured to output builds to the correct Nx workspace location
+  - **Smart Dependency Extraction**: All dependencies from source projects are merged into workspace root
+  - **Preserves Project Structure**: Maintains your original file organization and configuration
 - **Configuration Generator**: Add Astro to existing projects
 - **Build Executor**: Build Astro sites with Nx caching
 - **Dev Server Executor**: Run Astro dev server with hot reload
 - **Preview Executor**: Preview production builds locally
 - **Sync Executor**: Generate Astro TypeScript definitions
+  - **Nx-Compliant Sync**: Works with Nx's `tsconfig.base.json` convention (no root `tsconfig.json` required)
+  - **Conflict Prevention**: Metadata ensures Astro sync doesn't conflict with Nx TypeScript sync
 - **Check Executor**: Type-check Astro components and pages
 - **Test Executor**: Run Vitest tests (automatically configured when vitest is detected)
 - **Full Nx Integration**: Leverage Nx's task caching, affected commands, and dependency graph
@@ -93,10 +98,13 @@ Options:
 The import generator will:
 
 - Copy all project files to the workspace
+- **Automatically configure `outDir` in `astro.config.mjs`** to align with Nx output structure (`dist/{projectRoot}`)
 - Create a `project.json` with inferred Nx targets (build, dev, preview, check, sync)
+- Add Astro-specific metadata to prevent TypeScript sync conflicts
 - Update TypeScript path mappings in `tsconfig.base.json`
 - Preserve the original project structure and configuration
 - Automatically detect and configure available targets based on dependencies (e.g., test target only if vitest is installed)
+- Merge all project dependencies into the workspace root `package.json`
 
 Example:
 
@@ -205,6 +213,63 @@ You can enable automatic installation of `@astrojs/check` by adding the `autoIns
 ```
 
 When `autoInstall: true`, the plugin will automatically install `@astrojs/check` if it's missing, then proceed with type checking.
+
+## Nx Compliance
+
+### Output Directory Structure
+
+The plugin ensures all Astro projects follow Nx workspace conventions for build output:
+
+- **Workspace Standard**: All builds output to `{workspaceRoot}/dist/{projectRoot}`
+- **Automatic Configuration**: Import and application generators automatically configure `outDir` in `astro.config.mjs`
+- **Works at Any Depth**: Correctly handles nested projects (e.g., `apps/websites/marketing`)
+
+**Example:**
+
+- Project location: `apps/my-app/`
+- Build output: `dist/apps/my-app/`
+- Configuration: `outDir: '../../dist/apps/my-app'` (automatically injected)
+
+This ensures the `preview` executor can always find build artifacts and integrates seamlessly with Nx's caching system.
+
+### TypeScript Sync Behavior
+
+Astro projects use **Astro sync** (`astro sync`) for content collection type generation, which is separate from Nx's TypeScript project reference sync:
+
+| Sync Type              | Purpose                                            | Command               | Output                       |
+| ---------------------- | -------------------------------------------------- | --------------------- | ---------------------------- |
+| **Astro Sync**         | Generate types for content collections and modules | `nx sync my-app`      | `.astro/types.d.ts`          |
+| **Nx TypeScript Sync** | Update TypeScript project references               | `nx sync` (workspace) | `tsconfig.json` `references` |
+
+**Conflict Prevention:**
+
+The plugin adds metadata to sync targets to prevent `@nx/js:typescript-sync` from auto-detecting Astro projects:
+
+```json
+{
+  "sync": {
+    "executor": "@geekvetica/nx-astro:sync",
+    "metadata": {
+      "technologies": ["astro"],
+      "description": "Generate TypeScript types for Astro Content Collections and modules (via astro sync)"
+    }
+  }
+}
+```
+
+**Workspace Configuration:**
+
+To prevent TypeScript sync errors, add this to your workspace `nx.json`:
+
+```json
+{
+  "sync": {
+    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
+  }
+}
+```
+
+This tells Nx to skip the TypeScript sync generator, preventing conflicts with Astro's sync behavior. See the [Troubleshooting Guide](./TROUBLESHOOTING.md#typescript-sync-errors) for details.
 
 ## Nx Integration
 
@@ -415,6 +480,7 @@ If you're setting up CI for a project that uses nx-astro, see our [consuming pro
 
 ## Documentation
 
+- **[Troubleshooting Guide](./TROUBLESHOOTING.md)** - Solutions for common issues and migration guide
 - [CI/CD Setup Guide](./docs/ci-cd-setup.md) - Set up continuous integration and deployment
 - [Consuming Project CI Guide](./docs/consuming-project-ci.md) - CI/CD for projects using nx-astro
 - [Example CI Workflow](./docs/ci-examples/astro-project-ci.yml) - Complete GitHub Actions example
@@ -642,108 +708,68 @@ import { Button } from '@my-workspace/shared-components';
 
 ## Troubleshooting
 
-### Commands fail with "astro: command not found" or similar errors
+For detailed troubleshooting information, see the **[Troubleshooting Guide](./TROUBLESHOOTING.md)**.
 
-**Solution:**
+### Common Issues
 
-This issue was common in versions prior to 1.0.4, where Astro CLI commands would fail in monorepo environments because the `astro` binary wasn't in the system PATH.
+#### Preview can't find build output
 
-**If you're using version 1.0.4 or later**, the plugin automatically handles this with package manager detection. If you're still experiencing issues:
+**Symptoms:** `nx preview my-app` fails with "Cannot find build output" or shows blank page.
 
-1. **Verify package manager detection**:
-   - Check that you have the correct lock file in your workspace root:
-     - `bun.lockb` for Bun
-     - `pnpm-lock.yaml` for pnpm
-     - `yarn.lock` for Yarn
-     - `package-lock.json` for npm
-   - Alternatively, ensure the `packageManager` field is set in your root `package.json`:
-     ```json
-     {
-       "packageManager": "bun@1.0.0"
-     }
-     ```
+**Solution (v1.0.6+):** Automatic for new imports! For existing projects, add `outDir` to `astro.config.mjs`:
 
-2. **Verify Astro is installed**:
-
-   ```bash
-   # Check if astro is in dependencies
-   cat package.json | grep astro
-
-   # Verify astro binary exists
-   ls node_modules/.bin/astro
-   ```
-
-3. **Ensure node_modules is up to date**:
-
-   ```bash
-   # Bun
-   bun install
-
-   # pnpm
-   pnpm install
-
-   # Yarn
-   yarn install
-
-   # npm
-   npm install
-   ```
-
-4. **Check executor configuration**:
-   Verify your `project.json` uses the correct executor:
-   ```json
-   {
-     "targets": {
-       "build": {
-         "executor": "@geekvetica/nx-astro:build"
-       }
-     }
-   }
-   ```
-
-**If you're using an older version (< 1.0.4)**, upgrade to the latest version:
-
-```bash
-# Bun
-bun add -d @geekvetica/nx-astro@latest
-
-# pnpm
-pnpm add -D @geekvetica/nx-astro@latest
-
-# Yarn
-yarn add -D @geekvetica/nx-astro@latest
-
-# npm
-npm install --save-dev @geekvetica/nx-astro@latest
+```javascript
+export default defineConfig({
+  outDir: '../../dist/apps/my-app', // Adjust for your project depth
+  // ... rest of config
+});
 ```
 
-### Type checking fails with "@astrojs/check not found"
+See [Troubleshooting Guide - Preview Issues](./TROUBLESHOOTING.md#preview-command-cant-find-build-output) for details.
 
-**Solution:**
+#### TypeScript sync errors
 
-The `check` executor requires the `@astrojs/check` package to be installed. See the [Type Check](#type-check) section for installation instructions and the `autoInstall` option.
+**Symptoms:** `nx sync` fails with "Missing root tsconfig.json".
 
-### Vitest tests don't run
+**Solution:** Add to workspace `nx.json`:
 
-**Solution:**
-
-Ensure Vitest is installed in your project:
-
-```bash
-# Bun
-bun add -d vitest
-
-# pnpm
-pnpm add -D vitest
-
-# Yarn
-yarn add -D vitest
-
-# npm
-npm install --save-dev vitest
+```json
+{
+  "sync": {
+    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
+  }
+}
 ```
 
-The test executor is only available when Vitest is detected in your dependencies.
+See [Troubleshooting Guide - TypeScript Sync](./TROUBLESHOOTING.md#typescript-sync-errors) for details.
+
+#### Commands fail with "astro: command not found"
+
+**Solution:** This was fixed in v1.0.4 with automatic package manager detection. If still experiencing issues:
+
+1. Verify Astro is installed: `cat package.json | grep astro`
+2. Ensure dependencies are up to date: `bun install` (or npm/pnpm/yarn)
+3. Check your lock file exists in workspace root
+
+See [Troubleshooting Guide - Command Not Found](./TROUBLESHOOTING.md#commands-fail-with-astro-command-not-found) for details.
+
+#### Type checking fails
+
+**Solution:** Install `@astrojs/check`:
+
+```bash
+bun add -d @astrojs/check
+```
+
+Or enable auto-install in `project.json`. See [Type Check](#type-check) section above.
+
+#### More Help
+
+See the complete **[Troubleshooting Guide](./TROUBLESHOOTING.md)** for:
+
+- Migration from older versions
+- Vitest test issues
+- Getting more help
 
 ## Support
 
