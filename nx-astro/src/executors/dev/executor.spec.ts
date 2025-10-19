@@ -15,6 +15,12 @@ jest.mock('child_process', () => {
   };
 });
 
+// Mock command-builder
+const mockBuildAstroCommand = jest.fn();
+jest.mock('../../utils/command-builder', () => ({
+  buildAstroCommand: mockBuildAstroCommand,
+}));
+
 import devExecutor from './executor';
 
 describe('Dev Executor', () => {
@@ -62,11 +68,18 @@ describe('Dev Executor', () => {
     mockSpawn.mockClear();
     mockOn.mockClear();
     mockKill.mockClear();
+    mockBuildAstroCommand.mockClear();
     mockSpawn.mockReturnValue(mockChildProcess);
+
+    // Default mock return value for buildAstroCommand (simulating pnpm)
+    mockBuildAstroCommand.mockReturnValue({
+      command: 'pnpm',
+      args: ['exec', 'astro', 'dev'],
+    });
   });
 
   describe('basic functionality', () => {
-    it('should run astro dev command', async () => {
+    it('should run astro dev command using buildAstroCommand', async () => {
       const options: DevExecutorSchema = {};
 
       // Simulate clean exit
@@ -79,14 +92,21 @@ describe('Dev Executor', () => {
 
       const result = await devExecutor(options, context);
 
+      // Verify buildAstroCommand was called with correct parameters
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--root', '/workspace/apps/my-app']),
+        '/workspace',
+      );
+
+      // Verify spawn was called with command and args from buildAstroCommand
       expect(mockSpawn).toHaveBeenCalled();
       const spawnCall = mockSpawn.mock.calls[0];
       const command = spawnCall[0];
       const args = spawnCall[1];
 
-      expect(command).toBe('astro');
-      expect(args).toContain('dev');
-      expect(args).toContain('--root');
+      expect(command).toBe('pnpm');
+      expect(args).toEqual(['exec', 'astro', 'dev']);
       expect(result.success).toBe(true);
     });
 
@@ -152,11 +172,14 @@ describe('Dev Executor', () => {
     });
   });
 
-  describe('port configuration', () => {
-    it('should use custom port when provided', async () => {
-      const options: DevExecutorSchema = {
-        port: 3000,
-      };
+  describe('package manager integration', () => {
+    it('should use buildAstroCommand for npm', async () => {
+      const options: DevExecutorSchema = {};
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'npx',
+        args: ['astro', 'dev', '--root', '/workspace/apps/my-app'],
+      });
 
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
@@ -167,9 +190,180 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--port');
-      expect(args).toContain('3000');
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.any(Array),
+        '/workspace',
+      );
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      expect(spawnCall[0]).toBe('npx');
+      expect(spawnCall[1]).toContain('astro');
+      expect(spawnCall[1]).toContain('dev');
+    });
+
+    it('should use buildAstroCommand for bun', async () => {
+      const options: DevExecutorSchema = {};
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'bunx',
+        args: ['astro', 'dev', '--root', '/workspace/apps/my-app'],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await devExecutor(options, context);
+
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.any(Array),
+        '/workspace',
+      );
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      expect(spawnCall[0]).toBe('bunx');
+      expect(spawnCall[1]).toContain('astro');
+      expect(spawnCall[1]).toContain('dev');
+    });
+
+    it('should use buildAstroCommand for yarn', async () => {
+      const options: DevExecutorSchema = {};
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'yarn',
+        args: ['astro', 'dev', '--root', '/workspace/apps/my-app'],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await devExecutor(options, context);
+
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.any(Array),
+        '/workspace',
+      );
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      expect(spawnCall[0]).toBe('yarn');
+      expect(spawnCall[1]).toContain('astro');
+      expect(spawnCall[1]).toContain('dev');
+    });
+
+    it('should pass all arguments to buildAstroCommand', async () => {
+      const options: DevExecutorSchema = {
+        port: 3000,
+        host: true,
+        open: '/about',
+        site: 'https://example.com',
+        base: '/my-app',
+        config: 'custom.config.mjs',
+        verbose: true,
+        additionalArgs: ['--experimental'],
+      };
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '3000',
+          '--host',
+          '--open',
+          '/about',
+          '--site',
+          'https://example.com',
+          '--base',
+          '/my-app',
+          '--config',
+          'custom.config.mjs',
+          '--verbose',
+          '--experimental',
+        ],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await devExecutor(options, context);
+
+      // Verify buildAstroCommand was called with all arguments
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining([
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '3000',
+          '--host',
+          '--open',
+          '/about',
+          '--site',
+          'https://example.com',
+          '--base',
+          '/my-app',
+          '--config',
+          'custom.config.mjs',
+          '--verbose',
+          '--experimental',
+        ]),
+        '/workspace',
+      );
+    });
+  });
+
+  describe('port configuration', () => {
+    it('should use custom port when provided', async () => {
+      const options: DevExecutorSchema = {
+        port: 3000,
+      };
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '3000',
+        ],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await devExecutor(options, context);
+
+      // Verify buildAstroCommand was called with port argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--port', '3000']),
+        '/workspace',
+      );
     });
 
     it('should pass port flag to Astro CLI', async () => {
@@ -177,6 +371,19 @@ describe('Dev Executor', () => {
         port: 8080,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '8080',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -186,10 +393,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      const portIndex = args.indexOf('--port');
-      expect(portIndex).toBeGreaterThan(-1);
-      expect(args[portIndex + 1]).toBe('8080');
+      // Verify buildAstroCommand was called with port argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--port', '8080']),
+        '/workspace',
+      );
     });
   });
 
@@ -199,6 +408,19 @@ describe('Dev Executor', () => {
         host: '192.168.1.100',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--host',
+          '192.168.1.100',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -208,9 +430,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--host');
-      expect(args).toContain('192.168.1.100');
+      // Verify buildAstroCommand was called with host argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--host', '192.168.1.100']),
+        '/workspace',
+      );
     });
 
     it('should use --host flag for boolean true (0.0.0.0)', async () => {
@@ -218,6 +443,18 @@ describe('Dev Executor', () => {
         host: true,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--host',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -227,11 +464,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--host');
-      // When host is boolean true, only --host flag is passed (no value)
-      const hostIndex = args.indexOf('--host');
-      expect(hostIndex).toBeGreaterThan(-1);
+      // Verify buildAstroCommand was called with host flag (no value)
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--host']),
+        '/workspace',
+      );
     });
 
     it('should omit host flag for boolean false (localhost)', async () => {
@@ -239,6 +477,11 @@ describe('Dev Executor', () => {
         host: false,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: ['exec', 'astro', 'dev', '--root', '/workspace/apps/my-app'],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -248,8 +491,9 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).not.toContain('--host');
+      // Verify buildAstroCommand was called without host argument
+      const callArgs = mockBuildAstroCommand.mock.calls[0][1];
+      expect(callArgs).not.toContain('--host');
     });
   });
 
@@ -259,6 +503,18 @@ describe('Dev Executor', () => {
         open: true,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--open',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -268,8 +524,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--open');
+      // Verify buildAstroCommand was called with open flag
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--open']),
+        '/workspace',
+      );
     });
 
     it('should use --open=/path for string values', async () => {
@@ -277,6 +537,19 @@ describe('Dev Executor', () => {
         open: '/about',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--open',
+          '/about',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -286,9 +559,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--open');
-      expect(args).toContain('/about');
+      // Verify buildAstroCommand was called with open argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--open', '/about']),
+        '/workspace',
+      );
     });
 
     it('should omit open flag for boolean false', async () => {
@@ -296,6 +572,11 @@ describe('Dev Executor', () => {
         open: false,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: ['exec', 'astro', 'dev', '--root', '/workspace/apps/my-app'],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -305,8 +586,9 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).not.toContain('--open');
+      // Verify buildAstroCommand was called without open argument
+      const callArgs = mockBuildAstroCommand.mock.calls[0][1];
+      expect(callArgs).not.toContain('--open');
     });
   });
 
@@ -316,6 +598,19 @@ describe('Dev Executor', () => {
         site: 'https://example.com',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--site',
+          'https://example.com',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -325,9 +620,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--site');
-      expect(args).toContain('https://example.com');
+      // Verify buildAstroCommand was called with site argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--site', 'https://example.com']),
+        '/workspace',
+      );
     });
 
     it('should handle base option', async () => {
@@ -335,6 +633,19 @@ describe('Dev Executor', () => {
         base: '/my-app',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--base',
+          '/my-app',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -344,9 +655,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--base');
-      expect(args).toContain('/my-app');
+      // Verify buildAstroCommand was called with base argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--base', '/my-app']),
+        '/workspace',
+      );
     });
 
     it('should handle verbose option', async () => {
@@ -354,6 +668,18 @@ describe('Dev Executor', () => {
         verbose: true,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--verbose',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -363,8 +689,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--verbose');
+      // Verify buildAstroCommand was called with verbose flag
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--verbose']),
+        '/workspace',
+      );
     });
 
     it('should handle additional args', async () => {
@@ -372,6 +702,19 @@ describe('Dev Executor', () => {
         additionalArgs: ['--experimental', '--custom-flag'],
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--experimental',
+          '--custom-flag',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -381,9 +724,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--experimental');
-      expect(args).toContain('--custom-flag');
+      // Verify buildAstroCommand was called with additional args
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--experimental', '--custom-flag']),
+        '/workspace',
+      );
     });
 
     it('should handle config option', async () => {
@@ -391,6 +737,19 @@ describe('Dev Executor', () => {
         config: 'custom.config.mjs',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--config',
+          'custom.config.mjs',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -400,9 +759,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--config');
-      expect(args).toContain('custom.config.mjs');
+      // Verify buildAstroCommand was called with config argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--config', 'custom.config.mjs']),
+        '/workspace',
+      );
     });
   });
 
@@ -535,6 +897,11 @@ describe('Dev Executor', () => {
         root: '/custom/root',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: ['exec', 'astro', 'dev', '--root', '/custom/root'],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -544,14 +911,22 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--root');
-      expect(args).toContain('/custom/root');
+      // Verify buildAstroCommand was called with custom root
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--root', '/custom/root']),
+        '/workspace',
+      );
     });
 
     it('should use project root from context when root not provided', async () => {
       const options: DevExecutorSchema = {};
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: ['exec', 'astro', 'dev', '--root', '/workspace/apps/my-app'],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -561,9 +936,12 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--root');
-      expect(args).toContain('/workspace/apps/my-app');
+      // Verify buildAstroCommand was called with project root from context
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining(['--root', '/workspace/apps/my-app']),
+        '/workspace',
+      );
     });
   });
 
@@ -576,6 +954,22 @@ describe('Dev Executor', () => {
         verbose: true,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'dev',
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '3000',
+          '--host',
+          '--open',
+          '--verbose',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -585,13 +979,20 @@ describe('Dev Executor', () => {
 
       await devExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('dev');
-      expect(args).toContain('--port');
-      expect(args).toContain('3000');
-      expect(args).toContain('--host');
-      expect(args).toContain('--open');
-      expect(args).toContain('--verbose');
+      // Verify buildAstroCommand was called with all arguments
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'dev',
+        expect.arrayContaining([
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '3000',
+          '--host',
+          '--open',
+          '--verbose',
+        ]),
+        '/workspace',
+      );
     });
   });
 });

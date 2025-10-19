@@ -1,15 +1,46 @@
 import { ExecutorContext } from '@nx/devkit';
 import { BuildExecutorSchema } from './schema';
 
-// Mock child_process and util
-const mockExecAsync = jest.fn();
+// Mock child_process
+const mockExec = jest.fn();
 
-jest.mock('child_process');
-jest.mock('util', () => {
-  const actualUtil = jest.requireActual<typeof import('util')>('util');
+jest.mock('child_process', () => {
+  const actual = jest.requireActual('child_process');
   return {
-    ...actualUtil,
-    promisify: jest.fn(() => mockExecAsync),
+    ...actual,
+    exec: mockExec,
+  };
+});
+
+// Mock command-builder
+const mockBuildAstroCommandString = jest.fn();
+
+jest.mock('../../utils/command-builder', () => ({
+  buildAstroCommandString: mockBuildAstroCommandString,
+}));
+
+// Mock util with proper promisify implementation
+jest.mock('util', () => {
+  const actual = jest.requireActual('util');
+  return {
+    ...actual,
+    promisify: jest.fn((fn) => {
+      // Return a promisified version that returns what mockExec returns
+      return (...args: any[]) => {
+        return new Promise((resolve, reject) => {
+          fn(...args, (error: any, result: any) => {
+            if (error) {
+              // Make the error include stdout/stderr like exec does
+              error.stdout = result?.stdout || '';
+              error.stderr = result?.stderr || '';
+              reject(error);
+            } else {
+              resolve(result);
+            }
+          });
+        });
+      };
+    }),
   };
 });
 
@@ -42,34 +73,46 @@ describe('Build Executor', () => {
       isVerbose: false,
     } as ExecutorContext;
 
-    mockExecAsync.mockClear();
+    mockExec.mockClear();
+    mockBuildAstroCommandString.mockClear();
+
+    // Default mock implementation - returns a command string
+    mockBuildAstroCommandString.mockReturnValue(
+      'bunx astro build --root /workspace/apps/my-app',
+    );
+
+    // Default mockExec implementation - calls callback with success
+    mockExec.mockImplementation((cmd: string, options: any, callback: any) => {
+      callback(null, { stdout: 'Build successful', stderr: '' });
+      return {} as any;
+    });
   });
 
   describe('basic build', () => {
-    it('should run astro build command', async () => {
+    it('should run astro build command using command-builder', async () => {
       const options: BuildExecutorSchema = {};
-
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
 
       const result = await buildExecutor(options, context);
 
-      expect(mockExecAsync).toHaveBeenCalled();
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('astro build');
-      expect(callArgs).toContain('--root');
+      // Verify buildAstroCommandString was called with correct parameters
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app'],
+        '/workspace',
+      );
+
+      // Verify the built command string was passed to execAsync
+      expect(mockExec).toHaveBeenCalled();
+      const callArgs = mockExec.mock.calls[0];
+      expect(callArgs[0]).toBe(
+        'bunx astro build --root /workspace/apps/my-app',
+      );
+
       expect(result.success).toBe(true);
     });
 
     it('should return success status', async () => {
       const options: BuildExecutorSchema = {};
-
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
 
       const result = await buildExecutor(options, context);
 
@@ -83,16 +126,14 @@ describe('Build Executor', () => {
         outputPath: 'dist/custom',
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--outDir');
-      expect(callArgs).toContain('dist/custom');
+      // Verify buildAstroCommandString was called with outputPath in args
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app', '--outDir', 'dist/custom'],
+        '/workspace',
+      );
     });
   });
 
@@ -102,15 +143,14 @@ describe('Build Executor', () => {
         verbose: true,
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--verbose');
+      // Verify buildAstroCommandString was called with verbose flag
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app', '--verbose'],
+        '/workspace',
+      );
     });
   });
 
@@ -120,16 +160,14 @@ describe('Build Executor', () => {
         mode: 'static',
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--mode');
-      expect(callArgs).toContain('static');
+      // Verify buildAstroCommandString was called with mode flag
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app', '--mode', 'static'],
+        '/workspace',
+      );
     });
 
     it('should respect mode option - server', async () => {
@@ -137,16 +175,14 @@ describe('Build Executor', () => {
         mode: 'server',
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--mode');
-      expect(callArgs).toContain('server');
+      // Verify buildAstroCommandString was called with mode flag
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app', '--mode', 'server'],
+        '/workspace',
+      );
     });
   });
 
@@ -154,7 +190,13 @@ describe('Build Executor', () => {
     it('should return failure status on error', async () => {
       const options: BuildExecutorSchema = {};
 
-      mockExecAsync.mockRejectedValue(new Error('Build failed'));
+      // Mock exec to call callback with error
+      mockExec.mockImplementation(
+        (cmd: string, options: any, callback: any) => {
+          callback(new Error('Build failed'), null);
+          return {} as any;
+        },
+      );
 
       const result = await buildExecutor(options, context);
 
@@ -164,7 +206,13 @@ describe('Build Executor', () => {
     it('should handle missing astro', async () => {
       const options: BuildExecutorSchema = {};
 
-      mockExecAsync.mockRejectedValue(new Error('Command not found: astro'));
+      // Mock exec to call callback with error
+      mockExec.mockImplementation(
+        (cmd: string, options: any, callback: any) => {
+          callback(new Error('Command not found: astro'), null);
+          return {} as any;
+        },
+      );
 
       const result = await buildExecutor(options, context);
 
@@ -174,10 +222,13 @@ describe('Build Executor', () => {
     it('should handle build errors with stderr', async () => {
       const options: BuildExecutorSchema = {};
 
-      mockExecAsync.mockResolvedValue({
-        stdout: '',
-        stderr: 'Error: Build failed',
-      });
+      // Mock exec to succeed but with stderr
+      mockExec.mockImplementation(
+        (cmd: string, options: any, callback: any) => {
+          callback(null, { stdout: '', stderr: 'Error: Build failed' });
+          return {} as any;
+        },
+      );
 
       const result = await buildExecutor(options, context);
 
@@ -192,16 +243,14 @@ describe('Build Executor', () => {
         site: 'https://example.com',
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--site');
-      expect(callArgs).toContain('https://example.com');
+      // Verify buildAstroCommandString was called with site flag
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app', '--site', 'https://example.com'],
+        '/workspace',
+      );
     });
 
     it('should pass base option', async () => {
@@ -209,16 +258,14 @@ describe('Build Executor', () => {
         base: '/my-app',
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--base');
-      expect(callArgs).toContain('/my-app');
+      // Verify buildAstroCommandString was called with base flag
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app', '--base', '/my-app'],
+        '/workspace',
+      );
     });
 
     it('should pass additional arguments', async () => {
@@ -226,16 +273,14 @@ describe('Build Executor', () => {
         additionalArgs: ['--experimental', '--no-minify'],
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--experimental');
-      expect(callArgs).toContain('--no-minify');
+      // Verify buildAstroCommandString was called with additional args
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app', '--experimental', '--no-minify'],
+        '/workspace',
+      );
     });
   });
 
@@ -247,19 +292,22 @@ describe('Build Executor', () => {
         mode: 'static',
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('astro build');
-      expect(callArgs).toContain('--root');
-      expect(callArgs).toContain('--verbose');
-      expect(callArgs).toContain('--outDir');
-      expect(callArgs).toContain('--mode');
+      // Verify buildAstroCommandString was called with all flags
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        [
+          '--root',
+          '/workspace/apps/my-app',
+          '--outDir',
+          'dist/out',
+          '--mode',
+          'static',
+          '--verbose',
+        ],
+        '/workspace',
+      );
     });
   });
 
@@ -269,31 +317,39 @@ describe('Build Executor', () => {
         root: '/custom/root',
       };
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
-
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--root');
-      expect(callArgs).toContain('/custom/root');
+      // Verify buildAstroCommandString was called with custom root
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/custom/root'],
+        '/workspace',
+      );
     });
 
     it('should use project root from context when root not provided', async () => {
       const options: BuildExecutorSchema = {};
 
-      mockExecAsync.mockResolvedValue({
-        stdout: 'Build successful',
-        stderr: '',
-      });
+      await buildExecutor(options, context);
+
+      // Verify buildAstroCommandString was called with project root
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'build',
+        ['--root', '/workspace/apps/my-app'],
+        '/workspace',
+      );
+    });
+  });
+
+  describe('package manager detection', () => {
+    it('should pass workspace root to buildAstroCommandString for package manager detection', async () => {
+      const options: BuildExecutorSchema = {};
 
       await buildExecutor(options, context);
 
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('--root');
-      expect(callArgs).toContain('/workspace/apps/my-app');
+      // Verify buildAstroCommandString receives the workspace root for PM detection
+      const calls = mockBuildAstroCommandString.mock.calls;
+      expect(calls[0][2]).toBe('/workspace');
     });
   });
 });

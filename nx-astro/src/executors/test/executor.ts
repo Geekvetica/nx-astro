@@ -3,6 +3,7 @@ import { exec, spawn, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
 import { TestExecutorSchema } from './schema';
+import { buildCommand, buildCommandString } from '../../utils/command-builder';
 
 const execAsync = promisify(exec);
 
@@ -13,7 +14,7 @@ export interface TestExecutorOutput {
 
 export default async function testExecutor(
   options: TestExecutorSchema,
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<TestExecutorOutput> {
   try {
     // Get project configuration
@@ -103,9 +104,9 @@ export default async function testExecutor(
  */
 async function runTestMode(
   args: string[],
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<TestExecutorOutput> {
-  const command = ['vitest', ...args].join(' ');
+  const command = buildCommandString('vitest', args, context.root);
 
   logger.info(`Executing: ${command}`);
 
@@ -160,13 +161,19 @@ async function runTestMode(
  */
 async function runWatchMode(
   args: string[],
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<TestExecutorOutput> {
   return new Promise<TestExecutorOutput>((resolve) => {
-    logger.info(`Executing: vitest ${args.join(' ')}`);
+    const { command, args: cmdArgs } = buildCommand(
+      'vitest',
+      args,
+      context.root,
+    );
+
+    logger.info(`Executing: ${command} ${cmdArgs.join(' ')}`);
 
     // Spawn the test process in watch mode
-    const childProcess: ChildProcess = spawn('vitest', args, {
+    const childProcess: ChildProcess = spawn(command, cmdArgs, {
       cwd: context.root,
       stdio: ['inherit', 'pipe', 'pipe'],
       env: process.env,

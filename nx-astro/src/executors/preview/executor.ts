@@ -2,6 +2,7 @@ import { ExecutorContext, logger } from '@nx/devkit';
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import { PreviewExecutorSchema } from './schema';
+import { buildAstroCommand } from '../../utils/command-builder';
 
 export interface PreviewExecutorOutput {
   success: boolean;
@@ -10,7 +11,7 @@ export interface PreviewExecutorOutput {
 
 export default async function previewExecutor(
   options: PreviewExecutorSchema,
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<PreviewExecutorOutput> {
   return new Promise<PreviewExecutorOutput>((resolve) => {
     try {
@@ -30,66 +31,72 @@ export default async function previewExecutor(
       const projectRoot =
         options.root || path.join(context.root, projectConfig.root);
 
-      // Build the astro preview command arguments
-      const args: string[] = ['preview'];
+      // Build the command arguments (exclude 'preview' - it's the subcommand)
+      const commandArgs: string[] = [];
 
       // Add root flag
-      args.push('--root', projectRoot);
+      commandArgs.push('--root', projectRoot);
 
       // Add optional flags
       if (options.port !== undefined) {
-        args.push('--port', String(options.port));
+        commandArgs.push('--port', String(options.port));
       }
 
       if (options.host !== undefined) {
         if (typeof options.host === 'boolean') {
           if (options.host) {
-            args.push('--host');
+            commandArgs.push('--host');
           }
         } else {
-          args.push('--host', options.host);
+          commandArgs.push('--host', options.host);
         }
       }
 
       if (options.site) {
-        args.push('--site', options.site);
+        commandArgs.push('--site', options.site);
       }
 
       if (options.base) {
-        args.push('--base', options.base);
+        commandArgs.push('--base', options.base);
       }
 
       if (options.config) {
-        args.push('--config', options.config);
+        commandArgs.push('--config', options.config);
       }
 
       if (options.outputPath) {
-        args.push('--outDir', options.outputPath);
+        commandArgs.push('--outDir', options.outputPath);
       }
 
       if (options.verbose) {
-        args.push('--verbose');
+        commandArgs.push('--verbose');
       }
 
       if (options.open !== undefined) {
         if (typeof options.open === 'boolean') {
           if (options.open) {
-            args.push('--open');
+            commandArgs.push('--open');
           }
         } else {
-          args.push('--open', options.open);
+          commandArgs.push('--open', options.open);
         }
       }
 
       // Add additional arguments
       if (options.additionalArgs && options.additionalArgs.length > 0) {
-        args.push(...options.additionalArgs);
+        commandArgs.push(...options.additionalArgs);
       }
 
-      logger.info(`Executing: astro ${args.join(' ')}`);
+      // Build command with package manager prefix
+      const { command, args: fullArgs } = buildAstroCommand(
+        'preview',
+        commandArgs,
+        context.root,
+      );
+      logger.info(`Executing: ${command} ${fullArgs.join(' ')}`);
 
       // Spawn the preview server process
-      const childProcess: ChildProcess = spawn('astro', args, {
+      const childProcess: ChildProcess = spawn(command, fullArgs, {
         cwd: context.root,
         stdio: 'inherit',
         env: process.env,

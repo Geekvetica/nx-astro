@@ -15,6 +15,12 @@ jest.mock('child_process', () => {
   };
 });
 
+// Mock command-builder
+const mockBuildAstroCommand = jest.fn();
+jest.mock('../../utils/command-builder', () => ({
+  buildAstroCommand: mockBuildAstroCommand,
+}));
+
 import previewExecutor from './executor';
 
 describe('Preview Executor', () => {
@@ -62,11 +68,18 @@ describe('Preview Executor', () => {
     mockSpawn.mockClear();
     mockOn.mockClear();
     mockKill.mockClear();
+    mockBuildAstroCommand.mockClear();
     mockSpawn.mockReturnValue(mockChildProcess);
+
+    // Default mock return value for buildAstroCommand (simulating pnpm)
+    mockBuildAstroCommand.mockReturnValue({
+      command: 'pnpm',
+      args: ['exec', 'astro', 'preview'],
+    });
   });
 
   describe('basic preview', () => {
-    it('should run astro preview command', async () => {
+    it('should run astro preview command using buildAstroCommand', async () => {
       const options: PreviewExecutorSchema = {};
 
       // Simulate clean exit
@@ -79,14 +92,21 @@ describe('Preview Executor', () => {
 
       const result = await previewExecutor(options, context);
 
+      // Verify buildAstroCommand was called with correct parameters
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--root', '/workspace/apps/my-app']),
+        '/workspace',
+      );
+
+      // Verify spawn was called with command and args from buildAstroCommand
       expect(mockSpawn).toHaveBeenCalled();
       const spawnCall = mockSpawn.mock.calls[0];
       const command = spawnCall[0];
       const args = spawnCall[1];
 
-      expect(command).toBe('astro');
-      expect(args).toContain('preview');
-      expect(args).toContain('--root');
+      expect(command).toBe('pnpm');
+      expect(args).toEqual(['exec', 'astro', 'preview']);
       expect(result.success).toBe(true);
     });
 
@@ -112,6 +132,19 @@ describe('Preview Executor', () => {
         port: 3000,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '3000',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -121,9 +154,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--port');
-      expect(args).toContain('3000');
+      // Verify buildAstroCommand was called with port argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--port', '3000']),
+        '/workspace',
+      );
     });
   });
 
@@ -133,6 +169,19 @@ describe('Preview Executor', () => {
         host: '0.0.0.0',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--host',
+          '0.0.0.0',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -142,9 +191,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--host');
-      expect(args).toContain('0.0.0.0');
+      // Verify buildAstroCommand was called with host argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--host', '0.0.0.0']),
+        '/workspace',
+      );
     });
 
     it('should handle boolean host value', async () => {
@@ -152,6 +204,18 @@ describe('Preview Executor', () => {
         host: true,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--host',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -161,8 +225,175 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--host');
+      // Verify buildAstroCommand was called with host flag (no value)
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--host']),
+        '/workspace',
+      );
+    });
+  });
+
+  describe('package manager integration', () => {
+    it('should use buildAstroCommand for npm', async () => {
+      const options: PreviewExecutorSchema = {};
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'npx',
+        args: ['astro', 'preview', '--root', '/workspace/apps/my-app'],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await previewExecutor(options, context);
+
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.any(Array),
+        '/workspace',
+      );
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      expect(spawnCall[0]).toBe('npx');
+      expect(spawnCall[1]).toContain('astro');
+      expect(spawnCall[1]).toContain('preview');
+    });
+
+    it('should use buildAstroCommand for bun', async () => {
+      const options: PreviewExecutorSchema = {};
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'bunx',
+        args: ['astro', 'preview', '--root', '/workspace/apps/my-app'],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await previewExecutor(options, context);
+
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.any(Array),
+        '/workspace',
+      );
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      expect(spawnCall[0]).toBe('bunx');
+      expect(spawnCall[1]).toContain('astro');
+      expect(spawnCall[1]).toContain('preview');
+    });
+
+    it('should use buildAstroCommand for yarn', async () => {
+      const options: PreviewExecutorSchema = {};
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'yarn',
+        args: ['astro', 'preview', '--root', '/workspace/apps/my-app'],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await previewExecutor(options, context);
+
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.any(Array),
+        '/workspace',
+      );
+
+      const spawnCall = mockSpawn.mock.calls[0];
+      expect(spawnCall[0]).toBe('yarn');
+      expect(spawnCall[1]).toContain('astro');
+      expect(spawnCall[1]).toContain('preview');
+    });
+
+    it('should pass all arguments to buildAstroCommand', async () => {
+      const options: PreviewExecutorSchema = {
+        port: 4173,
+        host: true,
+        open: '/docs',
+        site: 'https://example.com',
+        base: '/my-app',
+        config: 'custom.config.mjs',
+        verbose: true,
+        outputPath: 'dist',
+        additionalArgs: ['--experimental'],
+      };
+
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '4173',
+          '--host',
+          '--open',
+          '/docs',
+          '--site',
+          'https://example.com',
+          '--base',
+          '/my-app',
+          '--config',
+          'custom.config.mjs',
+          '--outDir',
+          'dist',
+          '--verbose',
+          '--experimental',
+        ],
+      });
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      await previewExecutor(options, context);
+
+      // Verify buildAstroCommand was called with all arguments
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining([
+          '--root',
+          '/workspace/apps/my-app',
+          '--port',
+          '4173',
+          '--host',
+          '--open',
+          '/docs',
+          '--site',
+          'https://example.com',
+          '--base',
+          '/my-app',
+          '--config',
+          'custom.config.mjs',
+          '--outDir',
+          'dist',
+          '--verbose',
+          '--experimental',
+        ]),
+        '/workspace',
+      );
     });
   });
 
@@ -204,6 +435,19 @@ describe('Preview Executor', () => {
         site: 'https://example.com',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--site',
+          'https://example.com',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -213,9 +457,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--site');
-      expect(args).toContain('https://example.com');
+      // Verify buildAstroCommand was called with site argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--site', 'https://example.com']),
+        '/workspace',
+      );
     });
 
     it('should pass base option', async () => {
@@ -223,6 +470,19 @@ describe('Preview Executor', () => {
         base: '/my-app',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--base',
+          '/my-app',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -232,9 +492,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--base');
-      expect(args).toContain('/my-app');
+      // Verify buildAstroCommand was called with base argument
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--base', '/my-app']),
+        '/workspace',
+      );
     });
 
     it('should pass verbose flag', async () => {
@@ -242,6 +505,18 @@ describe('Preview Executor', () => {
         verbose: true,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--verbose',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -251,8 +526,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--verbose');
+      // Verify buildAstroCommand was called with verbose flag
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--verbose']),
+        '/workspace',
+      );
     });
 
     it('should pass open flag', async () => {
@@ -260,6 +539,18 @@ describe('Preview Executor', () => {
         open: true,
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--open',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -269,8 +560,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--open');
+      // Verify buildAstroCommand was called with open flag
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--open']),
+        '/workspace',
+      );
     });
 
     it('should pass additional arguments', async () => {
@@ -278,6 +573,19 @@ describe('Preview Executor', () => {
         additionalArgs: ['--experimental', '--custom-flag'],
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: [
+          'exec',
+          'astro',
+          'preview',
+          '--root',
+          '/workspace/apps/my-app',
+          '--experimental',
+          '--custom-flag',
+        ],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -287,9 +595,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--experimental');
-      expect(args).toContain('--custom-flag');
+      // Verify buildAstroCommand was called with additional args
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--experimental', '--custom-flag']),
+        '/workspace',
+      );
     });
   });
 
@@ -366,6 +677,11 @@ describe('Preview Executor', () => {
         root: '/custom/root',
       };
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: ['exec', 'astro', 'preview', '--root', '/custom/root'],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -375,14 +691,22 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--root');
-      expect(args).toContain('/custom/root');
+      // Verify buildAstroCommand was called with custom root
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--root', '/custom/root']),
+        '/workspace',
+      );
     });
 
     it('should use project root from context when root not provided', async () => {
       const options: PreviewExecutorSchema = {};
 
+      mockBuildAstroCommand.mockReturnValue({
+        command: 'pnpm',
+        args: ['exec', 'astro', 'preview', '--root', '/workspace/apps/my-app'],
+      });
+
       mockOn.mockImplementation((event: string, callback: any) => {
         if (event === 'close') {
           callback(0);
@@ -392,9 +716,12 @@ describe('Preview Executor', () => {
 
       await previewExecutor(options, context);
 
-      const args = mockSpawn.mock.calls[0][1];
-      expect(args).toContain('--root');
-      expect(args).toContain('/workspace/apps/my-app');
+      // Verify buildAstroCommand was called with project root from context
+      expect(mockBuildAstroCommand).toHaveBeenCalledWith(
+        'preview',
+        expect.arrayContaining(['--root', '/workspace/apps/my-app']),
+        '/workspace',
+      );
     });
   });
 });

@@ -495,16 +495,86 @@ To trigger a release:
 
 ## Compatibility
 
-| nx-astro | Nx      | Astro  | Node.js          |
-| -------- | ------- | ------ | ---------------- |
-| ^1.0.0   | ^21.0.0 | ^5.0.0 | ^18.0.0, ^20.0.0 |
+| nx-astro | Nx      | Astro  | Node.js          | Package Managers     |
+| -------- | ------- | ------ | ---------------- | -------------------- |
+| ^1.0.0   | ^21.0.0 | ^5.0.0 | ^18.0.0, ^20.0.0 | bun, pnpm, yarn, npm |
+
+**Note**: Version 1.0.4+ includes automatic package manager detection for seamless command execution in monorepo environments.
 
 ## Requirements
 
 - Node.js 18.x or 20.x
 - Nx 21.x or later
 - Astro 5.x or later
-- Package manager: npm, pnpm, or yarn
+- Package manager: bun, pnpm, yarn, or npm
+
+## Package Manager Support
+
+The nx-astro plugin automatically detects your package manager and ensures all Astro CLI commands execute correctly in monorepo environments. This eliminates common PATH-related issues when running commands like `astro build` or `astro check`.
+
+### Automatic Detection
+
+The plugin automatically detects your package manager by checking (in order):
+
+1. **`packageManager` field** in `package.json`
+2. **Lock files**:
+   - `bun.lockb` → Bun
+   - `pnpm-lock.yaml` → pnpm
+   - `yarn.lock` → Yarn
+   - `package-lock.json` → npm
+
+### Command Execution
+
+All executors automatically use the appropriate package manager prefix:
+
+| Package Manager | Command Example         |
+| --------------- | ----------------------- |
+| Bun             | `bunx astro build`      |
+| pnpm            | `pnpm exec astro build` |
+| Yarn            | `yarn astro build`      |
+| npm             | `npx astro build`       |
+
+The same pattern applies to all executors:
+
+- **build**: `{pm} astro build`
+- **dev**: `{pm} astro dev`
+- **preview**: `{pm} astro preview`
+- **check**: `{pm} astro check`
+- **sync**: `{pm} astro sync`
+- **test**: `{pm} vitest` (when Vitest is configured)
+
+### Benefits
+
+- **No configuration needed**: Works automatically based on your project setup
+- **Monorepo-friendly**: Resolves PATH issues in monorepo environments where `node_modules/.bin` isn't in the system PATH
+- **Consistent behavior**: All team members use the same package manager regardless of their local setup
+- **Error prevention**: Eliminates "command not found" errors when running Astro commands
+
+### Example
+
+When you run:
+
+```bash
+nx build my-app
+```
+
+The plugin automatically executes the appropriate command:
+
+```bash
+# If using Bun
+bunx astro build
+
+# If using pnpm
+pnpm exec astro build
+
+# If using Yarn
+yarn astro build
+
+# If using npm
+npx astro build
+```
+
+No additional configuration or environment setup is required.
 
 ## FAQ
 
@@ -569,6 +639,111 @@ import { Button } from '@my-workspace/shared-components';
 
 <Button>Click me</Button>
 ```
+
+## Troubleshooting
+
+### Commands fail with "astro: command not found" or similar errors
+
+**Solution:**
+
+This issue was common in versions prior to 1.0.4, where Astro CLI commands would fail in monorepo environments because the `astro` binary wasn't in the system PATH.
+
+**If you're using version 1.0.4 or later**, the plugin automatically handles this with package manager detection. If you're still experiencing issues:
+
+1. **Verify package manager detection**:
+   - Check that you have the correct lock file in your workspace root:
+     - `bun.lockb` for Bun
+     - `pnpm-lock.yaml` for pnpm
+     - `yarn.lock` for Yarn
+     - `package-lock.json` for npm
+   - Alternatively, ensure the `packageManager` field is set in your root `package.json`:
+     ```json
+     {
+       "packageManager": "bun@1.0.0"
+     }
+     ```
+
+2. **Verify Astro is installed**:
+
+   ```bash
+   # Check if astro is in dependencies
+   cat package.json | grep astro
+
+   # Verify astro binary exists
+   ls node_modules/.bin/astro
+   ```
+
+3. **Ensure node_modules is up to date**:
+
+   ```bash
+   # Bun
+   bun install
+
+   # pnpm
+   pnpm install
+
+   # Yarn
+   yarn install
+
+   # npm
+   npm install
+   ```
+
+4. **Check executor configuration**:
+   Verify your `project.json` uses the correct executor:
+   ```json
+   {
+     "targets": {
+       "build": {
+         "executor": "@geekvetica/nx-astro:build"
+       }
+     }
+   }
+   ```
+
+**If you're using an older version (< 1.0.4)**, upgrade to the latest version:
+
+```bash
+# Bun
+bun add -d @geekvetica/nx-astro@latest
+
+# pnpm
+pnpm add -D @geekvetica/nx-astro@latest
+
+# Yarn
+yarn add -D @geekvetica/nx-astro@latest
+
+# npm
+npm install --save-dev @geekvetica/nx-astro@latest
+```
+
+### Type checking fails with "@astrojs/check not found"
+
+**Solution:**
+
+The `check` executor requires the `@astrojs/check` package to be installed. See the [Type Check](#type-check) section for installation instructions and the `autoInstall` option.
+
+### Vitest tests don't run
+
+**Solution:**
+
+Ensure Vitest is installed in your project:
+
+```bash
+# Bun
+bun add -d vitest
+
+# pnpm
+pnpm add -D vitest
+
+# Yarn
+yarn add -D vitest
+
+# npm
+npm install --save-dev vitest
+```
+
+The test executor is only available when Vitest is detected in your dependencies.
 
 ## Support
 

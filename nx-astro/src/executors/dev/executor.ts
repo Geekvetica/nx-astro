@@ -2,6 +2,7 @@ import { ExecutorContext, logger } from '@nx/devkit';
 import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import { DevExecutorSchema } from './schema';
+import { buildAstroCommand } from '../../utils/command-builder';
 
 export interface DevExecutorOutput {
   success: boolean;
@@ -10,7 +11,7 @@ export interface DevExecutorOutput {
 
 export default async function devExecutor(
   options: DevExecutorSchema,
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<DevExecutorOutput> {
   return new Promise<DevExecutorOutput>((resolve) => {
     try {
@@ -30,62 +31,68 @@ export default async function devExecutor(
       const projectRoot =
         options.root || path.join(context.root, projectConfig.root);
 
-      // Build the astro dev command arguments
-      const args: string[] = ['dev'];
+      // Build the command arguments (exclude 'dev' - it's the subcommand)
+      const commandArgs: string[] = [];
 
       // Add root flag
-      args.push('--root', projectRoot);
+      commandArgs.push('--root', projectRoot);
 
       // Add optional flags
       if (options.port !== undefined) {
-        args.push('--port', String(options.port));
+        commandArgs.push('--port', String(options.port));
       }
 
       if (options.host !== undefined) {
         if (typeof options.host === 'boolean') {
           if (options.host) {
-            args.push('--host');
+            commandArgs.push('--host');
           }
         } else {
-          args.push('--host', options.host);
+          commandArgs.push('--host', options.host);
         }
       }
 
       if (options.open !== undefined) {
         if (typeof options.open === 'boolean') {
           if (options.open) {
-            args.push('--open');
+            commandArgs.push('--open');
           }
         } else {
-          args.push('--open', options.open);
+          commandArgs.push('--open', options.open);
         }
       }
 
       if (options.site) {
-        args.push('--site', options.site);
+        commandArgs.push('--site', options.site);
       }
 
       if (options.base) {
-        args.push('--base', options.base);
+        commandArgs.push('--base', options.base);
       }
 
       if (options.config) {
-        args.push('--config', options.config);
+        commandArgs.push('--config', options.config);
       }
 
       if (options.verbose) {
-        args.push('--verbose');
+        commandArgs.push('--verbose');
       }
 
       // Add additional arguments
       if (options.additionalArgs && options.additionalArgs.length > 0) {
-        args.push(...options.additionalArgs);
+        commandArgs.push(...options.additionalArgs);
       }
 
-      logger.info(`Executing: astro ${args.join(' ')}`);
+      // Build command with package manager prefix
+      const { command, args: fullArgs } = buildAstroCommand(
+        'dev',
+        commandArgs,
+        context.root,
+      );
+      logger.info(`Executing: ${command} ${fullArgs.join(' ')}`);
 
       // Spawn the dev server process
-      const childProcess: ChildProcess = spawn('astro', args, {
+      const childProcess: ChildProcess = spawn(command, fullArgs, {
         cwd: context.root,
         stdio: 'inherit',
         env: process.env,

@@ -10,6 +10,22 @@ jest.mock('child_process', () => ({
   spawn: (...args: any[]) => (mockSpawn as any)(...args),
 }));
 
+// Mock command-builder
+jest.mock('../../utils/command-builder', () => ({
+  buildCommand: jest.fn((binary: string, args: string[], rootDir: string) => {
+    // Default to pnpm for test consistency (can be overridden in specific tests)
+    return {
+      command: 'pnpm',
+      args: ['exec', binary, ...args],
+    };
+  }),
+  buildCommandString: jest.fn(
+    (binary: string, args: string[], rootDir: string) => {
+      return `pnpm exec ${binary} ${args.join(' ')}`.trim();
+    },
+  ),
+}));
+
 jest.mock('util', () => {
   const actual = jest.requireActual('util');
   return {
@@ -82,7 +98,7 @@ describe('Test Executor', () => {
   });
 
   describe('Basic Functionality', () => {
-    it('should run vitest command', async () => {
+    it('should run vitest command with package manager prefix', async () => {
       const options: TestExecutorSchema = {};
 
       mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
@@ -94,7 +110,7 @@ describe('Test Executor', () => {
 
       expect(mockExec).toHaveBeenCalled();
       const command = mockExec.mock.calls[0][0];
-      expect(command).toContain('vitest');
+      expect(command).toContain('pnpm exec vitest');
     });
 
     it('should return success when tests pass', async () => {
@@ -168,7 +184,9 @@ describe('Test Executor', () => {
       expect(mockSpawn).toHaveBeenCalled();
       const command = mockSpawn.mock.calls[0][0];
       const args = mockSpawn.mock.calls[0][1];
-      expect(command).toBe('vitest');
+      expect(command).toBe('pnpm');
+      expect(args).toContain('exec');
+      expect(args).toContain('vitest');
       expect(args).toContain('watch');
     });
 

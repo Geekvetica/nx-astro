@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
 import { BuildExecutorSchema } from './schema';
+import { buildAstroCommandString } from '../../utils/command-builder';
 
 const execAsync = promisify(exec);
 
@@ -13,7 +14,7 @@ export interface BuildExecutorOutput {
 
 export default async function buildExecutor(
   options: BuildExecutorSchema,
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<BuildExecutorOutput> {
   try {
     // Get project configuration
@@ -32,49 +33,52 @@ export default async function buildExecutor(
     const projectRoot =
       options.root || path.join(context.root, projectConfig.root);
 
-    // Build the astro build command
-    const args: string[] = ['astro', 'build'];
+    // Build the command arguments (exclude 'astro' and 'build')
+    const commandArgs: string[] = [];
 
     // Add root flag
-    args.push('--root', projectRoot);
+    commandArgs.push('--root', projectRoot);
 
     // Add optional flags
     if (options.outputPath) {
-      args.push('--outDir', options.outputPath);
+      commandArgs.push('--outDir', options.outputPath);
     }
 
     if (options.mode) {
-      args.push('--mode', options.mode);
+      commandArgs.push('--mode', options.mode);
     }
 
     if (options.verbose) {
-      args.push('--verbose');
+      commandArgs.push('--verbose');
     }
 
     if (options.site) {
-      args.push('--site', options.site);
+      commandArgs.push('--site', options.site);
     }
 
     if (options.base) {
-      args.push('--base', options.base);
+      commandArgs.push('--base', options.base);
     }
 
     if (options.config) {
-      args.push('--config', options.config);
+      commandArgs.push('--config', options.config);
     }
 
     // Add additional arguments
     if (options.additionalArgs && options.additionalArgs.length > 0) {
-      args.push(...options.additionalArgs);
+      commandArgs.push(...options.additionalArgs);
     }
 
-    // Build the command string
-    const command = args.join(' ');
-
-    logger.info(`Executing: ${command}`);
+    // Build command string with package manager prefix
+    const commandString = buildAstroCommandString(
+      'build',
+      commandArgs,
+      context.root,
+    );
+    logger.info(`Executing: ${commandString}`);
 
     // Execute the build command
-    const { stdout, stderr } = await execAsync(command, {
+    const { stdout, stderr } = await execAsync(commandString, {
       cwd: context.root,
       env: process.env,
     });

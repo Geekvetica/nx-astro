@@ -13,6 +13,13 @@ jest.mock('util', () => {
   };
 });
 
+// Mock command-builder
+const mockBuildAstroCommandString = jest.fn();
+
+jest.mock('../../utils/command-builder', () => ({
+  buildAstroCommandString: mockBuildAstroCommandString,
+}));
+
 import syncExecutor from './executor';
 
 describe('Sync Executor', () => {
@@ -43,6 +50,154 @@ describe('Sync Executor', () => {
     } as ExecutorContext;
 
     mockExecAsync.mockClear();
+    mockBuildAstroCommandString.mockClear();
+
+    // Default implementation for buildAstroCommandString
+    mockBuildAstroCommandString.mockImplementation(
+      (subcommand: string, args: string[], rootDir: string) => {
+        return `bunx astro ${subcommand} ${args.join(' ')}`;
+      },
+    );
+  });
+
+  describe('command-builder integration', () => {
+    it('should use buildAstroCommandString with sync subcommand', async () => {
+      const options: SyncExecutorSchema = {};
+
+      mockExecAsync.mockResolvedValue({
+        stdout: 'Types generated successfully',
+        stderr: '',
+      });
+
+      await syncExecutor(options, context);
+
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'sync',
+        expect.arrayContaining(['--root', '/workspace/apps/my-app']),
+        '/workspace',
+      );
+    });
+
+    it('should pass correct args to buildAstroCommandString with config option', async () => {
+      const options: SyncExecutorSchema = {
+        config: 'astro.config.custom.mjs',
+      };
+
+      mockExecAsync.mockResolvedValue({
+        stdout: 'Types generated successfully',
+        stderr: '',
+      });
+
+      await syncExecutor(options, context);
+
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'sync',
+        expect.arrayContaining([
+          '--root',
+          '/workspace/apps/my-app',
+          '--config',
+          'astro.config.custom.mjs',
+        ]),
+        '/workspace',
+      );
+    });
+
+    it('should pass correct args to buildAstroCommandString with verbose flag', async () => {
+      const options: SyncExecutorSchema = {
+        verbose: true,
+      };
+
+      mockExecAsync.mockResolvedValue({
+        stdout: 'Types generated successfully',
+        stderr: '',
+      });
+
+      await syncExecutor(options, context);
+
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'sync',
+        expect.arrayContaining([
+          '--root',
+          '/workspace/apps/my-app',
+          '--verbose',
+        ]),
+        '/workspace',
+      );
+    });
+
+    it('should pass correct args to buildAstroCommandString with additional args', async () => {
+      const options: SyncExecutorSchema = {
+        additionalArgs: ['--force', '--experimental'],
+      };
+
+      mockExecAsync.mockResolvedValue({
+        stdout: 'Types generated successfully',
+        stderr: '',
+      });
+
+      await syncExecutor(options, context);
+
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'sync',
+        expect.arrayContaining([
+          '--root',
+          '/workspace/apps/my-app',
+          '--force',
+          '--experimental',
+        ]),
+        '/workspace',
+      );
+    });
+
+    it('should pass correct args to buildAstroCommandString with all options', async () => {
+      const options: SyncExecutorSchema = {
+        root: '/custom/root',
+        config: 'astro.config.custom.mjs',
+        verbose: true,
+        additionalArgs: ['--force'],
+      };
+
+      mockExecAsync.mockResolvedValue({
+        stdout: 'Types generated successfully',
+        stderr: '',
+      });
+
+      await syncExecutor(options, context);
+
+      expect(mockBuildAstroCommandString).toHaveBeenCalledWith(
+        'sync',
+        expect.arrayContaining([
+          '--root',
+          '/custom/root',
+          '--config',
+          'astro.config.custom.mjs',
+          '--verbose',
+          '--force',
+        ]),
+        '/workspace',
+      );
+    });
+
+    it('should execute the command string returned by buildAstroCommandString', async () => {
+      const options: SyncExecutorSchema = {};
+      const mockCommandString = 'bunx astro sync --root /workspace/apps/my-app';
+
+      mockBuildAstroCommandString.mockReturnValue(mockCommandString);
+      mockExecAsync.mockResolvedValue({
+        stdout: 'Types generated successfully',
+        stderr: '',
+      });
+
+      await syncExecutor(options, context);
+
+      expect(mockExecAsync).toHaveBeenCalledWith(
+        mockCommandString,
+        expect.objectContaining({
+          cwd: '/workspace',
+          env: process.env,
+        }),
+      );
+    });
   });
 
   describe('basic functionality', () => {
@@ -57,9 +212,6 @@ describe('Sync Executor', () => {
       const result = await syncExecutor(options, context);
 
       expect(mockExecAsync).toHaveBeenCalled();
-      const callArgs = mockExecAsync.mock.calls[0][0] as string;
-      expect(callArgs).toContain('astro sync');
-      expect(callArgs).toContain('--root');
       expect(result.success).toBe(true);
     });
 
@@ -184,7 +336,7 @@ describe('Sync Executor', () => {
       const options: SyncExecutorSchema = {};
 
       mockExecAsync.mockRejectedValue(
-        new Error('Sync failed with exit code 1')
+        new Error('Sync failed with exit code 1'),
       );
 
       const result = await syncExecutor(options, context);
@@ -331,7 +483,7 @@ describe('Sync Executor', () => {
 
       const result = await syncExecutor(
         options,
-        invalidContext as ExecutorContext
+        invalidContext as ExecutorContext,
       );
 
       expect(result.success).toBe(false);
@@ -355,7 +507,7 @@ describe('Sync Executor', () => {
 
       const result = await syncExecutor(
         options,
-        invalidContext as ExecutorContext
+        invalidContext as ExecutorContext,
       );
 
       expect(result.success).toBe(false);

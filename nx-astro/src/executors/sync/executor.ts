@@ -3,6 +3,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as path from 'path';
 import { SyncExecutorSchema } from './schema';
+import { buildAstroCommandString } from '../../utils/command-builder';
 
 const execAsync = promisify(exec);
 
@@ -13,7 +14,7 @@ export interface SyncExecutorOutput {
 
 export default async function syncExecutor(
   options: SyncExecutorSchema,
-  context: ExecutorContext
+  context: ExecutorContext,
 ): Promise<SyncExecutorOutput> {
   try {
     // Get project configuration
@@ -32,33 +33,37 @@ export default async function syncExecutor(
     const projectRoot =
       options.root || path.join(context.root, projectConfig.root);
 
-    // Build the astro sync command
-    const args: string[] = ['astro', 'sync'];
+    // Build command arguments array (without 'astro' and 'sync')
+    const commandArgs: string[] = [];
 
     // Add root flag
-    args.push('--root', projectRoot);
+    commandArgs.push('--root', projectRoot);
 
     // Add optional flags
     if (options.config) {
-      args.push('--config', options.config);
+      commandArgs.push('--config', options.config);
     }
 
     if (options.verbose) {
-      args.push('--verbose');
+      commandArgs.push('--verbose');
     }
 
     // Add additional arguments
     if (options.additionalArgs && options.additionalArgs.length > 0) {
-      args.push(...options.additionalArgs);
+      commandArgs.push(...options.additionalArgs);
     }
 
-    // Build the command string
-    const command = args.join(' ');
+    // Build command string with package manager prefix
+    const commandString = buildAstroCommandString(
+      'sync',
+      commandArgs,
+      context.root,
+    );
 
-    logger.info(`Executing: ${command}`);
+    logger.info(`Executing: ${commandString}`);
 
     // Execute the sync command
-    const { stdout, stderr } = await execAsync(command, {
+    const { stdout, stderr } = await execAsync(commandString, {
       cwd: context.root,
       env: process.env,
     });

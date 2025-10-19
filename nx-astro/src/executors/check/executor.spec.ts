@@ -17,6 +17,15 @@ jest.mock('child_process', () => {
   };
 });
 
+// Mock command-builder
+const mockBuildAstroCommand = jest.fn();
+const mockBuildAstroCommandString = jest.fn();
+
+jest.mock('../../utils/command-builder', () => ({
+  buildAstroCommand: mockBuildAstroCommand,
+  buildAstroCommandString: mockBuildAstroCommandString,
+}));
+
 // Mock fs module for dependency checker
 const mockExistsSync = jest.fn();
 const mockReadFileSync = jest.fn();
@@ -102,6 +111,8 @@ describe('Check Executor', () => {
     mockSpawn.mockClear();
     mockOn.mockClear();
     mockKill.mockClear();
+    mockBuildAstroCommand.mockClear();
+    mockBuildAstroCommandString.mockClear();
 
     // Default: Mock @astrojs/check as INSTALLED for all tests
     // Individual test suites can override this behavior
@@ -120,6 +131,22 @@ describe('Check Executor', () => {
           '@astrojs/check': '^0.3.0',
         },
       }),
+    );
+
+    // Default command-builder mock implementations
+    mockBuildAstroCommandString.mockImplementation(
+      (subcommand: string, args: string[], rootDir: string) => {
+        return `bunx astro ${subcommand} ${args.join(' ')}`;
+      },
+    );
+
+    mockBuildAstroCommand.mockImplementation(
+      (subcommand: string, args: string[], rootDir: string) => {
+        return {
+          command: 'bunx',
+          args: ['astro', subcommand, ...args],
+        };
+      },
     );
   });
 
@@ -860,6 +887,401 @@ describe('Check Executor', () => {
       expect(result.success).toBe(false);
       expect(result.error).toContain('install');
       expect(result.error).toContain('fail');
+    });
+  });
+
+  describe('Command Builder Integration', () => {
+    describe('runCheckMode (non-watch mode)', () => {
+      it('should use buildAstroCommandString for command execution', async () => {
+        const options: CheckExecutorSchema = {};
+
+        mockBuildAstroCommandString.mockReturnValue(
+          'bunx astro check --root /workspace/apps/my-app',
+        );
+
+        mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+          callback(null, { stdout: 'No errors', stderr: '' });
+          return {} as any;
+        });
+
+        await checkExecutor(options, context);
+
+        // Verify buildAstroCommandString was called
+        expect(mockBuildAstroCommandString).toHaveBeenCalled();
+
+        // Verify it was called with correct arguments (subcommand='check', args without 'check', rootDir)
+        const calls = mockBuildAstroCommandString.mock.calls;
+        expect(calls.length).toBeGreaterThan(0);
+        const [subcommand, args] = calls[0];
+        expect(subcommand).toBe('check');
+        expect(args).not.toContain('check'); // 'check' should not be in args since it's the subcommand
+      });
+
+      it('should execute command string returned by buildAstroCommandString', async () => {
+        const options: CheckExecutorSchema = {};
+        const expectedCommand =
+          'bunx astro check --root /workspace/apps/my-app';
+
+        mockBuildAstroCommandString.mockReturnValue(expectedCommand);
+
+        mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+          callback(null, { stdout: 'No errors', stderr: '' });
+          return {} as any;
+        });
+
+        await checkExecutor(options, context);
+
+        // Verify execAsync was called with the command string from buildAstroCommandString
+        expect(mockExec).toHaveBeenCalledWith(
+          expectedCommand,
+          expect.objectContaining({
+            cwd: '/workspace',
+            env: process.env,
+          }),
+          expect.any(Function),
+        );
+      });
+
+      it('should work with Bun package manager', async () => {
+        const options: CheckExecutorSchema = {};
+
+        mockBuildAstroCommandString.mockReturnValue(
+          'bunx astro check --root /workspace/apps/my-app',
+        );
+
+        mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+          callback(null, { stdout: 'No errors', stderr: '' });
+          return {} as any;
+        });
+
+        await checkExecutor(options, context);
+
+        const executedCommand = mockExec.mock.calls[0][0];
+        expect(executedCommand).toContain('bunx');
+      });
+
+      it('should work with pnpm package manager', async () => {
+        const options: CheckExecutorSchema = {};
+
+        mockBuildAstroCommandString.mockReturnValue(
+          'pnpm exec astro check --root /workspace/apps/my-app',
+        );
+
+        mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+          callback(null, { stdout: 'No errors', stderr: '' });
+          return {} as any;
+        });
+
+        await checkExecutor(options, context);
+
+        const executedCommand = mockExec.mock.calls[0][0];
+        expect(executedCommand).toContain('pnpm exec');
+      });
+
+      it('should work with yarn package manager', async () => {
+        const options: CheckExecutorSchema = {};
+
+        mockBuildAstroCommandString.mockReturnValue(
+          'yarn astro check --root /workspace/apps/my-app',
+        );
+
+        mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+          callback(null, { stdout: 'No errors', stderr: '' });
+          return {} as any;
+        });
+
+        await checkExecutor(options, context);
+
+        const executedCommand = mockExec.mock.calls[0][0];
+        expect(executedCommand).toContain('yarn');
+      });
+
+      it('should work with npm package manager', async () => {
+        const options: CheckExecutorSchema = {};
+
+        mockBuildAstroCommandString.mockReturnValue(
+          'npx astro check --root /workspace/apps/my-app',
+        );
+
+        mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+          callback(null, { stdout: 'No errors', stderr: '' });
+          return {} as any;
+        });
+
+        await checkExecutor(options, context);
+
+        const executedCommand = mockExec.mock.calls[0][0];
+        expect(executedCommand).toContain('npx');
+      });
+
+      it('should pass all options correctly through command builder', async () => {
+        const options: CheckExecutorSchema = {
+          tsconfig: './tsconfig.strict.json',
+          verbose: true,
+          config: 'custom.config.mjs',
+        };
+
+        mockBuildAstroCommandString.mockReturnValue(
+          'bunx astro check --root /workspace/apps/my-app --tsconfig ./tsconfig.strict.json --verbose --config custom.config.mjs',
+        );
+
+        mockExec.mockImplementation((cmd: string, opts: any, callback: any) => {
+          callback(null, { stdout: 'No errors', stderr: '' });
+          return {} as any;
+        });
+
+        await checkExecutor(options, context);
+
+        // Verify args passed to buildAstroCommandString include all options
+        const [, args] = mockBuildAstroCommandString.mock.calls[0];
+        expect(args).toContain('--root');
+        expect(args).toContain('--tsconfig');
+        expect(args).toContain('--verbose');
+        expect(args).toContain('--config');
+      });
+    });
+
+    describe('runWatchMode (watch mode)', () => {
+      it('should use buildAstroCommand for spawn execution', async () => {
+        const options: CheckExecutorSchema = {
+          watch: true,
+        };
+
+        mockBuildAstroCommand.mockReturnValue({
+          command: 'bunx',
+          args: [
+            'astro',
+            'check',
+            '--root',
+            '/workspace/apps/my-app',
+            '--watch',
+          ],
+        });
+
+        mockSpawn.mockReturnValue(mockChildProcess);
+        mockOn.mockImplementation((event: string, callback: any) => {
+          if (event === 'close') {
+            callback(0);
+          }
+          return mockChildProcess;
+        });
+
+        await checkExecutor(options, context);
+
+        // Verify buildAstroCommand was called
+        expect(mockBuildAstroCommand).toHaveBeenCalled();
+
+        // Verify it was called with correct arguments
+        const [subcommand, args] = mockBuildAstroCommand.mock.calls[0];
+        expect(subcommand).toBe('check');
+        expect(args).not.toContain('check'); // 'check' should not be in args since it's the subcommand
+      });
+
+      it('should spawn with command and args from buildAstroCommand', async () => {
+        const options: CheckExecutorSchema = {
+          watch: true,
+        };
+
+        const expectedCommand = 'bunx';
+        const expectedArgs = [
+          'astro',
+          'check',
+          '--root',
+          '/workspace/apps/my-app',
+          '--watch',
+        ];
+
+        mockBuildAstroCommand.mockReturnValue({
+          command: expectedCommand,
+          args: expectedArgs,
+        });
+
+        mockSpawn.mockReturnValue(mockChildProcess);
+        mockOn.mockImplementation((event: string, callback: any) => {
+          if (event === 'close') {
+            callback(0);
+          }
+          return mockChildProcess;
+        });
+
+        await checkExecutor(options, context);
+
+        // Verify spawn was called with the command and args from buildAstroCommand
+        expect(mockSpawn).toHaveBeenCalledWith(
+          expectedCommand,
+          expectedArgs,
+          expect.objectContaining({
+            cwd: '/workspace',
+            stdio: 'inherit',
+            env: process.env,
+          }),
+        );
+      });
+
+      it('should work with Bun package manager in watch mode', async () => {
+        const options: CheckExecutorSchema = {
+          watch: true,
+        };
+
+        mockBuildAstroCommand.mockReturnValue({
+          command: 'bunx',
+          args: [
+            'astro',
+            'check',
+            '--root',
+            '/workspace/apps/my-app',
+            '--watch',
+          ],
+        });
+
+        mockSpawn.mockReturnValue(mockChildProcess);
+        mockOn.mockImplementation((event: string, callback: any) => {
+          if (event === 'close') {
+            callback(0);
+          }
+          return mockChildProcess;
+        });
+
+        await checkExecutor(options, context);
+
+        const [command, args] = mockSpawn.mock.calls[0];
+        expect(command).toBe('bunx');
+        expect(args).toContain('astro');
+      });
+
+      it('should work with pnpm package manager in watch mode', async () => {
+        const options: CheckExecutorSchema = {
+          watch: true,
+        };
+
+        mockBuildAstroCommand.mockReturnValue({
+          command: 'pnpm',
+          args: [
+            'exec',
+            'astro',
+            'check',
+            '--root',
+            '/workspace/apps/my-app',
+            '--watch',
+          ],
+        });
+
+        mockSpawn.mockReturnValue(mockChildProcess);
+        mockOn.mockImplementation((event: string, callback: any) => {
+          if (event === 'close') {
+            callback(0);
+          }
+          return mockChildProcess;
+        });
+
+        await checkExecutor(options, context);
+
+        const [command, args] = mockSpawn.mock.calls[0];
+        expect(command).toBe('pnpm');
+        expect(args[0]).toBe('exec');
+        expect(args).toContain('astro');
+      });
+
+      it('should work with yarn package manager in watch mode', async () => {
+        const options: CheckExecutorSchema = {
+          watch: true,
+        };
+
+        mockBuildAstroCommand.mockReturnValue({
+          command: 'yarn',
+          args: [
+            'astro',
+            'check',
+            '--root',
+            '/workspace/apps/my-app',
+            '--watch',
+          ],
+        });
+
+        mockSpawn.mockReturnValue(mockChildProcess);
+        mockOn.mockImplementation((event: string, callback: any) => {
+          if (event === 'close') {
+            callback(0);
+          }
+          return mockChildProcess;
+        });
+
+        await checkExecutor(options, context);
+
+        const [command, args] = mockSpawn.mock.calls[0];
+        expect(command).toBe('yarn');
+        expect(args).toContain('astro');
+      });
+
+      it('should work with npm package manager in watch mode', async () => {
+        const options: CheckExecutorSchema = {
+          watch: true,
+        };
+
+        mockBuildAstroCommand.mockReturnValue({
+          command: 'npx',
+          args: [
+            'astro',
+            'check',
+            '--root',
+            '/workspace/apps/my-app',
+            '--watch',
+          ],
+        });
+
+        mockSpawn.mockReturnValue(mockChildProcess);
+        mockOn.mockImplementation((event: string, callback: any) => {
+          if (event === 'close') {
+            callback(0);
+          }
+          return mockChildProcess;
+        });
+
+        await checkExecutor(options, context);
+
+        const [command, args] = mockSpawn.mock.calls[0];
+        expect(command).toBe('npx');
+        expect(args).toContain('astro');
+      });
+
+      it('should pass all options correctly through command builder in watch mode', async () => {
+        const options: CheckExecutorSchema = {
+          watch: true,
+          tsconfig: './tsconfig.json',
+          verbose: true,
+        };
+
+        mockBuildAstroCommand.mockReturnValue({
+          command: 'bunx',
+          args: [
+            'astro',
+            'check',
+            '--root',
+            '/workspace/apps/my-app',
+            '--watch',
+            '--tsconfig',
+            './tsconfig.json',
+            '--verbose',
+          ],
+        });
+
+        mockSpawn.mockReturnValue(mockChildProcess);
+        mockOn.mockImplementation((event: string, callback: any) => {
+          if (event === 'close') {
+            callback(0);
+          }
+          return mockChildProcess;
+        });
+
+        await checkExecutor(options, context);
+
+        // Verify args passed to buildAstroCommand include all options
+        const [, args] = mockBuildAstroCommand.mock.calls[0];
+        expect(args).toContain('--root');
+        expect(args).toContain('--watch');
+        expect(args).toContain('--tsconfig');
+        expect(args).toContain('--verbose');
+      });
     });
   });
 });

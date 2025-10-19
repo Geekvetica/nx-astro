@@ -8,6 +8,10 @@ import {
   detectPackageManager,
   getInstallCommand,
 } from '../../utils/dependency-checker';
+import {
+  buildAstroCommand,
+  buildAstroCommandString,
+} from '../../utils/command-builder';
 
 const execAsync = promisify(exec);
 
@@ -211,13 +215,22 @@ async function runCheckMode(
   args: string[],
   context: ExecutorContext,
 ): Promise<CheckExecutorOutput> {
-  const command = ['astro', ...args].join(' ');
+  // args array is ['check', '--root', projectRoot, ...other options]
+  // We need to extract 'check' as the subcommand and pass the rest as args
+  const subcommand = 'check';
+  const commandArgs = args.slice(1); // Remove 'check' from the beginning
 
-  logger.info(`Executing: ${command}`);
+  const commandString = buildAstroCommandString(
+    subcommand,
+    commandArgs,
+    context.root,
+  );
+
+  logger.info(`Executing: ${commandString}`);
 
   try {
     // Execute the check command
-    const { stdout, stderr } = await execAsync(command, {
+    const { stdout, stderr } = await execAsync(commandString, {
       cwd: context.root,
       env: process.env,
     });
@@ -269,10 +282,21 @@ async function runWatchMode(
   context: ExecutorContext,
 ): Promise<CheckExecutorOutput> {
   return new Promise<CheckExecutorOutput>((resolve) => {
-    logger.info(`Executing: astro ${args.join(' ')}`);
+    // args array is ['check', '--root', projectRoot, ...other options]
+    // We need to extract 'check' as the subcommand and pass the rest as args
+    const subcommand = 'check';
+    const commandArgs = args.slice(1); // Remove 'check' from the beginning
+
+    const { command, args: fullArgs } = buildAstroCommand(
+      subcommand,
+      commandArgs,
+      context.root,
+    );
+
+    logger.info(`Executing: ${command} ${fullArgs.join(' ')}`);
 
     // Spawn the check process in watch mode
-    const childProcess: ChildProcess = spawn('astro', args, {
+    const childProcess: ChildProcess = spawn(command, fullArgs, {
       cwd: context.root,
       stdio: 'inherit',
       env: process.env,
