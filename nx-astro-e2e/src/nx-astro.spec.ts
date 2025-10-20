@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { dirname, join } from 'path';
-import { mkdirSync, rmSync } from 'fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import {
   fileExists,
   logStep,
@@ -596,6 +596,39 @@ function createTestProject() {
     },
   );
   console.log(`Created test project in "${projectDirectory}"`);
+
+  // Ensure tsconfig.base.json exists at workspace root (required for hybrid TypeScript configuration)
+  const tsconfigBasePath = join(projectDirectory, 'tsconfig.base.json');
+  if (!existsSync(tsconfigBasePath)) {
+    console.log('Creating tsconfig.base.json at workspace root...');
+    writeFileSync(
+      tsconfigBasePath,
+      JSON.stringify(
+        {
+          compileOnSave: false,
+          compilerOptions: {
+            rootDir: '.',
+            sourceMap: true,
+            declaration: false,
+            moduleResolution: 'node',
+            emitDecoratorMetadata: true,
+            experimentalDecorators: true,
+            importHelpers: true,
+            target: 'es2015',
+            module: 'esnext',
+            lib: ['es2020', 'dom'],
+            skipLibCheck: true,
+            skipDefaultLibCheck: true,
+            baseUrl: '.',
+            paths: {},
+          },
+          exclude: ['node_modules', 'tmp'],
+        },
+        null,
+        2,
+      ),
+    );
+  }
 
   return projectDirectory;
 }
