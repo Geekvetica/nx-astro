@@ -1,3 +1,14 @@
+## 1.0.7 (2025-10-20)
+
+### 🩹 Fixes
+
+- sync task conflicts with nx sync ([1481179](https://github.com/Geekvetica/nx-astro/commit/1481179))
+- e2e tests ([930a36f](https://github.com/Geekvetica/nx-astro/commit/930a36f))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## [1.0.6] - 2025-10-19
 
 ### Fixed
