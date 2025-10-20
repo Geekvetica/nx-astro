@@ -17,6 +17,8 @@ import { createProjectConfig } from './utils/create-project-config';
 import { updateTsconfigPaths } from './utils/update-tsconfig-paths';
 import { extractDependencies } from './utils/extract-dependencies';
 import { modifyAstroConfig } from './utils/modify-astro-config';
+import { createHybridTsconfig } from './utils/create-hybrid-tsconfig';
+import { updateRootTsconfig } from '../application/utils/update-root-tsconfig';
 
 /**
  * Import an existing Astro application into the Nx workspace.
@@ -140,7 +142,11 @@ export async function importGenerator(
     offsetFromRoot(normalizedOptions.projectRoot),
   );
 
-  // Step 5.6: Extract dependencies from source package.json
+  // Step 5.6: Create hybrid TypeScript configuration
+  logger.info('📝 Creating hybrid TypeScript configuration...');
+  createHybridTsconfig(tree, normalizedOptions.projectRoot);
+
+  // Step 5.7: Extract dependencies from source package.json
   logger.info('📦 Extracting dependencies...');
   const { dependencies, devDependencies } = extractDependencies(
     normalizedOptions.sourcePath,
@@ -155,6 +161,10 @@ export async function importGenerator(
   logger.info('⚙️  Creating project configuration...');
   const projectConfig = createProjectConfig(normalizedOptions, tree);
   addProjectConfiguration(tree, normalizedOptions.projectName, projectConfig);
+
+  // Step 6.5: Update root tsconfig.json with project reference
+  logger.info('🔗 Updating root TypeScript configuration...');
+  updateRootTsconfig(tree, normalizedOptions.projectRoot);
 
   // Step 6.5: Add dependencies to workspace package.json
   logger.info('📝 Adding dependencies to workspace...');

@@ -232,9 +232,59 @@ The plugin ensures all Astro projects follow Nx workspace conventions for build 
 
 This ensures the `preview` executor can always find build artifacts and integrates seamlessly with Nx's caching system.
 
-### TypeScript Sync Behavior
+### TypeScript Configuration
 
-Astro projects use **Astro sync** (`astro sync`) for content collection type generation, which is separate from Nx's TypeScript project reference sync:
+nx-astro uses a **hybrid TypeScript configuration** approach that provides the best of both worlds: seamless integration with Nx's TypeScript tooling while maintaining full compatibility with Astro's requirements.
+
+#### Hybrid Configuration Structure
+
+Generated projects include two TypeScript configuration files:
+
+```
+project-root/
+├── tsconfig.base.json   # Extends workspace base, adds Astro-specific JSX settings
+└── tsconfig.json        # Extends local base, adds Astro-specific configuration
+```
+
+**tsconfig.base.json** (Project-level base):
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  }
+}
+```
+
+**tsconfig.json** (Project configuration):
+
+```json
+{
+  "extends": "./tsconfig.base.json",
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}
+```
+
+#### Benefits of Hybrid Configuration
+
+- **Workspace Integration**: Inherits shared compiler options and path mappings from workspace base
+- **Astro Compatibility**: Maintains all Astro-specific TypeScript settings
+- **IDE Support**: Better TypeScript IntelliSense across the entire workspace
+- **Nx Sync Compatible**: Works seamlessly with `@nx/js:typescript-sync` plugin
+- **Out-of-the-box**: No manual configuration needed for new or imported projects
+
+#### TypeScript Sync Behavior
+
+Astro projects use **Astro sync** (`astro sync`) for content collection type generation, which is separate from and compatible with Nx's TypeScript project reference sync:
 
 | Sync Type              | Purpose                                            | Command               | Output                       |
 | ---------------------- | -------------------------------------------------- | --------------------- | ---------------------------- |
@@ -243,7 +293,7 @@ Astro projects use **Astro sync** (`astro sync`) for content collection type gen
 
 **Conflict Prevention:**
 
-The plugin adds metadata to sync targets to prevent `@nx/js:typescript-sync` from auto-detecting Astro projects:
+The plugin adds metadata to sync targets to prevent `@nx/js:typescript-sync` from misinterpreting Astro projects:
 
 ```json
 {
@@ -257,19 +307,20 @@ The plugin adds metadata to sync targets to prevent `@nx/js:typescript-sync` fro
 }
 ```
 
-**Workspace Configuration:**
+**Root Configuration:**
 
-To prevent TypeScript sync errors, add this to your workspace `nx.json`:
+The plugin automatically creates and maintains a root `tsconfig.json` file when generating or importing projects:
 
 ```json
 {
-  "sync": {
-    "disabledTaskSyncGenerators": ["@nx/js:typescript-sync"]
-  }
+  "extends": "./tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "references": [{ "path": "./apps/my-astro-app" }, { "path": "./libs/my-library" }]
 }
 ```
 
-This tells Nx to skip the TypeScript sync generator, preventing conflicts with Astro's sync behavior. See the [Troubleshooting Guide](./TROUBLESHOOTING.md#typescript-sync-errors) for details.
+This enables Nx's TypeScript sync to work correctly across your entire workspace.
 
 ## Nx Integration
 

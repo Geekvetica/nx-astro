@@ -10,6 +10,7 @@ import { join } from 'path';
 import { ApplicationGeneratorSchema } from './schema';
 import { normalizeOptions } from './utils/normalize-options';
 import { validateExistingProject } from './utils/validate-project';
+import { updateRootTsconfig } from './utils/update-root-tsconfig';
 import { createProjectConfig } from '../import/utils/create-project-config';
 import { NormalizedImportOptions } from '../import/utils/normalize-options';
 
@@ -126,6 +127,9 @@ function addProjectToWorkspace(
   const projectConfig = createProjectConfig(importOptions, tree);
 
   addProjectConfiguration(tree, options.projectName, projectConfig);
+
+  // Add project reference to root tsconfig.json for Nx TypeScript sync
+  updateRootTsconfig(tree, options.projectRoot);
 }
 
 function getTemplateSubstitutions(

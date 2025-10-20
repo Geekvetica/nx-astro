@@ -44,8 +44,19 @@ describe('application generator', () => {
       expect(astroConfig).toContain('defineConfig');
       expect(astroConfig).toContain("output: 'static'");
 
+      // Verify hybrid TypeScript configuration
       const tsConfig = readJson(tree, 'apps/test-app/tsconfig.json');
-      expect(tsConfig.extends).toBe('astro/tsconfigs/strict');
+      expect(tsConfig.extends).toBe('./tsconfig.base.json');
+
+      const tsBaseConfig = readJson(tree, 'apps/test-app/tsconfig.base.json');
+      expect(tsBaseConfig.extends).toBe('../../tsconfig.base.json');
+      expect(tsBaseConfig.compilerOptions.jsx).toBe('react-jsx');
+
+      // Verify root tsconfig.json has project reference
+      const rootTsConfig = readJson(tree, 'tsconfig.json');
+      expect(rootTsConfig.references).toContainEqual({
+        path: './apps/test-app',
+      });
 
       const packageJson = readJson(tree, 'apps/test-app/package.json');
       expect(packageJson.name).toBe('test-app');
