@@ -36,7 +36,7 @@ describe('task-builder', () => {
       readFileSyncSpy.mockReturnValue(
         JSON.stringify({
           devDependencies: { vitest: '^1.0.0' },
-        })
+        }),
       );
 
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
@@ -57,7 +57,7 @@ describe('task-builder', () => {
       readFileSyncSpy.mockReturnValue(
         JSON.stringify({
           devDependencies: { typescript: '^5.0.0' },
-        })
+        }),
       );
 
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
@@ -92,7 +92,7 @@ describe('task-builder', () => {
       expect(tasks.build).toBeDefined();
       expect(tasks.build.executor).toBe('@geekvetica/nx-astro:build');
       expect(tasks.build.outputs).toContain(
-        `{workspaceRoot}/dist/{projectRoot}`
+        `{workspaceRoot}/dist/{projectRoot}`,
       );
     });
 
@@ -133,7 +133,7 @@ describe('task-builder', () => {
       readFileSyncSpy.mockReturnValue(
         JSON.stringify({
           devDependencies: { vitest: '^1.0.0' },
-        })
+        }),
       );
 
       const tasks = buildAstroTasks(mockProjectRoot, astroConfig, mockOptions);
@@ -163,7 +163,7 @@ describe('task-builder', () => {
         mockProjectRoot,
         astroConfig,
         mockOptions,
-        workspaceRoot
+        workspaceRoot,
       );
 
       expect(tasks.test).toBeDefined();
@@ -186,13 +186,13 @@ describe('task-builder', () => {
       readFileSyncSpy.mockReturnValue(
         JSON.stringify({
           devDependencies: { vitest: '^1.0.0' },
-        })
+        }),
       );
 
       const tasks = buildAstroTasks(
         mockProjectRoot,
         astroConfig,
-        customOptions
+        customOptions,
       );
 
       expect(tasks).toHaveProperty('serve');
@@ -239,7 +239,7 @@ describe('task-builder', () => {
 
       // Build outputs should be workspace-relative ({workspaceRoot}/dist/{projectRoot})
       expect(tasks.build.outputs).toContain(
-        `{workspaceRoot}/dist/{projectRoot}`
+        `{workspaceRoot}/dist/{projectRoot}`,
       );
       expect(tasks.build.outputs).toContain(`{projectRoot}/.astro`);
     });
@@ -257,6 +257,28 @@ describe('task-builder', () => {
 
       // Check depends on sync
       expect(tasks.check.dependsOn).toContain('sync');
+    });
+
+    describe('build task inputs', () => {
+      it('should include package.json in build inputs for cache tracking', () => {
+        const tasks = buildAstroTasks(mockProjectRoot, {}, mockOptions);
+
+        expect(tasks.build.inputs).toBeDefined();
+        expect(tasks.build.inputs).toContainEqual('{projectRoot}/package.json');
+      });
+
+      it('should include all necessary inputs for proper caching', () => {
+        const tasks = buildAstroTasks(mockProjectRoot, {}, mockOptions);
+
+        expect(tasks.build.inputs).toContain('production');
+        expect(tasks.build.inputs).toContain('^production');
+        expect(tasks.build.inputs).toContainEqual('{projectRoot}/package.json');
+        expect(tasks.build.inputs).toContainEqual(
+          expect.objectContaining({
+            externalDependencies: ['astro'],
+          }),
+        );
+      });
     });
   });
 });

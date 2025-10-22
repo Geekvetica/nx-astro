@@ -35,7 +35,7 @@ export function buildAstroTasks(
   projectRoot: string,
   astroConfig: Partial<AstroConfig>,
   options: NormalizedOptions,
-  workspaceRoot?: string
+  workspaceRoot?: string,
 ): AstroTasks {
   const tasks: AstroTasks = {};
 
@@ -56,6 +56,7 @@ export function buildAstroTasks(
     inputs: [
       'production',
       '^production',
+      '{projectRoot}/package.json',
       {
         externalDependencies: ['astro'],
       },
@@ -123,14 +124,14 @@ export function buildAstroTasks(
  */
 function hasVitestInstalled(
   projectRoot: string,
-  workspaceRoot?: string
+  workspaceRoot?: string,
 ): boolean {
   // Check project package.json
   const projectPackageJsonPath = join(projectRoot, 'package.json');
   if (existsSync(projectPackageJsonPath)) {
     try {
       const packageJson = JSON.parse(
-        readFileSync(projectPackageJsonPath, 'utf-8')
+        readFileSync(projectPackageJsonPath, 'utf-8'),
       );
       if (
         packageJson.dependencies?.vitest ||
@@ -149,7 +150,7 @@ function hasVitestInstalled(
     if (existsSync(workspacePackageJsonPath)) {
       try {
         const packageJson = JSON.parse(
-          readFileSync(workspacePackageJsonPath, 'utf-8')
+          readFileSync(workspacePackageJsonPath, 'utf-8'),
         );
         if (
           packageJson.dependencies?.vitest ||

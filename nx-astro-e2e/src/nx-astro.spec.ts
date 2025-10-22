@@ -364,14 +364,54 @@ describe('nx-astro e2e', () => {
       ).toBe(true);
     });
 
+    it('should have cacheable build configuration', () => {
+      logStep('Verifying build target has cache enabled...');
+      const showOutput = runNxCommand(
+        `show project ${testAppName} --json`,
+        projectDirectory,
+        { silent: true },
+      );
+
+      const projectConfig = JSON.parse(showOutput);
+      expect(projectConfig.targets.build).toBeDefined();
+      expect(projectConfig.targets.build.cache).toBe(true);
+      expect(projectConfig.targets.build.outputs).toBeDefined();
+      expect(projectConfig.targets.build.outputs.length).toBeGreaterThan(0);
+
+      logStep('Build target is properly configured for caching');
+    });
+
     it('should cache build results', () => {
       logStep('Running build again to test caching...');
+
+      // Run second build - should use cache
       const output = runNxCommand(`build ${testAppName}`, projectDirectory, {
         silent: true,
       });
 
-      // Second build should use cache
-      expect(output).toContain('cache');
+      // Comprehensive cache check with detailed diagnostics
+      const hasCacheHit =
+        output.includes('cache') ||
+        output.includes('[existing outputs match the cache]') ||
+        output.includes('[local cache]') ||
+        output.includes('restored from cache');
+
+      if (!hasCacheHit) {
+        // Enhanced diagnostics when test fails
+        console.error('Expected cache hit but got full rebuild');
+        console.error('Build output:', output);
+        console.error(
+          'Output includes "Executing:":',
+          output.includes('Executing:'),
+        );
+        console.error('Output includes "Syncing":', output.includes('Syncing'));
+        console.error(
+          'Output includes "Build completed":',
+          output.includes('Build completed'),
+        );
+      }
+
+      expect(hasCacheHit).toBe(true);
     });
   });
 

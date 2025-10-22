@@ -630,4 +630,133 @@ describe('syncAstrojsDependencies', () => {
       );
     });
   });
+
+  describe('devDependencies handling', () => {
+    it('should check devDependencies when comparing sync status', () => {
+      // Arrange - Project has @astrojs/check in devDependencies
+      const projectPackageJson = {
+        name: 'test-app',
+        dependencies: {},
+        devDependencies: {
+          '@astrojs/check': '^0.9.4',
+        },
+      };
+
+      const rootPackageJson = {
+        dependencies: {},
+        devDependencies: {
+          '@astrojs/check': '^0.9.4', // Same version as project
+        },
+      };
+
+      vol.fromJSON({
+        '/workspace/apps/test-app/package.json': JSON.stringify(
+          projectPackageJson,
+          null,
+          2,
+        ),
+        '/workspace/package.json': JSON.stringify(rootPackageJson, null, 2),
+      });
+
+      const writeFileSyncSpy = jest.spyOn(require('fs'), 'writeFileSync');
+
+      // Act
+      syncAstrojsDependencies('apps/test-app', '/workspace');
+
+      // Assert - Should NOT write because dependencies are already in sync
+      expect(writeFileSyncSpy).not.toHaveBeenCalled();
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('already in sync'),
+      );
+
+      writeFileSyncSpy.mockRestore();
+    });
+
+    it('should extract from both dependencies and devDependencies', () => {
+      // Arrange
+      const projectPackageJson = {
+        name: 'test-app',
+        dependencies: {
+          astro: '^5.0.0',
+        },
+        devDependencies: {
+          '@astrojs/check': '^0.9.4',
+        },
+      };
+
+      const rootPackageJson = {
+        dependencies: {
+          astro: '^5.0.0',
+        },
+        devDependencies: {
+          '@astrojs/check': '^0.9.4',
+        },
+      };
+
+      vol.fromJSON({
+        '/workspace/apps/test-app/package.json': JSON.stringify(
+          projectPackageJson,
+          null,
+          2,
+        ),
+        '/workspace/package.json': JSON.stringify(rootPackageJson, null, 2),
+      });
+
+      const writeFileSyncSpy = jest.spyOn(require('fs'), 'writeFileSync');
+
+      // Act
+      syncAstrojsDependencies('apps/test-app', '/workspace');
+
+      // Assert - Should log "already in sync" message
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('already in sync'),
+      );
+      expect(writeFileSyncSpy).not.toHaveBeenCalled();
+
+      writeFileSyncSpy.mockRestore();
+    });
+
+    it('should sync devDependencies from root when project is missing them', () => {
+      // Arrange
+      const projectPackageJson = {
+        name: 'test-app',
+        dependencies: {
+          astro: '^5.0.0',
+        },
+      };
+
+      const rootPackageJson = {
+        dependencies: {
+          astro: '^5.0.0',
+        },
+        devDependencies: {
+          '@astrojs/check': '^0.9.4',
+        },
+      };
+
+      vol.fromJSON({
+        '/workspace/apps/test-app/package.json': JSON.stringify(
+          projectPackageJson,
+          null,
+          2,
+        ),
+        '/workspace/package.json': JSON.stringify(rootPackageJson, null, 2),
+      });
+
+      // Act
+      syncAstrojsDependencies('apps/test-app', '/workspace');
+
+      // Assert
+      const updatedContent = vol.readFileSync(
+        '/workspace/apps/test-app/package.json',
+        'utf-8',
+      ) as string;
+      const updatedPackageJson = JSON.parse(updatedContent);
+
+      expect(updatedPackageJson.dependencies).toEqual({
+        astro: '^5.0.0',
+        '@astrojs/check': '^0.9.4',
+      });
+    });
+  });
 });

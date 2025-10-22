@@ -108,12 +108,14 @@ export function syncAstrojsDependencies(
   const projectContent = readFileSync(projectPackageJsonPath, 'utf-8');
   const projectPackageJson = JSON.parse(projectContent);
 
-  // Get current project dependencies
+  // Get current project dependencies AND devDependencies
   const currentDeps = projectPackageJson.dependencies || {};
+  const currentDevDeps = projectPackageJson.devDependencies || {};
 
-  // Extract current astro and @astrojs/* dependencies from project
+  // Extract current astro and @astrojs/* dependencies from project (both deps and devDeps)
   const currentAstrojsDeps = extractAstrojsDependencies({
     dependencies: currentDeps,
+    devDependencies: currentDevDeps,
   });
 
   // Check if already in sync

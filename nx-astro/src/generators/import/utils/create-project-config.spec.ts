@@ -165,4 +165,15 @@ describe('createProjectConfig', () => {
     expect(config).toBeDefined();
     expect(config.targets).toBeDefined();
   });
+
+  describe('build target inputs', () => {
+    it('should include package.json in build inputs for cache tracking', () => {
+      const config = createProjectConfig(options);
+
+      expect(config.targets!.build.inputs).toBeDefined();
+      expect(config.targets!.build.inputs).toContainEqual(
+        '{projectRoot}/package.json',
+      );
+    });
+  });
 });

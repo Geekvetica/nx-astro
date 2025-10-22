@@ -188,7 +188,10 @@ export function createProjectConfig(
       build: {
         executor: '@geekvetica/nx-astro:build',
         options: {},
-        inputs: createInputs(['production', '^production'], ['astro']),
+        inputs: createInputs(
+          ['production', '^production', '{projectRoot}/package.json'],
+          ['astro'],
+        ),
         outputs: [`{workspaceRoot}/dist/{projectRoot}`, `{projectRoot}/.astro`],
         cache: true,
         dependsOn: ['^build'],
