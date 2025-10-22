@@ -123,11 +123,14 @@ describe('dependency-checker', () => {
       expect(result).toBe('npm');
     });
 
-    it('should prioritize package.json packageManager field', () => {
+    it('should prioritize lock files over packageManager field', () => {
+      // NEW behavior: Lock files are now checked first, before packageManager field
+      // This ensures we trust the actual project state (lock file) over metadata
+
       // Arrange
       vol.fromJSON({
         '/project/package.json': JSON.stringify({
-          packageManager: 'pnpm',
+          packageManager: 'pnpm@9.0.0',
         }),
         '/project/bun.lockb': '',
       });
@@ -136,10 +139,13 @@ describe('dependency-checker', () => {
       const result = detectPackageManager('/project');
 
       // Assert
-      expect(result).toBe('pnpm');
+      // Lock file (bun.lockb) takes precedence over packageManager field (pnpm)
+      expect(result).toBe('bun');
     });
 
-    it('should handle packageManager with version', () => {
+    it('should use packageManager field when no lock files exist', () => {
+      // When no lock files are present, fall back to packageManager field
+
       // Arrange
       vol.fromJSON({
         '/project/package.json': JSON.stringify({
@@ -182,6 +188,45 @@ describe('dependency-checker', () => {
 
       // Assert
       expect(result).toBe('yarn');
+    });
+
+    it('should prioritize lock file over packageManager field for reliability', () => {
+      // This test ensures lock files (actual project state) take precedence
+      // over packageManager field (which might be incorrectly set)
+      //
+      // Real-world scenario: create-nx-workspace might set packageManager: "bun@..."
+      // even when workspace was created with pnpm (has pnpm-lock.yaml)
+      // We should trust the lock file as the source of truth
+
+      // Arrange
+      vol.fromJSON({
+        '/project/package.json': JSON.stringify({
+          packageManager: 'bun@1.0.0',
+        }),
+        '/project/pnpm-lock.yaml': '',
+      });
+
+      // Act
+      const result = detectPackageManager('/project');
+
+      // Assert
+      // NEW behavior: Lock file takes precedence for reliability
+      expect(result).toBe('pnpm');
+    });
+
+    it('should handle priority when both bun.lockb and pnpm-lock.yaml exist', () => {
+      // Arrange - no packageManager field, multiple lock files
+      vol.fromJSON({
+        '/project/bun.lockb': '',
+        '/project/pnpm-lock.yaml': '',
+      });
+
+      // Act
+      const result = detectPackageManager('/project');
+
+      // Assert
+      // Current behavior: First lock file checked (bun) wins
+      expect(result).toBe('bun');
     });
   });
 

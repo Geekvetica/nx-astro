@@ -193,7 +193,9 @@ describe('command-builder', () => {
       });
     });
 
-    it('should respect package.json packageManager field over lock files', () => {
+    it('should prioritize lock files over packageManager field', () => {
+      // NEW behavior: Lock files take precedence
+
       // Arrange
       vol.fromJSON({
         '/project/package.json': JSON.stringify({
@@ -206,9 +208,10 @@ describe('command-builder', () => {
       const result = buildAstroCommand('check', [], '/project');
 
       // Assert
+      // Lock file (bun.lockb) takes precedence over packageManager field (pnpm)
       expect(result).toEqual({
-        command: 'pnpm',
-        args: ['exec', 'astro', 'check'],
+        command: 'bunx',
+        args: ['astro', 'check'],
       });
     });
   });
@@ -313,7 +316,9 @@ describe('command-builder', () => {
       expect(result).toBe('yarn astro preview');
     });
 
-    it('should respect package.json packageManager field in command string', () => {
+    it('should prioritize lock files over packageManager field in command string', () => {
+      // NEW behavior: Lock files take precedence
+
       // Arrange
       vol.fromJSON({
         '/project/package.json': JSON.stringify({
@@ -326,7 +331,8 @@ describe('command-builder', () => {
       const result = buildAstroCommandString('build', [], '/project');
 
       // Assert
-      expect(result).toBe('bunx astro build');
+      // Lock file (pnpm-lock.yaml) takes precedence over packageManager field (bun)
+      expect(result).toBe('pnpm exec astro build');
     });
   });
 
@@ -427,7 +433,9 @@ describe('command-builder', () => {
       });
     });
 
-    it('should respect package.json packageManager field', () => {
+    it('should prioritize lock files over packageManager field', () => {
+      // NEW behavior: Lock files take precedence
+
       // Arrange
       vol.fromJSON({
         '/project/package.json': JSON.stringify({
@@ -440,8 +448,9 @@ describe('command-builder', () => {
       const result = buildCommand('vitest', ['run'], '/project');
 
       // Assert
+      // Lock file (bun.lockb) takes precedence over packageManager field (yarn)
       expect(result).toEqual({
-        command: 'yarn',
+        command: 'bunx',
         args: ['vitest', 'run'],
       });
     });

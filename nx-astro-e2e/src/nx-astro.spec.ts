@@ -91,8 +91,9 @@ describe('nx-astro e2e', () => {
       expect(packageJson.devDependencies).toBeDefined();
       expect(packageJson.devDependencies?.['astro']).toBeDefined();
 
-      // Note: No need to run pnpm install here as the workspace handles dependency hoisting
-      // and subsequent tests will run successfully with hoisted dependencies
+      // Install dependencies so they're available for subsequent tests
+      logStep('Installing dependencies after init generator...');
+      runPnpmCommand('install', projectDirectory, { silent: true });
     });
   });
 

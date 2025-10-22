@@ -17,14 +17,29 @@ export function isPackageInstalled(
 
 /**
  * Detects the package manager used in the workspace
- * Priority: package.json packageManager field > lock files
+ * Priority: lock files > package.json packageManager field
+ *
+ * Lock files represent the actual state of the project and are more reliable
+ * than the packageManager field, which might be incorrectly set or outdated.
+ *
  * @param rootDir - Root directory of the workspace
  * @returns Package manager name: 'bun', 'pnpm', 'yarn', or 'npm'
  */
 export function detectPackageManager(
   rootDir: string,
 ): 'bun' | 'pnpm' | 'yarn' | 'npm' {
-  // First check package.json for packageManager field
+  // First check lock files (most reliable indicator of actual package manager used)
+  if (existsSync(join(rootDir, 'bun.lockb'))) {
+    return 'bun';
+  }
+  if (existsSync(join(rootDir, 'pnpm-lock.yaml'))) {
+    return 'pnpm';
+  }
+  if (existsSync(join(rootDir, 'yarn.lock'))) {
+    return 'yarn';
+  }
+
+  // Fallback to package.json packageManager field if no lock files
   const packageJsonPath = join(rootDir, 'package.json');
   if (existsSync(packageJsonPath)) {
     try {
@@ -42,21 +57,11 @@ export function detectPackageManager(
         }
       }
     } catch {
-      // If package.json parsing fails, fall through to lock file detection
+      // If package.json parsing fails, default to npm
     }
   }
 
-  // Fallback to lock file detection
-  if (existsSync(join(rootDir, 'bun.lockb'))) {
-    return 'bun';
-  }
-  if (existsSync(join(rootDir, 'pnpm-lock.yaml'))) {
-    return 'pnpm';
-  }
-  if (existsSync(join(rootDir, 'yarn.lock'))) {
-    return 'yarn';
-  }
-
+  // Ultimate fallback
   return 'npm';
 }
 

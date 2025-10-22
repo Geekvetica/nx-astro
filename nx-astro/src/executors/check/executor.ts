@@ -21,6 +21,55 @@ export interface CheckExecutorOutput {
 }
 
 /**
+ * Validates that astro package is installed in the workspace.
+ *
+ * This function checks if the astro package is available. If not installed,
+ * it returns an error with installation instructions.
+ *
+ * @param context - Nx executor context containing workspace root and configuration
+ * @returns Error result if validation fails, undefined if validation passes
+ *
+ * @example
+ * ```typescript
+ * const error = validateAstroDependency(context);
+ * if (error) {
+ *   return error; // Package not installed, user must install manually
+ * }
+ * ```
+ */
+function validateAstroDependency(
+  context: ExecutorContext,
+): CheckExecutorOutput | undefined {
+  const isAstroInstalled = isPackageInstalled('astro', context.root);
+
+  if (isAstroInstalled) {
+    return undefined; // Validation passed
+  }
+
+  // Package is not installed
+  const packageManager = detectPackageManager(context.root);
+  const installCommand = getInstallCommand('astro', packageManager, true);
+
+  // Show installation instructions
+  const errorMessage = [
+    'The astro package is required to run type checking.',
+    '',
+    'Install it by running:',
+    `  ${installCommand}`,
+    '',
+    'Alternatively, add it to your package.json devDependencies and run install:',
+    '  "astro": "latest"',
+  ].join('\n');
+
+  logger.error(errorMessage);
+
+  return {
+    success: false,
+    error: `astro package is required. Run: ${installCommand}`,
+  };
+}
+
+/**
  * Validates that @astrojs/check package is installed in the workspace.
  *
  * This function checks if the @astrojs/check package is available. If not installed:
@@ -156,10 +205,19 @@ export default async function checkExecutor(
     const projectRoot =
       options.root || path.join(context.root, projectConfig.root);
 
+    // Validate astro package is installed
+    const astroValidationError = validateAstroDependency(context);
+    if (astroValidationError) {
+      return astroValidationError;
+    }
+
     // Validate @astrojs/check is installed (with optional auto-install)
-    const validationError = await validateCheckDependency(context, options);
-    if (validationError) {
-      return validationError;
+    const checkValidationError = await validateCheckDependency(
+      context,
+      options,
+    );
+    if (checkValidationError) {
+      return checkValidationError;
     }
 
     // Build the astro check command arguments
