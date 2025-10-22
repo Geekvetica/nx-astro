@@ -90,10 +90,6 @@ describe('nx-astro e2e', () => {
 
       expect(packageJson.devDependencies).toBeDefined();
       expect(packageJson.devDependencies?.['astro']).toBeDefined();
-
-      // Install dependencies so they're available for subsequent tests
-      logStep('Installing dependencies after init generator...');
-      runPnpmCommand('install', projectDirectory, { silent: true });
     });
   });
 
