@@ -86,7 +86,7 @@ describe('createProjectConfig', () => {
 
     const buildTarget = config.targets!.build;
     expect(buildTarget.outputs).toContain('{workspaceRoot}/dist/{projectRoot}');
-    expect(buildTarget.outputs).toContain('{projectRoot}/.astro');
+    expect(buildTarget.outputs).toHaveLength(1);
   });
 
   it('should configure dev target without caching', () => {
@@ -117,7 +117,7 @@ describe('createProjectConfig', () => {
 
     const syncTarget = config.targets!.sync;
     expect(syncTarget.cache).toBe(true);
-    expect(syncTarget.outputs).toContain('{projectRoot}/.astro');
+    expect(syncTarget.outputs).toEqual([]);
   });
 
   it('should configure sync target with Astro-specific metadata', () => {
@@ -174,6 +174,30 @@ describe('createProjectConfig', () => {
       expect(config.targets!.build.inputs).toContainEqual(
         '{projectRoot}/package.json',
       );
+    });
+  });
+
+  describe('build target outputs for imported projects', () => {
+    it('should only include dist directory in outputs', () => {
+      const config = createProjectConfig(options);
+
+      expect(config.targets!.build.outputs).toBeDefined();
+      expect(config.targets!.build.outputs).toHaveLength(1);
+      expect(config.targets!.build.outputs).toContain(
+        '{workspaceRoot}/dist/{projectRoot}',
+      );
+      expect(config.targets!.build.outputs).not.toContainEqual(
+        expect.stringContaining('.astro'),
+      );
+    });
+  });
+
+  describe('sync target outputs for imported projects', () => {
+    it('should have empty outputs array since sync generates internal metadata', () => {
+      const config = createProjectConfig(options);
+
+      expect(config.targets!.sync.outputs).toBeDefined();
+      expect(config.targets!.sync.outputs).toEqual([]);
     });
   });
 });

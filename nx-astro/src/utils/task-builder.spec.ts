@@ -122,7 +122,7 @@ describe('task-builder', () => {
 
       expect(tasks.sync).toBeDefined();
       expect(tasks.sync.executor).toBe('@geekvetica/nx-astro:sync');
-      expect(tasks.sync.outputs).toContain(`{projectRoot}/.astro`);
+      expect(tasks.sync.outputs).toEqual([]);
     });
 
     it('should configure test task when vitest is installed', () => {
@@ -241,7 +241,7 @@ describe('task-builder', () => {
       expect(tasks.build.outputs).toContain(
         `{workspaceRoot}/dist/{projectRoot}`,
       );
-      expect(tasks.build.outputs).toContain(`{projectRoot}/.astro`);
+      expect(tasks.build.outputs).toHaveLength(1);
     });
 
     it('should build task dependencies correctly', () => {
@@ -278,6 +278,30 @@ describe('task-builder', () => {
             externalDependencies: ['astro'],
           }),
         );
+      });
+    });
+
+    describe('build task outputs', () => {
+      it('should only include dist directory in outputs, not .astro', () => {
+        const tasks = buildAstroTasks(mockProjectRoot, {}, mockOptions);
+
+        expect(tasks.build.outputs).toBeDefined();
+        expect(tasks.build.outputs).toHaveLength(1);
+        expect(tasks.build.outputs).toContain(
+          '{workspaceRoot}/dist/{projectRoot}',
+        );
+        expect(tasks.build.outputs).not.toContainEqual(
+          expect.stringContaining('.astro'),
+        );
+      });
+    });
+
+    describe('sync task outputs', () => {
+      it('should have empty outputs array since sync generates internal metadata', () => {
+        const tasks = buildAstroTasks(mockProjectRoot, {}, mockOptions);
+
+        expect(tasks.sync.outputs).toBeDefined();
+        expect(tasks.sync.outputs).toEqual([]);
       });
     });
   });

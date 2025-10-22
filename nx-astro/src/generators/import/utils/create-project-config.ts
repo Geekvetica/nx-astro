@@ -192,7 +192,9 @@ export function createProjectConfig(
           ['production', '^production', '{projectRoot}/package.json'],
           ['astro'],
         ),
-        outputs: [`{workspaceRoot}/dist/{projectRoot}`, `{projectRoot}/.astro`],
+        // Only cache dist/ directory. The .astro/ directory contains internal metadata
+        // that Astro regenerates automatically and should not be cached.
+        outputs: [`{workspaceRoot}/dist/{projectRoot}`],
         cache: true,
         dependsOn: ['^build'],
       },
@@ -219,7 +221,9 @@ export function createProjectConfig(
         executor: '@geekvetica/nx-astro:sync',
         options: {},
         inputs: createInputs([`{projectRoot}/src/content/**/*`], ['astro']),
-        outputs: [`{projectRoot}/.astro`],
+        // outputs is empty because .astro/ directory contains only internal metadata
+        // that Astro regenerates automatically. Including it in cache causes issues on CI.
+        outputs: [],
         cache: true,
         metadata: {
           technologies: ['astro'],

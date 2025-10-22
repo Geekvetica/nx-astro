@@ -50,6 +50,8 @@ export function buildAstroTasks(
   };
 
   // Build task - builds for production
+  // Note: outputs only includes dist/ directory. The .astro/ directory contains
+  // internal metadata that Astro regenerates automatically and should not be cached.
   tasks[options.buildTargetName] = {
     executor: '@geekvetica/nx-astro:build',
     options: {},
@@ -61,7 +63,7 @@ export function buildAstroTasks(
         externalDependencies: ['astro'],
       },
     ],
-    outputs: [`{workspaceRoot}/dist/{projectRoot}`, `{projectRoot}/.astro`],
+    outputs: [`{workspaceRoot}/dist/{projectRoot}`],
     cache: true,
     dependsOn: ['^build'],
   };
@@ -90,6 +92,9 @@ export function buildAstroTasks(
   };
 
   // Sync task - generates types for content collections
+  // Note: outputs is empty because .astro/ directory contains only internal metadata
+  // that Astro regenerates automatically. Including it in cache causes issues on CI
+  // where the directory doesn't exist initially.
   tasks[options.syncTargetName] = {
     executor: '@geekvetica/nx-astro:sync',
     options: {},
@@ -99,7 +104,7 @@ export function buildAstroTasks(
         externalDependencies: ['astro'],
       },
     ],
-    outputs: [`{projectRoot}/.astro`],
+    outputs: [],
     cache: true,
   };
 
