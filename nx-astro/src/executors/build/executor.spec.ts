@@ -19,6 +19,13 @@ jest.mock('../../utils/command-builder', () => ({
   buildAstroCommandString: mockBuildAstroCommandString,
 }));
 
+// Mock sync-astrojs-deps
+const mockSyncAstrojsDependencies = jest.fn();
+
+jest.mock('../../utils/sync-astrojs-deps', () => ({
+  syncAstrojsDependencies: mockSyncAstrojsDependencies,
+}));
+
 // Mock util with proper promisify implementation
 jest.mock('util', () => {
   const actual = jest.requireActual('util');
@@ -45,6 +52,7 @@ jest.mock('util', () => {
 });
 
 import buildExecutor from './executor';
+import { syncAstrojsDependencies } from '../../utils/sync-astrojs-deps';
 
 describe('Build Executor', () => {
   let context: ExecutorContext;
@@ -75,6 +83,7 @@ describe('Build Executor', () => {
 
     mockExec.mockClear();
     mockBuildAstroCommandString.mockClear();
+    mockSyncAstrojsDependencies.mockClear();
 
     // Default mock implementation - returns a command string
     mockBuildAstroCommandString.mockReturnValue(
@@ -117,6 +126,57 @@ describe('Build Executor', () => {
       const result = await buildExecutor(options, context);
 
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe('dependency synchronization', () => {
+    it('should sync @astrojs/* dependencies before build', async () => {
+      const options: BuildExecutorSchema = {};
+
+      await buildExecutor(options, context);
+
+      // Verify syncAstrojsDependencies was called with correct arguments
+      expect(mockSyncAstrojsDependencies).toHaveBeenCalledWith(
+        'apps/my-app',
+        '/workspace',
+      );
+    });
+
+    it('should sync dependencies before executing build command', async () => {
+      const options: BuildExecutorSchema = {};
+      const callOrder: string[] = [];
+
+      // Track call order
+      mockSyncAstrojsDependencies.mockImplementation(() => {
+        callOrder.push('sync');
+      });
+
+      mockExec.mockImplementation(
+        (cmd: string, options: any, callback: any) => {
+          callOrder.push('build');
+          callback(null, { stdout: 'Build successful', stderr: '' });
+          return {} as any;
+        },
+      );
+
+      await buildExecutor(options, context);
+
+      // Verify sync was called before build
+      expect(callOrder).toEqual(['sync', 'build']);
+    });
+
+    it('should sync dependencies when using custom root', async () => {
+      const options: BuildExecutorSchema = {
+        root: '/custom/root',
+      };
+
+      await buildExecutor(options, context);
+
+      // Verify syncAstrojsDependencies was called with custom root
+      expect(mockSyncAstrojsDependencies).toHaveBeenCalledWith(
+        '/custom/root',
+        '/workspace',
+      );
     });
   });
 

@@ -18,6 +18,13 @@ Documentation for developers using the `@geekvetica/nx-astro` plugin in their pr
 
 ### Core Features
 
+- [Monorepo Compatibility](./MONOREPO-COMPATIBILITY.md) - **NEW** Automatic dependency management for Astro in monorepos
+  - Problem and solution overview
+  - How it works (auto-generate and auto-sync)
+  - Technical details and architecture
+  - Troubleshooting guide
+  - Real-world examples
+
 - [Generators](./generators.md) - Code generation tools for Astro projects
   - Application generator
   - Library generator

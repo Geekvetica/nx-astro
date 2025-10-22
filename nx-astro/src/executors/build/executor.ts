@@ -4,6 +4,7 @@ import { promisify } from 'util';
 import * as path from 'path';
 import { BuildExecutorSchema } from './schema';
 import { buildAstroCommandString } from '../../utils/command-builder';
+import { syncAstrojsDependencies } from '../../utils/sync-astrojs-deps';
 
 const execAsync = promisify(exec);
 
@@ -32,6 +33,9 @@ export default async function buildExecutor(
     // Determine project root
     const projectRoot =
       options.root || path.join(context.root, projectConfig.root);
+
+    // Sync @astrojs/* dependencies before build
+    syncAstrojsDependencies(options.root || projectConfig.root, context.root);
 
     // Build the command arguments (exclude 'astro' and 'build')
     const commandArgs: string[] = [];

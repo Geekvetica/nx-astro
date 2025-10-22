@@ -19,6 +19,8 @@ import { extractDependencies } from './utils/extract-dependencies';
 import { modifyAstroConfig } from './utils/modify-astro-config';
 import { createHybridTsconfig } from './utils/create-hybrid-tsconfig';
 import { updateRootTsconfig } from '../application/utils/update-root-tsconfig';
+import { createMinimalPackageJson } from './utils/create-minimal-package-json';
+import { join } from 'path';
 
 /**
  * Import an existing Astro application into the Nx workspace.
@@ -30,13 +32,15 @@ import { updateRootTsconfig } from '../application/utils/update-root-tsconfig';
  * 1. Validates the source is a valid Astro project (checks for astro.config, package.json, astro dependency)
  * 2. Copies project files while excluding generated content (node_modules, dist, .astro, lock files, etc.)
  * 3. Configures Astro output directory to align with Nx workspace structure
- * 4. Extracts all dependencies from the source project's package.json
- * 5. Merges dependencies into workspace root package.json (filters out workspace protocols, file links)
- * 6. Generates Nx project configuration with all standard targets (build, dev, preview, check, sync)
- * 7. Registers the project in the workspace configuration
- * 8. Updates TypeScript path mappings in tsconfig.base.json for type-safe imports
- * 9. Optionally formats all generated files
- * 10. Optionally installs packages (unless skipInstall is true)
+ * 4. Creates hybrid TypeScript configuration for Nx workspace integration
+ * 5. Creates minimal package.json with @astrojs/* dependencies (enables Astro integration detection)
+ * 6. Extracts all dependencies from the source project's package.json
+ * 7. Merges dependencies into workspace root package.json (filters out workspace protocols, file links)
+ * 8. Generates Nx project configuration with all standard targets (build, dev, preview, check, sync)
+ * 9. Registers the project in the workspace configuration
+ * 10. Updates TypeScript path mappings in tsconfig.base.json for type-safe imports
+ * 11. Optionally formats all generated files
+ * 12. Optionally installs packages (unless skipInstall is true)
  *
  * ## Use cases
  * - Migrating existing Astro projects into a new Nx monorepo
@@ -145,6 +149,14 @@ export async function importGenerator(
   // Step 5.6: Create hybrid TypeScript configuration
   logger.info('📝 Creating hybrid TypeScript configuration...');
   createHybridTsconfig(tree, normalizedOptions.projectRoot);
+
+  // Step 5.6.5: Create minimal package.json with @astrojs/* dependencies
+  logger.info('📦 Creating minimal package.json...');
+  createMinimalPackageJson(
+    tree,
+    normalizedOptions.projectRoot,
+    join(normalizedOptions.sourcePath, 'package.json'),
+  );
 
   // Step 5.7: Extract dependencies from source package.json
   logger.info('📦 Extracting dependencies...');

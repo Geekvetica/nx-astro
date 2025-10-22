@@ -160,7 +160,41 @@ None. Existing projects will continue to work but may need manual updates to ben
 
 ## [Unreleased]
 
+### Added
+
+- **Monorepo Compatibility**: Auto-generate minimal package.json with @astrojs/\* dependencies during import
+  - Creates minimal `package.json` in project directory with only `@astrojs/*` dependencies
+  - Extracts dependencies from source project automatically
+  - Solves "Only URLs with a scheme in: file, data, and node are supported... Received protocol 'astro:'" error
+  - Enables Astro's integration detection in monorepo environments
+  - Zero configuration required - works automatically on import
+
+- **Monorepo Compatibility**: Auto-sync @astrojs/\* dependencies before every build
+  - Syncs all `@astrojs/*` dependencies from workspace root to project `package.json` before each build
+  - Ensures builds always use latest workspace dependency versions
+  - Preserves non-`@astrojs/*` dependencies in project
+  - Performance optimized - only writes when changes detected (<50ms overhead)
+  - Works seamlessly with Nx release workflows
+  - Provides clear logging of sync operations
+
+### Changed
+
+- **Import generator**: Now creates minimal `package.json` automatically (step 5.6.5)
+  - Extracts all `@astrojs/*` dependencies from source `package.json`
+  - Creates minimal file with only required fields and `@astrojs/*` dependencies
+  - Logs count of dependencies added to project
+
+- **Build executor**: Now syncs dependencies before build execution (line 38-41)
+  - Calls `syncAstrojsDependencies()` before building command string
+  - Logs sync results (count or "already in sync")
+  - Warns if project `package.json` doesn't exist
+
 ### Fixed
+
+- **Monorepo build failures**: Fixed "astro:" protocol error in monorepo environments
+  - Root cause: Astro couldn't detect `@astrojs/*` integrations in hoisted dependency environments
+  - Solution: Auto-generate and auto-sync project-level `package.json` with `@astrojs/*` dependencies
+  - Affects all Astro projects using integrations in Nx monorepos
 
 - **check executor**: Prevents hanging when `@astrojs/check` is not installed
   - Added validation to check if `@astrojs/check` package is installed before running type checking

@@ -33,7 +33,16 @@ describe('importGenerator', () => {
       [`${sourcePath}/astro.config.mjs`]: 'export default {};',
       [`${sourcePath}/package.json`]: JSON.stringify({
         name: 'my-astro-app',
-        dependencies: { astro: '^5.0.0' },
+        dependencies: {
+          astro: '^5.0.0',
+          '@astrojs/react': '^3.0.0',
+          '@astrojs/sitemap': '^3.0.0',
+          react: '^18.0.0',
+        },
+        devDependencies: {
+          '@astrojs/check': '^0.5.0',
+          typescript: '^5.0.0',
+        },
       }),
       [`${sourcePath}/src/pages/index.astro`]: '<h1>Hello</h1>',
       [`${sourcePath}/src/components/Button.astro`]: '<button>Click</button>',
@@ -71,6 +80,45 @@ describe('importGenerator', () => {
       );
       expect(tree.exists('apps/imported-app/tsconfig.json')).toBe(true);
       expect(tree.exists('apps/imported-app/README.md')).toBe(true);
+    });
+
+    it('should create minimal package.json with @astrojs/* dependencies', async () => {
+      const options: ImportGeneratorSchema = {
+        source: sourcePath,
+        name: 'imported-app',
+      };
+
+      await importGenerator(tree, options);
+
+      // Verify package.json exists
+      expect(tree.exists('apps/imported-app/package.json')).toBe(true);
+
+      // Read and parse the created package.json
+      const packageJsonContent = tree.read(
+        'apps/imported-app/package.json',
+        'utf-8',
+      );
+      const packageJson = JSON.parse(packageJsonContent);
+
+      // Verify structure
+      expect(packageJson.name).toBe('imported-app');
+      expect(packageJson.version).toBe('0.1.0');
+      expect(packageJson.private).toBe(true);
+      expect(packageJson.type).toBe('module');
+
+      // Verify @astrojs/* dependencies are present
+      expect(packageJson.dependencies).toBeDefined();
+      expect(packageJson.dependencies['@astrojs/react']).toBe('^3.0.0');
+      expect(packageJson.dependencies['@astrojs/sitemap']).toBe('^3.0.0');
+      expect(packageJson.dependencies['@astrojs/check']).toBe('^0.5.0');
+
+      // Verify non-@astrojs dependencies are NOT in the minimal package.json
+      expect(packageJson.dependencies['astro']).toBeUndefined();
+      expect(packageJson.dependencies['react']).toBeUndefined();
+      expect(packageJson.dependencies['typescript']).toBeUndefined();
+
+      // Verify devDependencies is not included (all deps are in dependencies)
+      expect(packageJson.devDependencies).toBeUndefined();
     });
 
     it('should create project.json with correct configuration', async () => {
