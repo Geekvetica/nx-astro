@@ -346,6 +346,18 @@ describe('nx-astro e2e', () => {
   });
 
   describe('build executor', () => {
+    beforeAll(() => {
+      // Pre-warm build to trigger syncAstrojsDependencies and stabilize package.json
+      // This ensures package.json is in its final state before cache tests
+      // The syncAstrojsDependencies function in build executor modifies package.json
+      // on first run, which would invalidate cache for subsequent builds
+      logStep('Pre-warming build to stabilize dependencies...');
+      runNxCommand(`build ${testAppName}`, projectDirectory, { silent: true });
+      logStep(
+        'Dependencies stabilized, package.json is now stable for caching',
+      );
+    });
+
     it('should build Astro project', () => {
       logStep('Running build executor...');
       runNxCommand(`build ${testAppName}`, projectDirectory);
