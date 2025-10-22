@@ -23,11 +23,12 @@ describe('syncAstrojsDependencies', () => {
   });
 
   describe('basic synchronization', () => {
-    it('should sync @astrojs/* dependencies from root to project', () => {
+    it('should sync astro and @astrojs/* dependencies from root to project', () => {
       // Arrange
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/vue': '^4.0.0',
             react: '^18.0.0',
@@ -41,6 +42,7 @@ describe('syncAstrojsDependencies', () => {
           name: 'my-app',
           version: '0.1.0',
           dependencies: {
+            astro: '^4.0.0',
             '@astrojs/react': '^2.0.0',
           },
         }),
@@ -57,20 +59,22 @@ describe('syncAstrojsDependencies', () => {
       const updatedPackageJson = JSON.parse(updatedContent);
 
       expect(updatedPackageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
         '@astrojs/vue': '^4.0.0',
         '@astrojs/check': '^0.5.0',
       });
       expect(logger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Synced 3 @astrojs/* dependencies'),
+        expect.stringContaining('Synced 4 Astro-related'),
       );
     });
 
-    it('should preserve non-@astrojs/* dependencies in project', () => {
+    it('should preserve non-Astro dependencies in project', () => {
       // Arrange
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
           },
         }),
@@ -78,6 +82,7 @@ describe('syncAstrojsDependencies', () => {
           name: 'my-app',
           version: '0.1.0',
           dependencies: {
+            astro: '^4.0.0',
             '@astrojs/react': '^2.0.0',
             react: '^18.0.0',
             lodash: '^4.0.0',
@@ -96,6 +101,7 @@ describe('syncAstrojsDependencies', () => {
       const updatedPackageJson = JSON.parse(updatedContent);
 
       expect(updatedPackageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
         react: '^18.0.0',
         lodash: '^4.0.0',
@@ -109,6 +115,7 @@ describe('syncAstrojsDependencies', () => {
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/vue': '^4.0.0',
           },
@@ -117,6 +124,7 @@ describe('syncAstrojsDependencies', () => {
           name: 'my-app',
           version: '0.1.0',
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/vue': '^4.0.0',
             react: '^18.0.0',
@@ -168,8 +176,8 @@ describe('syncAstrojsDependencies', () => {
     });
   });
 
-  describe('no @astrojs/* dependencies in root', () => {
-    it('should clear @astrojs/* dependencies from project when root has none', () => {
+  describe('no Astro-related dependencies in root', () => {
+    it('should clear Astro-related dependencies from project when root has none', () => {
       // Arrange
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
@@ -182,6 +190,7 @@ describe('syncAstrojsDependencies', () => {
           name: 'my-app',
           version: '0.1.0',
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^2.0.0',
             '@astrojs/vue': '^3.0.0',
             react: '^18.0.0',
@@ -202,6 +211,7 @@ describe('syncAstrojsDependencies', () => {
       expect(updatedPackageJson.dependencies).toEqual({
         react: '^18.0.0',
       });
+      expect(updatedPackageJson.dependencies).not.toHaveProperty('astro');
       expect(updatedPackageJson.dependencies).not.toHaveProperty(
         '@astrojs/react',
       );
@@ -211,12 +221,13 @@ describe('syncAstrojsDependencies', () => {
     });
   });
 
-  describe('project missing @astrojs/* dependencies', () => {
-    it('should add missing @astrojs/* dependencies to project', () => {
+  describe('project missing Astro-related dependencies', () => {
+    it('should add missing Astro-related dependencies to project', () => {
       // Arrange
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/vue': '^4.0.0',
             '@astrojs/svelte': '^5.0.0',
@@ -243,6 +254,7 @@ describe('syncAstrojsDependencies', () => {
       const updatedPackageJson = JSON.parse(updatedContent);
 
       expect(updatedPackageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
         '@astrojs/vue': '^4.0.0',
         '@astrojs/svelte': '^5.0.0',
@@ -251,12 +263,13 @@ describe('syncAstrojsDependencies', () => {
     });
   });
 
-  describe('project has extra @astrojs/* dependencies', () => {
-    it('should remove @astrojs/* dependencies not in root', () => {
+  describe('project has extra Astro-related dependencies', () => {
+    it('should remove Astro-related dependencies not in root', () => {
       // Arrange
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
           },
         }),
@@ -264,6 +277,7 @@ describe('syncAstrojsDependencies', () => {
           name: 'my-app',
           version: '0.1.0',
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/vue': '^4.0.0',
             '@astrojs/svelte': '^5.0.0',
@@ -283,6 +297,7 @@ describe('syncAstrojsDependencies', () => {
       const updatedPackageJson = JSON.parse(updatedContent);
 
       expect(updatedPackageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
         react: '^18.0.0',
       });
@@ -301,6 +316,7 @@ describe('syncAstrojsDependencies', () => {
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
           dependencies: {
+            astro: '^5.0.0', // update
             '@astrojs/react': '^3.0.0', // update
             '@astrojs/vue': '^4.0.0', // add
           },
@@ -312,6 +328,7 @@ describe('syncAstrojsDependencies', () => {
           name: 'my-app',
           version: '0.1.0',
           dependencies: {
+            astro: '^4.0.0', // should update
             '@astrojs/react': '^2.0.0', // should update
             '@astrojs/svelte': '^5.0.0', // should remove
             react: '^18.0.0', // should keep
@@ -330,6 +347,7 @@ describe('syncAstrojsDependencies', () => {
       const updatedPackageJson = JSON.parse(updatedContent);
 
       expect(updatedPackageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
         '@astrojs/vue': '^4.0.0',
         '@astrojs/check': '^0.5.0',
@@ -344,6 +362,7 @@ describe('syncAstrojsDependencies', () => {
       vol.fromJSON({
         '/workspace/package.json': JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
           },
         }),
@@ -364,6 +383,7 @@ describe('syncAstrojsDependencies', () => {
       const updatedPackageJson = JSON.parse(updatedContent);
 
       expect(updatedPackageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
       });
     });
@@ -556,7 +576,7 @@ describe('syncAstrojsDependencies', () => {
 
       // Assert
       expect(logger.info).toHaveBeenCalledWith(
-        'Synced 2 @astrojs/* dependencies to apps/my-app/package.json',
+        'Synced 2 Astro-related dependencies to apps/my-app/package.json',
       );
     });
 
@@ -580,7 +600,7 @@ describe('syncAstrojsDependencies', () => {
 
       // Assert
       expect(logger.info).toHaveBeenCalledWith(
-        'Synced 1 @astrojs/* dependency to apps/my-app/package.json',
+        'Synced 1 Astro-related dependency to apps/my-app/package.json',
       );
     });
 
@@ -606,7 +626,7 @@ describe('syncAstrojsDependencies', () => {
 
       // Assert
       expect(logger.info).toHaveBeenCalledWith(
-        '@astrojs/* dependencies already in sync for apps/my-app/package.json',
+        'Astro-related dependencies already in sync for apps/my-app/package.json',
       );
     });
   });

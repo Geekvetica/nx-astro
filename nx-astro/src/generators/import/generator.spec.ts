@@ -106,14 +106,14 @@ describe('importGenerator', () => {
       expect(packageJson.private).toBe(true);
       expect(packageJson.type).toBe('module');
 
-      // Verify @astrojs/* dependencies are present
+      // Verify astro and @astrojs/* dependencies are present
       expect(packageJson.dependencies).toBeDefined();
+      expect(packageJson.dependencies['astro']).toBe('^5.0.0');
       expect(packageJson.dependencies['@astrojs/react']).toBe('^3.0.0');
       expect(packageJson.dependencies['@astrojs/sitemap']).toBe('^3.0.0');
       expect(packageJson.dependencies['@astrojs/check']).toBe('^0.5.0');
 
-      // Verify non-@astrojs dependencies are NOT in the minimal package.json
-      expect(packageJson.dependencies['astro']).toBeUndefined();
+      // Verify non-Astro dependencies are NOT in the minimal package.json
       expect(packageJson.dependencies['react']).toBeUndefined();
       expect(packageJson.dependencies['typescript']).toBeUndefined();
 

@@ -23,7 +23,7 @@ describe('createMinimalPackageJson', () => {
   });
 
   describe('basic functionality', () => {
-    it('should create minimal package.json with @astrojs/* dependencies from dependencies', () => {
+    it('should create minimal package.json with astro and @astrojs/* dependencies from dependencies', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
@@ -32,6 +32,7 @@ describe('createMinimalPackageJson', () => {
           name: 'original-project',
           version: '2.0.0',
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/sitemap': '^2.0.0',
             react: '^18.0.0',
@@ -52,6 +53,7 @@ describe('createMinimalPackageJson', () => {
         private: true,
         type: 'module',
         dependencies: {
+          astro: '^5.0.0',
           '@astrojs/react': '^3.0.0',
           '@astrojs/sitemap': '^2.0.0',
         },
@@ -79,12 +81,15 @@ describe('createMinimalPackageJson', () => {
       expect(packageJson.name).toBe('my-app');
     });
 
-    it('should extract @astrojs/* dependencies from devDependencies', () => {
+    it('should extract astro and @astrojs/* dependencies from devDependencies', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
       vol.fromJSON({
         [sourcePath]: JSON.stringify({
+          dependencies: {
+            astro: '^5.0.0',
+          },
           devDependencies: {
             '@astrojs/check': '^0.5.0',
             '@astrojs/ts-plugin': '^1.0.0',
@@ -100,18 +105,20 @@ describe('createMinimalPackageJson', () => {
       );
 
       expect(packageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/check': '^0.5.0',
         '@astrojs/ts-plugin': '^1.0.0',
       });
     });
 
-    it('should merge @astrojs/* dependencies from both dependencies and devDependencies', () => {
+    it('should merge astro and @astrojs/* dependencies from both dependencies and devDependencies', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
       vol.fromJSON({
         [sourcePath]: JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             react: '^18.0.0',
           },
@@ -129,6 +136,7 @@ describe('createMinimalPackageJson', () => {
       );
 
       expect(packageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
         '@astrojs/check': '^0.5.0',
       });
@@ -136,7 +144,7 @@ describe('createMinimalPackageJson', () => {
   });
 
   describe('edge cases', () => {
-    it('should handle source package.json with no @astrojs/* dependencies', () => {
+    it('should handle source package.json with no Astro-related dependencies', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
@@ -222,7 +230,7 @@ describe('createMinimalPackageJson', () => {
       expect(packageJson.dependencies).toEqual({});
     });
 
-    it('should handle only @astrojs/* dependencies in devDependencies', () => {
+    it('should handle only @astrojs/* dependencies in devDependencies without astro package', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
@@ -362,13 +370,14 @@ describe('createMinimalPackageJson', () => {
   });
 
   describe('logging', () => {
-    it('should log number of @astrojs/* dependencies added', () => {
+    it('should log number of Astro-related dependencies added', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
       vol.fromJSON({
         [sourcePath]: JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/sitemap': '^2.0.0',
             react: '^18.0.0',
@@ -378,13 +387,13 @@ describe('createMinimalPackageJson', () => {
 
       createMinimalPackageJson(tree, projectRoot, sourcePath);
 
-      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('2'));
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('3'));
       expect(loggerSpy).toHaveBeenCalledWith(
-        expect.stringContaining('@astrojs/'),
+        expect.stringContaining('Astro-related'),
       );
     });
 
-    it('should log when no @astrojs/* dependencies found', () => {
+    it('should log when no Astro-related dependencies found', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
@@ -408,6 +417,7 @@ describe('createMinimalPackageJson', () => {
       vol.fromJSON({
         [sourcePath]: JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
           },
           devDependencies: {
@@ -419,22 +429,23 @@ describe('createMinimalPackageJson', () => {
 
       createMinimalPackageJson(tree, projectRoot, sourcePath);
 
-      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('3'));
+      expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('4'));
     });
   });
 
   describe('dependency extraction', () => {
-    it('should only extract packages starting with @astrojs/', () => {
+    it('should only extract astro and packages starting with @astrojs/', () => {
       const sourcePath = '/source-project/package.json';
       const projectRoot = 'apps/my-project';
 
       vol.fromJSON({
         [sourcePath]: JSON.stringify({
           dependencies: {
-            '@astrojs/react': '^3.0.0',
-            '@astro/something': '^1.0.0', // Different scope
-            'astrojs-plugin': '^1.0.0', // No scope
-            '@other/astrojs': '^1.0.0', // Different scope
+            astro: '^5.0.0', // Should be extracted
+            '@astrojs/react': '^3.0.0', // Should be extracted
+            '@astro/something': '^1.0.0', // Different scope - should NOT be extracted
+            'astrojs-plugin': '^1.0.0', // No scope - should NOT be extracted
+            '@other/astrojs': '^1.0.0', // Different scope - should NOT be extracted
           },
         }),
       });
@@ -446,7 +457,57 @@ describe('createMinimalPackageJson', () => {
       );
 
       expect(packageJson.dependencies).toEqual({
+        astro: '^5.0.0',
         '@astrojs/react': '^3.0.0',
+      });
+    });
+
+    it('should extract astro package from dependencies', () => {
+      const sourcePath = '/source-project/package.json';
+      const projectRoot = 'apps/my-project';
+
+      vol.fromJSON({
+        [sourcePath]: JSON.stringify({
+          dependencies: {
+            astro: '^5.0.0',
+            react: '^18.0.0',
+            vue: '^3.0.0',
+          },
+        }),
+      });
+
+      createMinimalPackageJson(tree, projectRoot, sourcePath);
+
+      const packageJson = JSON.parse(
+        tree.read(`${projectRoot}/package.json`, 'utf-8') as string,
+      );
+
+      expect(packageJson.dependencies).toEqual({
+        astro: '^5.0.0',
+      });
+    });
+
+    it('should extract astro package from devDependencies', () => {
+      const sourcePath = '/source-project/package.json';
+      const projectRoot = 'apps/my-project';
+
+      vol.fromJSON({
+        [sourcePath]: JSON.stringify({
+          devDependencies: {
+            astro: '^5.0.0',
+            typescript: '^5.0.0',
+          },
+        }),
+      });
+
+      createMinimalPackageJson(tree, projectRoot, sourcePath);
+
+      const packageJson = JSON.parse(
+        tree.read(`${projectRoot}/package.json`, 'utf-8') as string,
+      );
+
+      expect(packageJson.dependencies).toEqual({
+        astro: '^5.0.0',
       });
     });
 
@@ -486,6 +547,7 @@ describe('createMinimalPackageJson', () => {
       vol.fromJSON({
         [sourcePath]: JSON.stringify({
           dependencies: {
+            astro: '^5.0.0',
             '@astrojs/react': '^3.0.0',
             '@astrojs/vue': '^4.0.0',
             '@astrojs/svelte': '^5.0.0',
@@ -503,7 +565,8 @@ describe('createMinimalPackageJson', () => {
         tree.read(`${projectRoot}/package.json`, 'utf-8') as string,
       );
 
-      expect(Object.keys(packageJson.dependencies)).toHaveLength(7);
+      expect(Object.keys(packageJson.dependencies)).toHaveLength(8);
+      expect(packageJson.dependencies).toHaveProperty('astro');
       expect(packageJson.dependencies).toHaveProperty('@astrojs/react');
       expect(packageJson.dependencies).toHaveProperty('@astrojs/vue');
       expect(packageJson.dependencies).toHaveProperty('@astrojs/svelte');

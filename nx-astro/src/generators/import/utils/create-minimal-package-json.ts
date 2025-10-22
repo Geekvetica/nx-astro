@@ -3,24 +3,24 @@ import { readFileSync } from 'fs';
 import { basename } from 'path';
 
 /**
- * Creates a minimal package.json file with @astrojs/* dependencies extracted from source.
+ * Creates a minimal package.json file with astro and @astrojs/* dependencies extracted from source.
  *
  * This function solves a monorepo build issue where Astro's heuristics fail to identify
  * @astrojs/* integrations without a local package.json. It reads the source package.json,
- * extracts all dependencies starting with @astrojs/, and creates a minimal package.json
- * in the project root with only those dependencies.
+ * extracts the astro package and all dependencies starting with @astrojs/, and creates a
+ * minimal package.json in the project root with only those dependencies.
  *
  * ## What it does
  * - Reads source package.json from sourcePath
- * - Extracts all dependencies starting with @astrojs/* (from both dependencies and devDependencies)
+ * - Extracts astro and all dependencies starting with @astrojs/* (from both dependencies and devDependencies)
  * - Creates a minimal package.json with:
  *   - name: basename of projectRoot
  *   - version: "0.1.0"
  *   - private: true
  *   - type: "module"
- *   - dependencies: all extracted @astrojs/* deps
+ *   - dependencies: all extracted astro and @astrojs/* deps
  * - Writes to tree at {projectRoot}/package.json
- * - Logs the number of @astrojs/* dependencies added
+ * - Logs the number of Astro-related dependencies added
  *
  * @param tree - Nx virtual file system tree (changes are staged until commit)
  * @param projectRoot - Target path in workspace (relative to workspace root) where package.json will be created
@@ -37,11 +37,12 @@ import { basename } from 'path';
  * // Result: Creates apps/my-astro-app/package.json with @astrojs/* dependencies
  * ```
  *
- * @example With multiple @astrojs/* dependencies
+ * @example With multiple Astro-related dependencies
  * ```typescript
  * // Source package.json has:
  * // {
  * //   "dependencies": {
+ * //     "astro": "^5.0.0",
  * //     "@astrojs/react": "^3.0.0",
  * //     "react": "^18.0.0"
  * //   },
@@ -60,32 +61,38 @@ import { basename } from 'path';
  * //   "private": true,
  * //   "type": "module",
  * //   "dependencies": {
+ * //     "astro": "^5.0.0",
  * //     "@astrojs/react": "^3.0.0",
  * //     "@astrojs/check": "^0.5.0"
  * //   }
  * // }
  * ```
  *
- * @example No @astrojs/* dependencies
+ * @example No Astro-related dependencies except astro itself
  * ```typescript
- * // Source package.json has no @astrojs/* dependencies
+ * // Source package.json has only astro
+ * // {
+ * //   "dependencies": { "astro": "^5.0.0" }
+ * // }
  * createMinimalPackageJson(tree, 'apps/my-app', '/source/package.json');
  *
- * // Generated package.json with empty dependencies:
+ * // Generated package.json with astro:
  * // {
  * //   "name": "my-app",
  * //   "version": "0.1.0",
  * //   "private": true,
  * //   "type": "module",
- * //   "dependencies": {}
+ * //   "dependencies": {
+ * //     "astro": "^5.0.0"
+ * //   }
  * // }
  * ```
  */
 /**
- * Extracts all dependencies starting with @astrojs/ from a dependencies object.
+ * Extracts the astro package and all dependencies starting with @astrojs/ from a dependencies object.
  *
  * @param dependencies - Dependencies object from package.json (can be null/undefined)
- * @returns Object containing only @astrojs/* dependencies with their versions
+ * @returns Object containing only astro and @astrojs/* dependencies with their versions
  */
 function extractAstrojsDependencies(
   dependencies: Record<string, string> | null | undefined,
@@ -97,7 +104,8 @@ function extractAstrojsDependencies(
   const astrojsDeps: Record<string, string> = {};
 
   for (const [name, version] of Object.entries(dependencies)) {
-    if (name.startsWith('@astrojs/')) {
+    // Include both astro itself and all @astrojs/* packages
+    if (name === 'astro' || name.startsWith('@astrojs/')) {
       astrojsDeps[name] = version;
     }
   }
@@ -145,6 +153,6 @@ export function createMinimalPackageJson(
   const dependencyCount = Object.keys(allAstrojsDeps).length;
   const dependencyWord = dependencyCount === 1 ? 'dependency' : 'dependencies';
   logger.info(
-    `Added ${dependencyCount} @astrojs/* ${dependencyWord} to ${targetPath}`,
+    `Added ${dependencyCount} Astro-related ${dependencyWord} to ${targetPath}`,
   );
 }
