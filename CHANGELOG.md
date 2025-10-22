@@ -1,3 +1,22 @@
+## 1.0.8 (2025-10-22)
+
+### 🚀 Features
+
+- added creation of minimal package.json for build and versioning compatibility ([90596e2](https://github.com/Geekvetica/nx-astro/commit/90596e2))
+
+### 🩹 Fixes
+
+- e2e tests ([52fe8cb](https://github.com/Geekvetica/nx-astro/commit/52fe8cb))
+- e2e tests ([36e02d3](https://github.com/Geekvetica/nx-astro/commit/36e02d3))
+- e2e tests ([c717055](https://github.com/Geekvetica/nx-astro/commit/c717055))
+- e2e tests ([980e080](https://github.com/Geekvetica/nx-astro/commit/980e080))
+- e2e caching test ([60b45bf](https://github.com/Geekvetica/nx-astro/commit/60b45bf))
+- **e2e:** remove unnecessary pnpm install that fails in CI ([29bcbf0](https://github.com/Geekvetica/nx-astro/commit/29bcbf0))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski
+
 ## 1.0.7 (2025-10-20)
 
 ### 🩹 Fixes
