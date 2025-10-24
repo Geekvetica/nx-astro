@@ -12,8 +12,8 @@ importers:
         specifier: ^9.5.0
         version: 9.5.0(astro@5.14.5(@types/node@24.8.0)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1))
       '@nx/devkit':
-        specifier: 21.6.4
-        version: 21.6.4(nx@21.6.5(@swc-node/register@1.11.1(@swc/core@1.13.5(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.13.5(@swc/helpers@0.5.17)))
+        specifier: 22.0.1
+        version: 22.0.1(nx@21.6.5(@swc-node/register@1.11.1(@swc/core@1.13.5(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.13.5(@swc/helpers@0.5.17)))
       astro:
         specifier: ^5.14.5
         version: 5.14.5(@types/node@24.8.0)(rollup@4.52.4)(typescript@5.9.3)(yaml@2.8.1)
@@ -1426,15 +1426,15 @@ packages:
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
 
-  '@nx/devkit@21.6.4':
-    resolution: {integrity: sha512-uMvpnMDJTT3aW4Zp+Ig1YJzvHhjpgrkt2aPEKN7v7rM9TzcEmEWqyR8RZG7QlE4QAJe2uK2F6l1Z4n/5Bnonxw==}
-    peerDependencies:
-      nx: '>= 20 <= 22'
-
   '@nx/devkit@21.6.5':
     resolution: {integrity: sha512-cJQoPd2/FNFiFgn93o0nR7XA26q1Sg+hKSgWr6YKus622UCYeST3M/h2NHNXpIfz2h6L7puBRrGwWiQC7cHWJQ==}
     peerDependencies:
       nx: '>= 20 <= 22'
+
+  '@nx/devkit@22.0.1':
+    resolution: {integrity: sha512-pam3RuHI+1vwg4pKyq4zq4oFuXvqllJvuArsCWYCv6m10NYPu0cXRXaAbZfffcmW6Kvh1cRSb80OCs8ZzN4cXA==}
+    peerDependencies:
+      nx: '>= 21 <= 23 || ^22.0.0-0'
 
   '@nx/eslint-plugin@21.6.5':
     resolution: {integrity: sha512-5rVjs1UB/O3l0VRzHoHMWqVOMP+I8ThjQvxN8K9/60ucLiHnDbkUON05+on1uy57XDzK/lW3JBCAKFVJwYzWAQ==}
@@ -7337,7 +7337,7 @@ snapshots:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
 
-  '@nx/devkit@21.6.4(nx@21.6.5(@swc-node/register@1.11.1(@swc/core@1.13.5(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.13.5(@swc/helpers@0.5.17)))':
+  '@nx/devkit@21.6.5(nx@21.6.5(@swc-node/register@1.11.1(@swc/core@1.13.5(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.13.5(@swc/helpers@0.5.17)))':
     dependencies:
       ejs: 3.1.10
       enquirer: 2.3.6
@@ -7348,11 +7348,11 @@ snapshots:
       tslib: 2.8.1
       yargs-parser: 21.1.1
 
-  '@nx/devkit@21.6.5(nx@21.6.5(@swc-node/register@1.11.1(@swc/core@1.13.5(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.13.5(@swc/helpers@0.5.17)))':
+  '@nx/devkit@22.0.1(nx@21.6.5(@swc-node/register@1.11.1(@swc/core@1.13.5(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.13.5(@swc/helpers@0.5.17)))':
     dependencies:
+      '@zkochan/js-yaml': 0.0.7
       ejs: 3.1.10
       enquirer: 2.3.6
-      ignore: 5.3.2
       minimatch: 9.0.3
       nx: 21.6.5(@swc-node/register@1.11.1(@swc/core@1.13.5(@swc/helpers@0.5.17))(@swc/types@0.1.25)(typescript@5.9.3))(@swc/core@1.13.5(@swc/helpers@0.5.17))
       semver: 7.7.3
