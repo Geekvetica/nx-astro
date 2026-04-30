@@ -24,9 +24,11 @@
       "cache": true,
       "inputs": [
         "default",
+        "^default",
         "{workspaceRoot}/.eslintrc.json",
         "{workspaceRoot}/.eslintignore",
-        "{workspaceRoot}/eslint.config.mjs"
+        "{workspaceRoot}/eslint.config.mjs",
+        "{workspaceRoot}/tools/eslint-rules/**/*"
       ]
     },
     "@nx/jest:jest": {
@@ -46,13 +48,11 @@
   "release": {
     "version": {
       "preVersionCommand": "pnpm dlx nx run-many -t build",
-      "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "fallbackCurrentVersionResolver": "disk",
-        "specifierSource": "prompt"
-      }
+      "specifierSource": "prompt",
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk",
+      "preserveLocalDependencyProtocols": false
     },
-    "releaseTagPattern": "v{version}",
     "changelog": {
       "workspaceChangelog": {
         "createRelease": "github",
@@ -74,7 +74,10 @@
       "tagMessage": "v{version}",
       "tagArgs": "--force"
     },
-    "projects": ["nx-astro"]
+    "projects": ["nx-astro"],
+    "releaseTag": {
+      "pattern": "v{version}"
+    }
   },
   "plugins": [
     {
@@ -88,5 +91,7 @@
         "syncTargetName": "sync"
       }
     }
-  ]
+  ],
+  "neverConnectToCloud": true,
+  "analytics": false
 }

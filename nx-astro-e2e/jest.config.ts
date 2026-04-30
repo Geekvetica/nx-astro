@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   displayName: 'nx-astro-e2e',
   preset: '../jest.preset.js',
   transform: {

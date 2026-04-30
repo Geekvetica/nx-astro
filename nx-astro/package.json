@@ -43,7 +43,7 @@
     "provenance": true
   },
   "dependencies": {
-    "@nx/devkit": "21.6.4",
+    "@nx/devkit": "22.7.1",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {

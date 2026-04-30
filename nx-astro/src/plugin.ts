@@ -1,6 +1,6 @@
 import {
   CreateNodesV2,
-  CreateNodesContext,
+  CreateNodesContextV2,
   CreateNodesResult,
   TargetConfiguration,
 } from '@nx/devkit';
@@ -50,7 +50,7 @@ export const createNodesV2: CreateNodesV2<AstroPluginOptions> = [
   async (
     configFiles: readonly string[],
     options: AstroPluginOptions | undefined,
-    context: CreateNodesContext
+    context: CreateNodesContextV2,
   ): Promise<Array<[string, CreateNodesResult]>> => {
     const normalizedOptions = normalizeOptions(options);
 
@@ -61,14 +61,14 @@ export const createNodesV2: CreateNodesV2<AstroPluginOptions> = [
         const result = await createNodesForConfigFile(
           configFile,
           normalizedOptions,
-          context
+          context,
         );
         results.push([configFile, result]);
       } catch (error) {
         // Log error but don't fail the entire process
         console.warn(
           `Failed to process Astro config file ${configFile}:`,
-          error
+          error,
         );
 
         // Still create a minimal project configuration
@@ -97,7 +97,7 @@ export const createNodesV2: CreateNodesV2<AstroPluginOptions> = [
 async function createNodesForConfigFile(
   configFile: string,
   options: NormalizedOptions,
-  context: CreateNodesContext
+  context: CreateNodesContextV2,
 ): Promise<CreateNodesResult> {
   const projectRoot = normalizeProjectRoot(dirname(configFile));
   const absoluteConfigPath = join(context.workspaceRoot, configFile);
@@ -111,7 +111,7 @@ async function createNodesForConfigFile(
     // If config reading/parsing fails, use empty config
     console.warn(
       `Failed to parse Astro config at ${configFile}, using defaults:`,
-      error
+      error,
     );
   }
 
@@ -120,7 +120,7 @@ async function createNodesForConfigFile(
     projectRoot,
     astroConfig,
     options,
-    context.workspaceRoot
+    context.workspaceRoot,
   );
 
   // Determine source root from config or use default
@@ -147,7 +147,7 @@ async function createNodesForConfigFile(
  * Normalizes plugin options with default values
  */
 function normalizeOptions(
-  options: AstroPluginOptions | undefined
+  options: AstroPluginOptions | undefined,
 ): NormalizedOptions {
   return {
     devTargetName: options?.devTargetName || 'dev',

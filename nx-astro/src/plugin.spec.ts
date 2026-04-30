@@ -1,4 +1,4 @@
-import { CreateNodesContext } from '@nx/devkit';
+import { CreateNodesContextV2 } from '@nx/devkit';
 import { createNodesV2 } from './plugin';
 import { vol } from 'memfs';
 
@@ -7,7 +7,7 @@ jest.mock('fs', () => require('memfs').fs);
 jest.mock('fs/promises', () => require('memfs').fs.promises);
 
 describe('@geekvetica/nx-astro plugin', () => {
-  let context: CreateNodesContext;
+  let context: CreateNodesContextV2;
 
   beforeEach(() => {
     context = {
@@ -18,7 +18,6 @@ describe('@geekvetica/nx-astro plugin', () => {
         },
       },
       workspaceRoot: '/workspace',
-      configFiles: [],
     };
 
     // Reset memfs
@@ -46,7 +45,7 @@ describe('@geekvetica/nx-astro plugin', () => {
             };
           `,
         },
-        '/workspace'
+        '/workspace',
       );
 
       const [, createNodesFunction] = createNodesV2;
@@ -69,7 +68,7 @@ describe('@geekvetica/nx-astro plugin', () => {
             };
           `,
         },
-        '/workspace'
+        '/workspace',
       );
 
       const [, createNodesFunction] = createNodesV2;
@@ -97,7 +96,7 @@ describe('@geekvetica/nx-astro plugin', () => {
             };
           `,
         },
-        '/workspace'
+        '/workspace',
       );
 
       const options = {
@@ -124,7 +123,7 @@ describe('@geekvetica/nx-astro plugin', () => {
             export default {};
           `,
         },
-        '/workspace'
+        '/workspace',
       );
 
       const [, createNodesFunction] = createNodesV2;
@@ -147,7 +146,7 @@ describe('@geekvetica/nx-astro plugin', () => {
           'apps/app1/astro.config.mjs': 'export default {};',
           'apps/app2/astro.config.mjs': 'export default {};',
         },
-        '/workspace'
+        '/workspace',
       );
 
       const [, createNodesFunction] = createNodesV2;
@@ -168,7 +167,7 @@ describe('@geekvetica/nx-astro plugin', () => {
         {
           'apps/my-app/astro.config.mjs': 'this is not valid javascript',
         },
-        '/workspace'
+        '/workspace',
       );
 
       const [, createNodesFunction] = createNodesV2;
@@ -191,7 +190,7 @@ describe('@geekvetica/nx-astro plugin', () => {
             };
           `,
         },
-        '/workspace'
+        '/workspace',
       );
 
       const [, createNodesFunction] = createNodesV2;

@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   displayName: 'nx-astro',
   preset: '../jest.preset.js',
   testEnvironment: 'node',
