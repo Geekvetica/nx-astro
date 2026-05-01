@@ -397,5 +397,19 @@ describe('astro-config-parser', () => {
 
       expect(config.session).toBeUndefined();
     });
+
+    it('should remove session object when it has only unrecognized fields', () => {
+      const configContent = `
+        export default {
+          session: {
+            unknownField: 'value'
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session).toBeUndefined();
+    });
   });
 });
