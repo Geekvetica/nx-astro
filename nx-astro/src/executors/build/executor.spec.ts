@@ -49,10 +49,12 @@ jest.mock('@nx/js', () => ({
 
 // Mock file system writes for generated artifacts
 const mockWriteFileSync = jest.fn();
+const mockMkdirSync = jest.fn();
 
 jest.mock('fs', () => ({
   ...jest.requireActual('fs'),
   writeFileSync: mockWriteFileSync,
+  mkdirSync: mockMkdirSync,
 }));
 
 // Mock util with proper promisify implementation
@@ -118,6 +120,7 @@ describe('Build Executor', () => {
     mockGetLockFileName.mockClear();
     mockDetectPackageManager.mockClear();
     mockWriteFileSync.mockClear();
+    mockMkdirSync.mockClear();
 
     // Default mock implementation - returns a command string
     mockBuildAstroCommandString.mockReturnValue(
@@ -479,7 +482,44 @@ describe('Build Executor', () => {
       expect(result.success).toBe(true);
       expect(mockCreatePackageJson).toHaveBeenCalled();
       expect(mockCreateLockFile).toHaveBeenCalled();
+      expect(mockMkdirSync).toHaveBeenCalledWith('dist/apps/my-app', {
+        recursive: true,
+      });
       expect(mockWriteFileSync).toHaveBeenCalledTimes(2);
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('dist/apps/my-app/package.json'),
+        expect.any(String),
+        expect.any(Object),
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('dist/apps/my-app/pnpm-lock.yaml'),
+        'lockfile-content',
+        expect.any(Object),
+      );
+    });
+
+    it('should not write lockfile for bun workspaces', async () => {
+      const options: BuildExecutorSchema = {
+        generatePackageJson: true,
+        outputPath: 'dist/apps/my-app',
+      };
+
+      mockDetectPackageManager.mockReturnValue('bun');
+      mockGetLockFileName.mockReturnValue('bun.lock');
+      mockCreateLockFile.mockReturnValue('');
+
+      const result = await buildExecutor(options, context);
+
+      expect(result.success).toBe(true);
+      expect(mockMkdirSync).toHaveBeenCalledWith('dist/apps/my-app', {
+        recursive: true,
+      });
+      expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('dist/apps/my-app/package.json'),
+        expect.any(String),
+        expect.any(Object),
+      );
     });
 
     it('should pass through package generation options to Nx helpers', async () => {
@@ -497,6 +537,8 @@ describe('Build Executor', () => {
         'my-app',
         expect.any(Object),
         expect.objectContaining({
+          target: 'build',
+          root: '/workspace',
           isProduction: false,
           skipOverrides: true,
           skipPackageManager: true,

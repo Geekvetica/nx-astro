@@ -2,7 +2,7 @@ import { ExecutorContext, detectPackageManager, logger } from '@nx/devkit';
 import { createLockFile, createPackageJson, getLockFileName } from '@nx/js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { writeFileSync } from 'fs';
+import { mkdirSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { BuildExecutorSchema } from './schema';
 import { buildAstroCommandString } from '../../utils/command-builder';
@@ -117,6 +117,8 @@ export default async function buildExecutor(
         packageManager,
       );
 
+      mkdirSync(outputPath, { recursive: true });
+
       writeFileSync(
         path.join(outputPath, 'package.json'),
         `${JSON.stringify(packageJson, null, 2)}\n`,
@@ -124,9 +126,11 @@ export default async function buildExecutor(
           encoding: 'utf-8',
         },
       );
-      writeFileSync(path.join(outputPath, lockFileName), lockFile, {
-        encoding: 'utf-8',
-      });
+      if (packageManager !== 'bun' && lockFile) {
+        writeFileSync(path.join(outputPath, lockFileName), lockFile, {
+          encoding: 'utf-8',
+        });
+      }
     }
 
     return { success: true };
