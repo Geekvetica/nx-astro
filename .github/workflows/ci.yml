@@ -47,7 +47,7 @@ permissions:
   contents: read
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '22.x'
   # Enable Nx caching in CI
   NX_CLOUD_DISTRIBUTED_EXECUTION: 'false'
   # Coverage threshold (fail if below this percentage)
