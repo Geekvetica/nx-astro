@@ -297,5 +297,105 @@ describe('astro-config-parser', () => {
       expect(config.experimental?.logger).toBeDefined();
       expect(config.experimental?.svgOptimizer).toBeDefined();
     });
+
+    it('should return empty config when no braces present', () => {
+      const configContent = `
+        export default undefined;
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(Object.keys(config).length).toBe(0);
+    });
+
+    it('should remove empty server object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          server: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.server).toBeUndefined();
+    });
+
+    it('should remove empty build object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          build: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.build).toBeUndefined();
+    });
+
+    it('should remove empty legacy object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          legacy: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.legacy).toBeUndefined();
+    });
+
+    it('should remove empty session object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          session: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session).toBeUndefined();
+    });
+
+    it('should remove empty experimental object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          experimental: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.experimental).toBeUndefined();
+    });
+
+    it('should parse server host as boolean true', () => {
+      const configContent = `
+        export default {
+          server: {
+            port: 3000,
+            host: true
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.server?.host).toBe(true);
+    });
+
+    it('should handle session with nested options that have unclosed braces gracefully', () => {
+      const configContent = `
+        export default {
+          session: {
+            driver: '@astrojs/session/memory',
+            options: { broken
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session).toBeUndefined();
+    });
   });
 });

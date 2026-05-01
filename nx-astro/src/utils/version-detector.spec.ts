@@ -168,6 +168,42 @@ describe('version-detector', () => {
       // Assert
       expect(result).toBeNull();
     });
+
+    it('should handle non-semver version strings like "latest"', () => {
+      // Arrange
+      vol.fromJSON({
+        '/project/package.json': JSON.stringify({
+          name: 'test-project',
+          dependencies: {
+            astro: 'latest',
+          },
+        }),
+      });
+
+      // Act
+      const result = detectAstroVersion('/project/package.json');
+
+      // Assert
+      expect(result).toBe('latest');
+    });
+
+    it('should handle wildcard version string', () => {
+      // Arrange
+      vol.fromJSON({
+        '/project/package.json': JSON.stringify({
+          name: 'test-project',
+          dependencies: {
+            astro: '*',
+          },
+        }),
+      });
+
+      // Act
+      const result = detectAstroVersion('/project/package.json');
+
+      // Assert
+      expect(result).toBe('*');
+    });
   });
 
   describe('parseMajorVersion', () => {

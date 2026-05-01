@@ -1,4 +1,4 @@
-import { ProjectConfiguration } from '@nx/devkit';
+import { ProjectConfiguration, Tree } from '@nx/devkit';
 import { createProjectConfig } from './create-project-config';
 import { NormalizedImportOptions } from './normalize-options';
 
@@ -198,6 +198,105 @@ describe('createProjectConfig', () => {
 
       expect(config.targets!.sync.outputs).toBeDefined();
       expect(config.targets!.sync.outputs).toEqual([]);
+    });
+  });
+
+  describe('Bun package manager support', () => {
+    function createMockTree(files: Record<string, string>): Tree {
+      return {
+        exists: (path: string) => path in files,
+        read: (path: string) => files[path] || null,
+        write: jest.fn(),
+        delete: jest.fn(),
+        rename: jest.fn(),
+        listChanges: jest.fn(),
+        readFile: jest.fn(),
+        isFile: jest.fn(),
+        children: jest.fn(),
+        root: '.',
+      } as unknown as Tree;
+    }
+
+    it('should use bun.lockb in inputs when packageManager is bun', () => {
+      const tree = createMockTree({
+        'package.json': JSON.stringify({ packageManager: 'bun@1.0.0' }),
+      });
+
+      const config = createProjectConfig(options, tree);
+
+      const buildInputs = config.targets!.build.inputs;
+      expect(buildInputs).toContain('{workspaceRoot}/bun.lockb');
+      expect(buildInputs).not.toContainEqual(
+        expect.objectContaining({ externalDependencies: expect.any(Array) }),
+      );
+
+      const checkInputs = config.targets!.check.inputs;
+      expect(checkInputs).toContain('{workspaceRoot}/bun.lockb');
+
+      const syncInputs = config.targets!.sync.inputs;
+      expect(syncInputs).toContain('{workspaceRoot}/bun.lockb');
+    });
+
+    it('should use externalDependencies when packageManager is pnpm', () => {
+      const tree = createMockTree({
+        'package.json': JSON.stringify({ packageManager: 'pnpm@8.0.0' }),
+      });
+
+      const config = createProjectConfig(options, tree);
+
+      const buildInputs = config.targets!.build.inputs;
+      expect(buildInputs).toContainEqual({
+        externalDependencies: ['astro'],
+      });
+      expect(buildInputs).not.toContain('{workspaceRoot}/bun.lockb');
+    });
+
+    it('should use externalDependencies when pnpm-lock.yaml exists', () => {
+      const tree = createMockTree({
+        'pnpm-lock.yaml': 'lockfileVersion: 5.4',
+      });
+
+      const config = createProjectConfig(options, tree);
+
+      const buildInputs = config.targets!.build.inputs;
+      expect(buildInputs).toContainEqual({
+        externalDependencies: ['astro'],
+      });
+    });
+
+    it('should use externalDependencies when yarn.lock exists', () => {
+      const tree = createMockTree({
+        'yarn.lock': '# yarn lockfile v1',
+      });
+
+      const config = createProjectConfig(options, tree);
+
+      const buildInputs = config.targets!.build.inputs;
+      expect(buildInputs).toContainEqual({
+        externalDependencies: ['astro'],
+      });
+    });
+
+    it('should default to npm (externalDependencies) when no tree provided', () => {
+      const config = createProjectConfig(options);
+
+      const buildInputs = config.targets!.build.inputs;
+      expect(buildInputs).toContainEqual({
+        externalDependencies: ['astro'],
+      });
+    });
+
+    it('should use externalDependencies when package-lock.json exists (npm)', () => {
+      const tree = createMockTree({
+        'package-lock.json': JSON.stringify({ lockfileVersion: 2 }),
+      });
+
+      const config = createProjectConfig(options, tree);
+
+      const buildInputs = config.targets!.build.inputs;
+      expect(buildInputs).toContainEqual({
+        externalDependencies: ['astro'],
+      });
     });
   });
 });
