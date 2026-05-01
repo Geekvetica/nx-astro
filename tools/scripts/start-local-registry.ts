@@ -12,16 +12,15 @@
 
 import { execSync } from 'child_process';
 import { join } from 'path';
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 
 export default async () => {
   console.log('Starting E2E test preparation...');
 
   try {
-    // Create temp directory for E2E package (unique per run)
-    const tempDir = join(tmpdir(), 'nx-astro-e2e-' + Date.now());
-    mkdirSync(tempDir, { recursive: true });
+    // Create temp directory for E2E package (securely, unique per run)
+    const tempDir = mkdtempSync(join(tmpdir(), 'nx-astro-e2e-'));
     console.log(`Created temp directory: ${tempDir}`);
 
     // Copy built package to temp directory
