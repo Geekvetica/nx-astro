@@ -1,14 +1,12 @@
 import { extractDependencies } from './extract-dependencies';
-import { mkdirSync, writeFileSync, rmSync } from 'fs';
+import { mkdtempSync, writeFileSync, rmSync } from 'fs';
 import { join } from 'path';
-import { tmpdir } from 'os';
 
 describe('extractDependencies', () => {
   let tempDir: string;
 
   beforeEach(() => {
-    tempDir = join(tmpdir(), `nx-astro-test-${Date.now()}`);
-    mkdirSync(tempDir, { recursive: true });
+    tempDir = mkdtempSync(join(process.cwd(), 'nx-astro-test-'));
   });
 
   afterEach(() => {
