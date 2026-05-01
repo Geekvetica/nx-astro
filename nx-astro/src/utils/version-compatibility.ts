@@ -14,8 +14,8 @@ export interface AstroVersionFlags {
 export function getCompatibilityFlags(majorVersion: number): AstroVersionFlags {
   return {
     majorVersion,
-    supportsHybridOutput: majorVersion < 5,
-    supportsAstroGlob: majorVersion < 5,
+    supportsHybridOutput: majorVersion < 6,
+    supportsAstroGlob: majorVersion < 6,
     requiresNode22: majorVersion >= 6,
     supportsLegacyContentCollections: majorVersion < 6,
     supportsCjsConfig: majorVersion < 6,
@@ -33,5 +33,8 @@ export function getCompatibilityFlagsFromPath(
   }
 
   const majorVersion = parseMajorVersion(version);
+  if (majorVersion === 0) {
+    return null;
+  }
   return getCompatibilityFlags(majorVersion);
 }

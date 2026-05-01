@@ -37,8 +37,8 @@ describe('version-compatibility', () => {
 
       // Assert
       expect(result.majorVersion).toBe(5);
-      expect(result.supportsHybridOutput).toBe(false);
-      expect(result.supportsAstroGlob).toBe(false);
+      expect(result.supportsHybridOutput).toBe(true);
+      expect(result.supportsAstroGlob).toBe(true);
       expect(result.requiresNode22).toBe(false);
       expect(result.supportsLegacyContentCollections).toBe(true);
       expect(result.supportsCjsConfig).toBe(true);
@@ -176,6 +176,42 @@ describe('version-compatibility', () => {
       // Assert
       expect(result).toBeNull();
     });
+
+    it('should return null when astro version is a non-numeric tag like latest', () => {
+      // Arrange
+      vol.fromJSON({
+        '/project/package.json': JSON.stringify({
+          name: 'test-project',
+          devDependencies: {
+            astro: 'latest',
+          },
+        }),
+      });
+
+      // Act
+      const result = getCompatibilityFlagsFromPath('/project/package.json');
+
+      // Assert
+      expect(result).toBeNull();
+    });
+
+    it('should return null when astro version is a wildcard', () => {
+      // Arrange
+      vol.fromJSON({
+        '/project/package.json': JSON.stringify({
+          name: 'test-project',
+          devDependencies: {
+            astro: '*',
+          },
+        }),
+      });
+
+      // Act
+      const result = getCompatibilityFlagsFromPath('/project/package.json');
+
+      // Assert
+      expect(result).toBeNull();
+    });
   });
 
   describe('AstroVersionFlags interface', () => {
@@ -183,8 +219,8 @@ describe('version-compatibility', () => {
       // Arrange & Act
       const flags: AstroVersionFlags = {
         majorVersion: 5,
-        supportsHybridOutput: false,
-        supportsAstroGlob: false,
+        supportsHybridOutput: true,
+        supportsAstroGlob: true,
         requiresNode22: false,
         supportsLegacyContentCollections: true,
         supportsCjsConfig: true,

@@ -6,7 +6,6 @@ import {
   formatFiles,
 } from '@nx/devkit';
 import { InitGeneratorSchema } from './schema';
-import { getAstroVersionRange } from '../../utils/version-detector';
 
 const PLUGIN_NAME = '@geekvetica/nx-astro';
 
@@ -106,12 +105,9 @@ function addDependencies(tree: Tree, astroVersion: '5' | '6' | 'latest'): void {
   const existingAstroRange =
     existingDependencies['astro'] ?? existingDevDependencies['astro'];
 
-  const astroRange =
-    existingAstroRange ??
-    getAstroVersionRange(tree.root) ??
-    resolveVersionRange(astroVersion);
+  const astroRange = existingAstroRange ?? resolveVersionRange(astroVersion);
   const nodeRange = existingAstroRange
-    ? undefined
+    ? resolveNodeVersionFromRange(existingAstroRange)
     : resolveNodeVersion(astroVersion);
 
   const devDependencies: Record<string, string> = {};
@@ -141,6 +137,15 @@ function resolveVersionRange(astroVersion: '5' | '6' | 'latest'): string {
 function resolveNodeVersion(astroVersion: '5' | '6' | 'latest'): string {
   const resolved = astroVersion === 'latest' ? '6' : astroVersion;
   return ASTRO_VERSIONS[resolved].node;
+}
+
+function resolveNodeVersionFromRange(astroRange: string): string | undefined {
+  const majorMatch = astroRange.match(/^[\^~>=<]*\s*(\d+)/);
+  if (!majorMatch) {
+    return undefined;
+  }
+  const major = majorMatch[1];
+  return ASTRO_VERSIONS[major]?.node;
 }
 
 export default initGenerator;

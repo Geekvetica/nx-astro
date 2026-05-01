@@ -209,6 +209,34 @@ describe('init generator', () => {
       // Should keep existing version
       expect(packageJson.devDependencies['astro']).toBe('^4.0.0');
     });
+
+    it('should add @astrojs/node when astro exists but @astrojs/node is missing', async () => {
+      updateJson(tree, 'package.json', (json) => {
+        json.devDependencies = json.devDependencies || {};
+        json.devDependencies['astro'] = '^5.10.0';
+        return json;
+      });
+
+      await initGenerator(tree, {});
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toBe('^5.10.0');
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^9\./);
+    });
+
+    it('should add @astrojs/node with Astro 6 version when astro 6 exists', async () => {
+      updateJson(tree, 'package.json', (json) => {
+        json.devDependencies = json.devDependencies || {};
+        json.devDependencies['astro'] = '^6.0.0';
+        return json;
+      });
+
+      await initGenerator(tree, {});
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toBe('^6.0.0');
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^10\./);
+    });
   });
 
   describe('error handling', () => {
