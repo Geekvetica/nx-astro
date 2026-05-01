@@ -1,6 +1,16 @@
 import { ExecutorContext } from '@nx/devkit';
 import { BuildExecutorSchema } from './schema';
 
+const mockDetectPackageManager = jest.fn();
+
+jest.mock('@nx/devkit', () => {
+  const actual = jest.requireActual('@nx/devkit');
+  return {
+    ...actual,
+    detectPackageManager: mockDetectPackageManager,
+  };
+});
+
 // Mock child_process
 const mockExec = jest.fn();
 
@@ -24,6 +34,27 @@ const mockSyncAstrojsDependencies = jest.fn();
 
 jest.mock('../../utils/sync-astrojs-deps', () => ({
   syncAstrojsDependencies: mockSyncAstrojsDependencies,
+}));
+
+// Mock @nx/js package artifact helpers
+const mockCreatePackageJson = jest.fn();
+const mockCreateLockFile = jest.fn();
+const mockGetLockFileName = jest.fn();
+
+jest.mock('@nx/js', () => ({
+  createPackageJson: mockCreatePackageJson,
+  createLockFile: mockCreateLockFile,
+  getLockFileName: mockGetLockFileName,
+}));
+
+// Mock file system writes for generated artifacts
+const mockWriteFileSync = jest.fn();
+const mockMkdirSync = jest.fn();
+
+jest.mock('fs', () => ({
+  ...jest.requireActual('fs'),
+  writeFileSync: mockWriteFileSync,
+  mkdirSync: mockMkdirSync,
 }));
 
 // Mock util with proper promisify implementation
@@ -84,6 +115,12 @@ describe('Build Executor', () => {
     mockExec.mockClear();
     mockBuildAstroCommandString.mockClear();
     mockSyncAstrojsDependencies.mockClear();
+    mockCreatePackageJson.mockClear();
+    mockCreateLockFile.mockClear();
+    mockGetLockFileName.mockClear();
+    mockDetectPackageManager.mockClear();
+    mockWriteFileSync.mockClear();
+    mockMkdirSync.mockClear();
 
     // Default mock implementation - returns a command string
     mockBuildAstroCommandString.mockReturnValue(
@@ -95,6 +132,15 @@ describe('Build Executor', () => {
       callback(null, { stdout: 'Build successful', stderr: '' });
       return {} as any;
     });
+
+    mockCreatePackageJson.mockReturnValue({
+      name: 'my-app',
+      version: '0.0.0',
+      dependencies: {},
+    });
+    mockCreateLockFile.mockReturnValue('lockfile-content');
+    mockGetLockFileName.mockReturnValue('pnpm-lock.yaml');
+    mockDetectPackageManager.mockReturnValue('pnpm');
   });
 
   describe('basic build', () => {
@@ -410,6 +456,114 @@ describe('Build Executor', () => {
       // Verify buildAstroCommandString receives the workspace root for PM detection
       const calls = mockBuildAstroCommandString.mock.calls;
       expect(calls[0][2]).toBe('/workspace');
+    });
+  });
+
+  describe('package artifact generation', () => {
+    it('should not generate package artifacts by default', async () => {
+      const options: BuildExecutorSchema = {};
+
+      const result = await buildExecutor(options, context);
+
+      expect(result.success).toBe(true);
+      expect(mockCreatePackageJson).not.toHaveBeenCalled();
+      expect(mockCreateLockFile).not.toHaveBeenCalled();
+      expect(mockWriteFileSync).not.toHaveBeenCalled();
+    });
+
+    it('should generate package.json and lockfile when enabled', async () => {
+      const options: BuildExecutorSchema = {
+        generatePackageJson: true,
+        outputPath: 'dist/apps/my-app',
+      };
+
+      const result = await buildExecutor(options, context);
+
+      expect(result.success).toBe(true);
+      expect(mockCreatePackageJson).toHaveBeenCalled();
+      expect(mockCreateLockFile).toHaveBeenCalled();
+      expect(mockMkdirSync).toHaveBeenCalledWith('dist/apps/my-app', {
+        recursive: true,
+      });
+      expect(mockWriteFileSync).toHaveBeenCalledTimes(2);
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('dist/apps/my-app/package.json'),
+        expect.any(String),
+        expect.any(Object),
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('dist/apps/my-app/pnpm-lock.yaml'),
+        'lockfile-content',
+        expect.any(Object),
+      );
+    });
+
+    it('should not write lockfile for bun workspaces', async () => {
+      const options: BuildExecutorSchema = {
+        generatePackageJson: true,
+        outputPath: 'dist/apps/my-app',
+      };
+
+      mockDetectPackageManager.mockReturnValue('bun');
+      mockGetLockFileName.mockReturnValue('bun.lock');
+      mockCreateLockFile.mockReturnValue('');
+
+      const result = await buildExecutor(options, context);
+
+      expect(result.success).toBe(true);
+      expect(mockMkdirSync).toHaveBeenCalledWith('dist/apps/my-app', {
+        recursive: true,
+      });
+      expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('dist/apps/my-app/package.json'),
+        expect.any(String),
+        expect.any(Object),
+      );
+    });
+
+    it('should pass through package generation options to Nx helpers', async () => {
+      const options: BuildExecutorSchema = {
+        generatePackageJson: true,
+        includeDevDependenciesInPackageJson: true,
+        skipOverrides: true,
+        skipPackageManager: true,
+        outputPath: 'dist/apps/my-app',
+      };
+
+      await buildExecutor(options, context);
+
+      expect(mockCreatePackageJson).toHaveBeenCalledWith(
+        'my-app',
+        expect.any(Object),
+        expect.objectContaining({
+          target: 'build',
+          root: '/workspace',
+          isProduction: false,
+          skipOverrides: true,
+          skipPackageManager: true,
+        }),
+      );
+    });
+
+    it('should not generate package artifacts when build fails', async () => {
+      const options: BuildExecutorSchema = {
+        generatePackageJson: true,
+      };
+
+      mockExec.mockImplementation(
+        (cmd: string, options: any, callback: any) => {
+          callback(new Error('Build failed'), null);
+          return {} as any;
+        },
+      );
+
+      const result = await buildExecutor(options, context);
+
+      expect(result.success).toBe(false);
+      expect(mockCreatePackageJson).not.toHaveBeenCalled();
+      expect(mockCreateLockFile).not.toHaveBeenCalled();
+      expect(mockWriteFileSync).not.toHaveBeenCalled();
     });
   });
 });

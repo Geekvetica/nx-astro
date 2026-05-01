@@ -1,6 +1,8 @@
-import { ExecutorContext, logger } from '@nx/devkit';
+import { ExecutorContext, detectPackageManager, logger } from '@nx/devkit';
+import { createLockFile, createPackageJson, getLockFileName } from '@nx/js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { mkdirSync, writeFileSync } from 'fs';
 import * as path from 'path';
 import { BuildExecutorSchema } from './schema';
 import { buildAstroCommandString } from '../../utils/command-builder';
@@ -96,6 +98,40 @@ export default async function buildExecutor(
     }
 
     logger.info('Build completed successfully');
+
+    if (options.generatePackageJson) {
+      const outputPath =
+        options.outputPath || path.join('dist', projectConfig.root);
+      const packageJson = createPackageJson(projectName, context.projectGraph, {
+        target: context.targetName,
+        root: context.root,
+        isProduction: !options.includeDevDependenciesInPackageJson,
+        skipOverrides: options.skipOverrides,
+        skipPackageManager: options.skipPackageManager,
+      });
+      const packageManager = detectPackageManager(context.root);
+      const lockFileName = getLockFileName(packageManager);
+      const lockFile = createLockFile(
+        packageJson,
+        context.projectGraph,
+        packageManager,
+      );
+
+      mkdirSync(outputPath, { recursive: true });
+
+      writeFileSync(
+        path.join(outputPath, 'package.json'),
+        `${JSON.stringify(packageJson, null, 2)}\n`,
+        {
+          encoding: 'utf-8',
+        },
+      );
+      if (packageManager !== 'bun' && lockFile) {
+        writeFileSync(path.join(outputPath, lockFileName), lockFile, {
+          encoding: 'utf-8',
+        });
+      }
+    }
 
     return { success: true };
   } catch (error) {
