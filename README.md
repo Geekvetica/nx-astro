@@ -1,5 +1,11 @@
 # nx-astro
 
+<!-- ALL-CONTRIBUTORS-BADGE:START - Do not remove or modify this section -->
+
+[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors-)
+
+<!-- ALL-CONTRIBUTORS-BADGE:END -->
+
 [![CI](https://github.com/geekvetica/nx-astro/actions/workflows/ci.yml/badge.svg)](https://github.com/geekvetica/nx-astro/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/geekvetica/nx-astro/branch/main/graph/badge.svg)](https://codecov.io/gh/geekvetica/nx-astro)
 [![npm version](https://badge.fury.io/js/%40geekvetica%2Fnx-astro.svg)](https://www.npmjs.com/package/@geekvetica/nx-astro)
@@ -975,6 +981,34 @@ Special thanks to:
 - The Nx team for the amazing developer tools
 - The Astro team for the incredible web framework
 - All contributors who help improve this plugin
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+<table>
+  <tbody>
+    <tr>
+      <td align="center" valign="top" width="14.28%"><a href="https://github.com/pwojciechowski"><img src="https://avatars.githubusercontent.com/u/886488?v=4?s=100" width="100px;" alt="Paweł Wojciechowski"/><br /><sub><b>Paweł Wojciechowski</b></sub></a><br /><a href="https://github.com/pwojciechowski/nx-astro/commits?author=pwojciechowski" title="Code">💻</a> <a href="https://github.com/pwojciechowski/nx-astro/commits?author=pwojciechowski" title="Documentation">📖</a> <a href="#infra-pwojciechowski" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-pwojciechowski" title="Maintenance">🚧</a></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+We welcome contributions of all kinds — code, documentation, testing, design, ideas, and more!
+
+**Want to be added?** Comment on any issue or PR with:
+
+```
+@all-contributors please add @YOUR_USERNAME for <contribution-type>
+```
+
+See [all contribution types](https://allcontributors.org/docs/en/emoji-key).
 
 ---
 

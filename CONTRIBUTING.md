@@ -5,6 +5,7 @@ Thank you for considering contributing to @geekvetica/nx-astro! This document pr
 ## Table of Contents
 
 - [Code of Conduct](#code-of-conduct)
+- [First-Time Contributors](#first-time-contributors)
 - [Getting Started](#getting-started)
 - [Development Setup](#development-setup)
 - [Project Structure](#project-structure)
@@ -14,20 +15,89 @@ Thank you for considering contributing to @geekvetica/nx-astro! This document pr
 - [Commit Guidelines](#commit-guidelines)
 - [Pull Request Process](#pull-request-process)
 - [Issue Reporting](#issue-reporting)
+- [Label Guide](#label-guide)
+- [Documentation](#documentation)
+- [Development Tips](#development-tips)
 
 ---
 
 ## Code of Conduct
 
-This project adheres to a Code of Conduct that all contributors are expected to follow. Please be respectful and constructive in all interactions.
+This project follows the [Contributor Covenant Code of Conduct](./CODE_OF_CONDUCT.md).
+Please read it before contributing. In short: be respectful, be inclusive, and
+focus on what is best for the community.
 
-### Our Standards
+Instances of abusive, harassing, or otherwise unacceptable behavior may be
+reported to [github@geekveti.ca](mailto:github@geekveti.ca).
 
-- Be welcoming and inclusive
-- Be respectful of differing viewpoints
-- Accept constructive criticism gracefully
-- Focus on what is best for the community
-- Show empathy towards other community members
+---
+
+## First-Time Contributors
+
+Never contributed to open source before? We'd love to have you! Here's how to get started:
+
+### Step-by-Step Guide
+
+1. **Find an issue** — Browse [open issues](https://github.com/geekvetica/nx-astro/issues) and look for:
+   - [`good first issue`](https://github.com/geekvetica/nx-astro/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — beginner-friendly tasks
+   - [`help wanted`](https://github.com/geekvetica/nx-astro/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) — where we need external contributors
+
+2. **Comment on the issue** — Let us know you'd like to work on it so we can assign it and avoid duplicate effort.
+
+3. **Fork the repository** — Click the "Fork" button on GitHub to create your own copy.
+
+4. **Clone your fork**:
+
+   ```bash
+   git clone https://github.com/YOUR_USERNAME/nx-astro.git
+   cd nx-astro
+   ```
+
+5. **Set up the project**:
+
+   ```bash
+   pnpm install
+   pnpm exec nx build nx-astro
+   pnpm exec nx test nx-astro
+   ```
+
+6. **Create a branch**:
+
+   ```bash
+   git checkout -b fix/issue-123-short-description
+   ```
+
+7. **Make your changes** — Write tests first (TDD), then implement the minimum code to pass them.
+
+8. **Verify everything passes**:
+
+   ```bash
+   pnpm exec nx lint nx-astro
+   pnpm exec nx test nx-astro
+   pnpm exec nx build nx-astro
+   ```
+
+9. **Commit and push**:
+
+   ```bash
+   git add .
+   git commit -m "fix(scope): describe what you fixed"
+   git push origin fix/issue-123-short-description
+   ```
+
+10. **Open a Pull Request** — Go to the original repo and click "Compare & pull request". Fill out the PR template.
+
+### What to Expect
+
+- A maintainer will review your PR and may request changes — this is normal and part of the process.
+- Don't worry about making mistakes; we're here to help.
+- Once approved, your PR will be merged and you'll be recognized as a contributor!
+
+### Useful Resources
+
+- [How to Contribute to Open Source](https://opensource.guide/how-to-contribute/)
+- [First Contributions](https://github.com/firstcontributions/first-contributions) — hands-on tutorial
+- [Conventional Commits](https://www.conventionalcommits.org/) — our commit message format
 
 ---
 
@@ -436,7 +506,6 @@ The scope should be the name of the affected package or area:
    ```
 
 2. **Create PR on GitHub**
-
    - Use a clear, descriptive title
    - Reference related issues
    - Describe changes made
@@ -521,6 +590,58 @@ Create a feature request with:
 
 ---
 
+## Label Guide
+
+We use GitHub labels to organize issues and pull requests. Here's what they mean:
+
+### Triage
+
+| Label          | Description                                     |
+| -------------- | ----------------------------------------------- |
+| `needs-triage` | New issue or PR awaiting initial review         |
+| `blocked`      | Cannot proceed until something else is resolved |
+
+### Type
+
+| Label           | Description                               |
+| --------------- | ----------------------------------------- |
+| `bug`           | Something isn't working correctly         |
+| `enhancement`   | New feature or improvement request        |
+| `documentation` | Documentation fixes or improvements       |
+| `chore`         | Maintenance, tooling, CI, or housekeeping |
+
+### Contribution
+
+| Label              | Description                                           |
+| ------------------ | ----------------------------------------------------- |
+| `good first issue` | Beginner-friendly — great for your first contribution |
+| `help wanted`      | We need external contributors to tackle this          |
+
+### Status
+
+| Label       | Description                                               |
+| ----------- | --------------------------------------------------------- |
+| `wontfix`   | This will not be addressed (reason explained in comments) |
+| `duplicate` | Already reported or exists elsewhere                      |
+| `invalid`   | Doesn't seem right or applicable                          |
+
+### Scope
+
+| Label        | Description                                                                    |
+| ------------ | ------------------------------------------------------------------------------ |
+| `generators` | Related to code generators (`application`, `library`, `import`, etc.)          |
+| `executors`  | Related to task executors (`build`, `dev`, `preview`, `check`, `sync`, `test`) |
+| `plugin`     | Plugin infrastructure and core logic                                           |
+| `e2e`        | End-to-end testing                                                             |
+
+### Dependencies
+
+| Label          | Description                                |
+| -------------- | ------------------------------------------ |
+| `dependencies` | Dependency updates (often from Dependabot) |
+
+---
+
 ## Documentation
 
 ### Writing Documentation
@@ -593,9 +714,10 @@ nx g @geekvetica/nx-astro:application test-app
 
 ## Questions?
 
-- **GitHub Discussions**: Ask questions
-- **Discord**: Join Nx community
-- **Issues**: Report bugs or request features
+- **GitHub Discussions**: [Ask questions, share ideas, brainstorm](https://github.com/geekvetica/nx-astro/discussions)
+- **Support Guide**: See [SUPPORT.md](./SUPPORT.md) for where to get help
+- **Security Issues**: See [SECURITY.md](./SECURITY.md) for responsible disclosure
+- **Nx Community Discord**: [Join the Nx community](https://go.nx.dev/community)
 
 ---
 

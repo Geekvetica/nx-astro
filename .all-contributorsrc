@@ -1,0 +1,21 @@
+{
+  "projectName": "nx-astro",
+  "projectOwner": "pwojciechowski",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": ["README.md"],
+  "imageSize": 100,
+  "commit": true,
+  "commitConvention": "angular",
+  "contributors": [
+    {
+      "login": "pwojciechowski",
+      "name": "Paweł Wojciechowski",
+      "avatar_url": "https://avatars.githubusercontent.com/u/886488?v=4",
+      "profile": "https://github.com/pwojciechowski",
+      "contributions": ["code", "doc", "infra", "maintenance"]
+    }
+  ],
+  "contributorsPerLine": 7
+}
+

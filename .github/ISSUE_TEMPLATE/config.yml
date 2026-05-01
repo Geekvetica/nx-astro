@@ -1,14 +1,11 @@
 blank_issues_enabled: true
 contact_links:
-  - name: Question or Discussion
-    url: https://github.com/pwojciechowski/_dev/nx-astro/discussions
-    about: Ask questions or discuss ideas with the community
-  - name: Documentation
-    url: https://github.com/pwojciechowski/_dev/nx-astro#readme
-    about: Check the documentation for usage instructions and examples
-  - name: Astro Documentation
-    url: https://docs.astro.build
-    about: Official Astro documentation for Astro-specific questions
-  - name: Nx Documentation
-    url: https://nx.dev
-    about: Official Nx documentation for Nx-specific questions
+  - name: Ask a Question or Start a Discussion
+    url: https://github.com/geekvetica/nx-astro/discussions
+    about: Have a question, idea, or want to chat? Head over to GitHub Discussions!
+  - name: Read the Documentation
+    url: https://github.com/geekvetica/nx-astro/tree/main/docs
+    about: Check the docs before opening an issue — your question may already be answered.
+  - name: Troubleshooting Guide
+    url: https://github.com/geekvetica/nx-astro/blob/main/TROUBLESHOOTING.md
+    about: Solutions for common issues and migration guides.
