@@ -9,16 +9,17 @@ export interface NormalizedOptions {
   template: 'minimal' | 'blog' | 'portfolio';
   skipFormat: boolean;
   importExisting: boolean;
+  astroVersion: '5' | '6' | 'latest';
 }
 
 export function normalizeOptions(
-  options: ApplicationGeneratorSchema
+  options: ApplicationGeneratorSchema,
 ): NormalizedOptions {
   // Validate project name
   const projectNamePattern = /^[a-zA-Z][a-zA-Z0-9-]*$/;
   if (!projectNamePattern.test(options.name)) {
     throw new Error(
-      `Project name "${options.name}" is invalid. It must start with a letter and contain only letters, numbers, and hyphens.`
+      `Project name "${options.name}" is invalid. It must start with a letter and contain only letters, numbers, and hyphens.`,
     );
   }
 
@@ -45,6 +46,7 @@ export function normalizeOptions(
   const template = options.template || 'minimal';
   const skipFormat = options.skipFormat || false;
   const importExisting = options.importExisting || false;
+  const astroVersion = options.astroVersion || 'latest';
 
   return {
     projectName,
@@ -54,5 +56,6 @@ export function normalizeOptions(
     template,
     skipFormat,
     importExisting,
+    astroVersion,
   };
 }

@@ -98,4 +98,45 @@ describe('AstroConfig types', () => {
     expect(config.base).toBe('/blog');
     expect(config.trailingSlash).toBe('always');
   });
+
+  it('should support legacy configuration for Astro 5.x', () => {
+    const config: AstroConfig = {
+      legacy: {
+        collectionsBackwardsCompat: true,
+      },
+    };
+
+    expect(config.legacy?.collectionsBackwardsCompat).toBe(true);
+  });
+
+  it('should support session configuration for Astro 6+', () => {
+    const config: AstroConfig = {
+      session: {
+        driver: 'cloudflare-kv-binding',
+        options: { binding: 'SESSION' },
+        cookie: { name: '__session', secure: true },
+        ttl: 86400,
+      },
+    };
+
+    expect(config.session?.driver).toBe('cloudflare-kv-binding');
+    expect(config.session?.ttl).toBe(86400);
+    expect(config.session?.options?.binding).toBe('SESSION');
+  });
+
+  it('should support experimental fields with known Astro 6 options', () => {
+    const config: AstroConfig = {
+      experimental: {
+        contentIntellisense: true,
+        responsiveImages: true,
+        clientPrerender: true,
+        envDirectives: true,
+        svg: true,
+      },
+    };
+
+    expect(config.experimental?.contentIntellisense).toBe(true);
+    expect(config.experimental?.responsiveImages).toBe(true);
+    expect(config.experimental?.clientPrerender).toBe(true);
+  });
 });

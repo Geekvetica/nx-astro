@@ -55,6 +55,12 @@
       "type": "boolean",
       "description": "Skip formatting files after generation",
       "default": false
+    },
+    "astroVersion": {
+      "type": "string",
+      "description": "Major Astro version to target",
+      "enum": ["5", "6", "latest"],
+      "default": "latest"
     }
   },
   "required": ["name"]

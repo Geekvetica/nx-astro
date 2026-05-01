@@ -9,6 +9,21 @@
       "type": "boolean",
       "description": "Skip adding Astro dependencies to package.json",
       "default": false
+    },
+    "astroVersion": {
+      "type": "string",
+      "enum": ["5", "6", "latest"],
+      "default": "latest",
+      "description": "Major Astro version to install",
+      "x-prompt": {
+        "message": "Which major Astro version would you like to install?",
+        "type": "list",
+        "items": [
+          { "value": "latest", "label": "Latest (6.x)" },
+          { "value": "6", "label": "6.x" },
+          { "value": "5", "label": "5.x (Legacy)" }
+        ]
+      }
     }
   },
   "additionalProperties": false

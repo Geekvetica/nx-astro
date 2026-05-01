@@ -26,7 +26,8 @@ describe('init generator', () => {
       const nxJson = readJson(tree, 'nx.json');
       const plugin = nxJson.plugins.find(
         (p: any) =>
-          (typeof p === 'object' && p.plugin === '@geekvetica/nx-astro') || p === '@geekvetica/nx-astro'
+          (typeof p === 'object' && p.plugin === '@geekvetica/nx-astro') ||
+          p === '@geekvetica/nx-astro',
       );
 
       expect(plugin).toBeDefined();
@@ -51,7 +52,8 @@ describe('init generator', () => {
       const nxJson = readJson(tree, 'nx.json');
       const pluginCount = nxJson.plugins.filter(
         (p: any) =>
-          (typeof p === 'object' && p.plugin === '@geekvetica/nx-astro') || p === '@geekvetica/nx-astro'
+          (typeof p === 'object' && p.plugin === '@geekvetica/nx-astro') ||
+          p === '@geekvetica/nx-astro',
       ).length;
 
       expect(pluginCount).toBe(1);
@@ -114,10 +116,57 @@ describe('init generator', () => {
       await initGenerator(tree, {});
 
       const packageJson = readJson(tree, 'package.json');
-      expect(packageJson.devDependencies['astro']).toMatch(/^\^?\d+\.\d+\.\d+$/);
-      expect(packageJson.devDependencies['@astrojs/node']).toMatch(
-        /^\^?\d+\.\d+\.\d+$/
+      expect(packageJson.devDependencies['astro']).toMatch(
+        /^\^?\d+\.\d+\.\d+$/,
       );
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(
+        /^\^?\d+\.\d+\.\d+$/,
+      );
+    });
+
+    it('should install Astro 6.x when astroVersion is "6"', async () => {
+      await initGenerator(tree, { astroVersion: '6' });
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toMatch(/^\^6\./);
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^10\./);
+    });
+
+    it('should install Astro 5.x when astroVersion is "5"', async () => {
+      await initGenerator(tree, { astroVersion: '5' });
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toMatch(/^\^5\./);
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^9\./);
+    });
+
+    it('should install Astro 6.x when astroVersion is "latest"', async () => {
+      await initGenerator(tree, { astroVersion: 'latest' });
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toMatch(/^\^6\./);
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^10\./);
+    });
+
+    it('should install Astro 6.x by default when no astroVersion provided', async () => {
+      await initGenerator(tree, {});
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toMatch(/^\^6\./);
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^10\./);
+    });
+
+    it('should use existing Astro version range when astro is already installed', async () => {
+      updateJson(tree, 'package.json', (json) => {
+        json.devDependencies = json.devDependencies || {};
+        json.devDependencies['astro'] = '^5.10.0';
+        return json;
+      });
+
+      await initGenerator(tree, { astroVersion: '6' });
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toBe('^5.10.0');
     });
 
     it('should respect skipPackageJson option', async () => {
@@ -160,6 +209,34 @@ describe('init generator', () => {
       // Should keep existing version
       expect(packageJson.devDependencies['astro']).toBe('^4.0.0');
     });
+
+    it('should add @astrojs/node when astro exists but @astrojs/node is missing', async () => {
+      updateJson(tree, 'package.json', (json) => {
+        json.devDependencies = json.devDependencies || {};
+        json.devDependencies['astro'] = '^5.10.0';
+        return json;
+      });
+
+      await initGenerator(tree, {});
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toBe('^5.10.0');
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^9\./);
+    });
+
+    it('should add @astrojs/node with Astro 6 version when astro 6 exists', async () => {
+      updateJson(tree, 'package.json', (json) => {
+        json.devDependencies = json.devDependencies || {};
+        json.devDependencies['astro'] = '^6.0.0';
+        return json;
+      });
+
+      await initGenerator(tree, {});
+
+      const packageJson = readJson(tree, 'package.json');
+      expect(packageJson.devDependencies['astro']).toBe('^6.0.0');
+      expect(packageJson.devDependencies['@astrojs/node']).toMatch(/^\^10\./);
+    });
   });
 
   describe('error handling', () => {
@@ -182,7 +259,7 @@ describe('init generator', () => {
       tree.delete('package.json');
 
       await expect(
-        initGenerator(tree, { skipPackageJson: true })
+        initGenerator(tree, { skipPackageJson: true }),
       ).resolves.not.toThrow();
     });
   });

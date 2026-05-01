@@ -503,6 +503,96 @@ describe('application generator', () => {
     });
   });
 
+  describe('astroVersion option', () => {
+    it('should default to latest when astroVersion is not specified', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'version-default',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const astroConfig = tree.read(
+        'apps/version-default/astro.config.mjs',
+        'utf-8',
+      );
+      expect(astroConfig).toContain("output: 'static'");
+      expect(astroConfig).not.toContain("output: 'hybrid'");
+    });
+
+    it('should generate Astro 5 compatible config when astroVersion is 5', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'astro5-app',
+        astroVersion: '5',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const astroConfig = tree.read(
+        'apps/astro5-app/astro.config.mjs',
+        'utf-8',
+      );
+      expect(astroConfig).toContain("output: 'static'");
+      expect(astroConfig).not.toContain("output: 'hybrid'");
+    });
+
+    it('should generate Astro 6 compatible config when astroVersion is 6', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'astro6-app',
+        astroVersion: '6',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const astroConfig = tree.read(
+        'apps/astro6-app/astro.config.mjs',
+        'utf-8',
+      );
+      expect(astroConfig).toContain("output: 'static'");
+      expect(astroConfig).not.toContain("output: 'hybrid'");
+    });
+
+    it('should generate Astro 6 compatible config when astroVersion is latest', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'astro-latest',
+        astroVersion: 'latest',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const astroConfig = tree.read(
+        'apps/astro-latest/astro.config.mjs',
+        'utf-8',
+      );
+      expect(astroConfig).toContain("output: 'static'");
+      expect(astroConfig).not.toContain("output: 'hybrid'");
+    });
+
+    it('should generate ESM config file for all versions', async () => {
+      for (const version of ['5', '6', 'latest'] as const) {
+        const options: ApplicationGeneratorSchema = {
+          name: `esm-${version}`,
+          astroVersion: version,
+        };
+
+        await applicationGenerator(tree, options);
+
+        expect(tree.exists(`apps/esm-${version}/astro.config.mjs`)).toBe(true);
+      }
+    });
+
+    it('should generate TypeScript config compatible with Astro 5+', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'ts-compat',
+        astroVersion: '5',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const tsConfig = readJson(tree, 'apps/ts-compat/tsconfig.json');
+      expect(tsConfig.include).toContain('.astro/types.d.ts');
+    });
+  });
+
   describe('template option', () => {
     it('should use minimal template by default', async () => {
       const options: ApplicationGeneratorSchema = {

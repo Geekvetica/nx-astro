@@ -8,8 +8,11 @@ import {
 import { InitGeneratorSchema } from './schema';
 
 const PLUGIN_NAME = '@geekvetica/nx-astro';
-const ASTRO_VERSION = '^5.0.3';
-const ASTROJS_NODE_VERSION = '^9.0.0';
+
+const ASTRO_VERSIONS: Record<string, { astro: string; node: string }> = {
+  '5': { astro: '^5.14.5', node: '^9.5.0' },
+  '6': { astro: '^6.2.0', node: '^10.0.0' },
+};
 
 const DEFAULT_PLUGIN_OPTIONS = {
   devTargetName: 'dev',
@@ -47,7 +50,7 @@ const DEFAULT_PLUGIN_OPTIONS = {
  */
 export async function initGenerator(
   tree: Tree,
-  options: InitGeneratorSchema
+  options: InitGeneratorSchema,
 ): Promise<void> {
   // Check if nx.json exists
   if (!tree.exists('nx.json')) {
@@ -62,7 +65,7 @@ export async function initGenerator(
     if (!tree.exists('package.json')) {
       throw new Error('package.json not found in workspace root');
     }
-    addDependencies(tree);
+    addDependencies(tree, options.astroVersion ?? 'latest');
   }
 
   await formatFiles(tree);
@@ -79,7 +82,7 @@ function addPluginToNxJson(tree: Tree): void {
     const isPluginRegistered = json.plugins.some(
       (plugin: string | { plugin: string }) =>
         plugin === PLUGIN_NAME ||
-        (typeof plugin === 'object' && plugin.plugin === PLUGIN_NAME)
+        (typeof plugin === 'object' && plugin.plugin === PLUGIN_NAME),
     );
 
     // Only add if not already registered
@@ -94,30 +97,55 @@ function addPluginToNxJson(tree: Tree): void {
   });
 }
 
-function addDependencies(tree: Tree): void {
+function addDependencies(tree: Tree, astroVersion: '5' | '6' | 'latest'): void {
   const packageJson = readJson(tree, 'package.json');
   const existingDependencies = packageJson.dependencies || {};
   const existingDevDependencies = packageJson.devDependencies || {};
 
-  // Prepare dev dependencies to add
+  const existingAstroRange =
+    existingDependencies['astro'] ?? existingDevDependencies['astro'];
+
+  const astroRange = existingAstroRange ?? resolveVersionRange(astroVersion);
+  const nodeRange = existingAstroRange
+    ? resolveNodeVersionFromRange(existingAstroRange)
+    : resolveNodeVersion(astroVersion);
+
   const devDependencies: Record<string, string> = {};
 
-  // Only add if not already present in either dependencies or devDependencies
-  if (!existingDependencies['astro'] && !existingDevDependencies['astro']) {
-    devDependencies['astro'] = ASTRO_VERSION;
+  if (!existingAstroRange) {
+    devDependencies['astro'] = astroRange;
   }
 
   if (
     !existingDependencies['@astrojs/node'] &&
-    !existingDevDependencies['@astrojs/node']
+    !existingDevDependencies['@astrojs/node'] &&
+    nodeRange
   ) {
-    devDependencies['@astrojs/node'] = ASTROJS_NODE_VERSION;
+    devDependencies['@astrojs/node'] = nodeRange;
   }
 
-  // Add dev dependencies if there are any to add
   if (Object.keys(devDependencies).length > 0) {
     addDependenciesToPackageJson(tree, {}, devDependencies);
   }
+}
+
+function resolveVersionRange(astroVersion: '5' | '6' | 'latest'): string {
+  const resolved = astroVersion === 'latest' ? '6' : astroVersion;
+  return ASTRO_VERSIONS[resolved].astro;
+}
+
+function resolveNodeVersion(astroVersion: '5' | '6' | 'latest'): string {
+  const resolved = astroVersion === 'latest' ? '6' : astroVersion;
+  return ASTRO_VERSIONS[resolved].node;
+}
+
+function resolveNodeVersionFromRange(astroRange: string): string | undefined {
+  const majorMatch = astroRange.match(/^[\^~>=<]*\s*(\d+)/);
+  if (!majorMatch) {
+    return undefined;
+  }
+  const major = majorMatch[1];
+  return ASTRO_VERSIONS[major]?.node;
 }
 
 export default initGenerator;

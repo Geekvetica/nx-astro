@@ -183,5 +183,233 @@ describe('astro-config-parser', () => {
       expect(config.server?.port).toBe(4321);
       expect(config.output).toBe('static');
     });
+
+    it('should parse legacy config with collectionsBackwardsCompat', () => {
+      const configContent = `
+        export default {
+          output: 'server',
+          legacy: {
+            collectionsBackwardsCompat: true
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.legacy).toBeDefined();
+      expect(config.legacy?.collectionsBackwardsCompat).toBe(true);
+    });
+
+    it('should parse legacy config with collectionsBackwardsCompat set to false', () => {
+      const configContent = `
+        export default {
+          legacy: {
+            collectionsBackwardsCompat: false
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.legacy?.collectionsBackwardsCompat).toBe(false);
+    });
+
+    it('should parse session config with Astro 6 shape', () => {
+      const configContent = `
+        export default {
+          output: 'server',
+          session: {
+            driver: '@astrojs/session/dynamodb',
+            ttl: 3600
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session).toBeDefined();
+      expect(config.session?.driver).toBe('@astrojs/session/dynamodb');
+      expect(config.session?.ttl).toBe(3600);
+    });
+
+    it('should parse session config with options and cookie', () => {
+      const configContent = `
+        export default {
+          session: {
+            driver: '@astrojs/session/memory',
+            options: { max: 100 },
+            cookie: { secure: true, sameSite: 'strict' }
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session?.driver).toBe('@astrojs/session/memory');
+      expect(config.session?.options).toBeDefined();
+      expect(config.session?.cookie).toBeDefined();
+    });
+
+    it('should detect experimental.logger presence', () => {
+      const configContent = `
+        export default {
+          experimental: {
+            logger: 'debug'
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.experimental).toBeDefined();
+      expect(config.experimental?.logger).toBeDefined();
+    });
+
+    it('should detect experimental.svgOptimizer presence', () => {
+      const configContent = `
+        export default {
+          experimental: {
+            svgOptimizer: true
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.experimental).toBeDefined();
+      expect(config.experimental?.svgOptimizer).toBeDefined();
+    });
+
+    it('should parse multiple experimental fields together', () => {
+      const configContent = `
+        export default {
+          experimental: {
+            clientPrerender: true,
+            logger: 'verbose',
+            svgOptimizer: true
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.experimental?.clientPrerender).toBe(true);
+      expect(config.experimental?.logger).toBeDefined();
+      expect(config.experimental?.svgOptimizer).toBeDefined();
+    });
+
+    it('should return empty config when no braces present', () => {
+      const configContent = `
+        export default undefined;
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(Object.keys(config).length).toBe(0);
+    });
+
+    it('should remove empty server object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          server: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.server).toBeUndefined();
+    });
+
+    it('should remove empty build object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          build: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.build).toBeUndefined();
+    });
+
+    it('should remove empty legacy object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          legacy: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.legacy).toBeUndefined();
+    });
+
+    it('should remove empty session object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          session: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session).toBeUndefined();
+    });
+
+    it('should remove empty experimental object when all values are undefined', () => {
+      const configContent = `
+        export default {
+          experimental: {}
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.experimental).toBeUndefined();
+    });
+
+    it('should parse server host as boolean true', () => {
+      const configContent = `
+        export default {
+          server: {
+            port: 3000,
+            host: true
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.server?.host).toBe(true);
+    });
+
+    it('should handle session with nested options that have unclosed braces gracefully', () => {
+      const configContent = `
+        export default {
+          session: {
+            driver: '@astrojs/session/memory',
+            options: { broken
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session).toBeUndefined();
+    });
+
+    it('should remove session object when it has only unrecognized fields', () => {
+      const configContent = `
+        export default {
+          session: {
+            unknownField: 'value'
+          }
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.session).toBeUndefined();
+    });
   });
 });
