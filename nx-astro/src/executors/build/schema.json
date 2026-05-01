@@ -52,6 +52,26 @@
       "items": {
         "type": "string"
       }
+    },
+    "generatePackageJson": {
+      "type": "boolean",
+      "description": "Generate package.json and lockfile in the output path",
+      "default": false
+    },
+    "includeDevDependenciesInPackageJson": {
+      "type": "boolean",
+      "description": "Include devDependencies in generated package.json",
+      "default": false
+    },
+    "skipOverrides": {
+      "type": "boolean",
+      "description": "Skip overrides field in generated package.json",
+      "default": false
+    },
+    "skipPackageManager": {
+      "type": "boolean",
+      "description": "Skip packageManager field in generated package.json",
+      "default": false
     }
   },
   "required": []

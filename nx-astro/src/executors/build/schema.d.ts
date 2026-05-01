@@ -52,4 +52,28 @@ export interface BuildExecutorSchema {
    * Additional CLI arguments to pass to Astro
    */
   additionalArgs?: string[];
+
+  /**
+   * Generate package.json and lockfile in the output path
+   * @default false
+   */
+  generatePackageJson?: boolean;
+
+  /**
+   * Include devDependencies in generated package.json
+   * @default false
+   */
+  includeDevDependenciesInPackageJson?: boolean;
+
+  /**
+   * Skip overrides field in generated package.json
+   * @default false
+   */
+  skipOverrides?: boolean;
+
+  /**
+   * Skip packageManager field in generated package.json
+   * @default false
+   */
+  skipPackageManager?: boolean;
 }

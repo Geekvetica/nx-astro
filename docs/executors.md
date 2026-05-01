@@ -180,18 +180,22 @@ nx build my-app --sourcemap
 
 ### Options
 
-| Option           | Type       | Default              | Description                                                                                                       |
-| ---------------- | ---------- | -------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `outputPath`     | `string`   | from config          | Override the default output directory. By default, uses `dist/{projectRoot}` or the value from `astro.config.mjs` |
-| `mode`           | `string`   | -                    | Build mode: `'static'` for SSG or `'server'` for SSR (usually determined by astro.config.mjs)                     |
-| `root`           | `string`   | project root         | Project root path (provided by Nx automatically)                                                                  |
-| `config`         | `string`   | `"astro.config.mjs"` | Path to Astro config file                                                                                         |
-| `site`           | `string`   | -                    | Site URL for absolute URLs in production                                                                          |
-| `base`           | `string`   | -                    | Base path for deployment (e.g., `/blog` for subdirectory deployments)                                             |
-| `sourcemap`      | `boolean`  | `false`              | Generate source maps for debugging production builds                                                              |
-| `clean`          | `boolean`  | `true`               | Clean output directory before build                                                                               |
-| `verbose`        | `boolean`  | `false`              | Enable verbose output for debugging                                                                               |
-| `additionalArgs` | `string[]` | -                    | Additional CLI arguments to pass to Astro                                                                         |
+| Option                                | Type       | Default              | Description                                                                                                       |
+| ------------------------------------- | ---------- | -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `outputPath`                          | `string`   | from config          | Override the default output directory. By default, uses `dist/{projectRoot}` or the value from `astro.config.mjs` |
+| `mode`                                | `string`   | -                    | Build mode: `'static'` for SSG or `'server'` for SSR (usually determined by astro.config.mjs)                     |
+| `root`                                | `string`   | project root         | Project root path (provided by Nx automatically)                                                                  |
+| `config`                              | `string`   | `"astro.config.mjs"` | Path to Astro config file                                                                                         |
+| `site`                                | `string`   | -                    | Site URL for absolute URLs in production                                                                          |
+| `base`                                | `string`   | -                    | Base path for deployment (e.g., `/blog` for subdirectory deployments)                                             |
+| `sourcemap`                           | `boolean`  | `false`              | Generate source maps for debugging production builds                                                              |
+| `clean`                               | `boolean`  | `true`               | Clean output directory before build                                                                               |
+| `verbose`                             | `boolean`  | `false`              | Enable verbose output for debugging                                                                               |
+| `additionalArgs`                      | `string[]` | -                    | Additional CLI arguments to pass to Astro                                                                         |
+| `generatePackageJson`                 | `boolean`  | `false`              | Generate `package.json` and lockfile artifacts in the build output directory                                      |
+| `includeDevDependenciesInPackageJson` | `boolean`  | `false`              | Include `devDependencies` in the generated `package.json`                                                         |
+| `skipOverrides`                       | `boolean`  | `false`              | Omit `overrides` from the generated `package.json`                                                                |
+| `skipPackageManager`                  | `boolean`  | `false`              | Omit `packageManager` from the generated `package.json`                                                           |
 
 ### Build Output
 
