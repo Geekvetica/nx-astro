@@ -81,7 +81,8 @@ export interface AstroConfig {
    * Output mode for the Astro project
    * - static: Pre-rendered static site
    * - server: Full server-side rendering
-   * - hybrid: Mix of static and server-rendered pages
+   * - hybrid: Mix of static and server-rendered pages (deprecated in Astro 5, removed in Astro 6)
+   * @deprecated Use 'server' output mode instead. Removed in Astro 6.
    */
   output?: 'static' | 'server' | 'hybrid';
 
@@ -173,5 +174,28 @@ export interface AstroConfig {
   /**
    * Experimental features
    */
-  experimental?: Record<string, unknown>;
+  experimental?: Record<string, unknown> & {
+    contentIntellisense?: boolean;
+    responsiveImages?: boolean;
+    clientPrerender?: boolean;
+    envDirectives?: boolean;
+    svg?: boolean;
+  };
+
+  /**
+   * Legacy compatibility options (Astro 5.x only, removed in Astro 6)
+   */
+  legacy?: {
+    collectionsBackwardsCompat?: boolean;
+  };
+
+  /**
+   * Session configuration for server-side state management (Astro 6+)
+   */
+  session?: {
+    driver?: string;
+    options?: Record<string, unknown>;
+    cookie?: Record<string, unknown>;
+    ttl?: number;
+  };
 }

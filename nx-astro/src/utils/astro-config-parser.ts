@@ -41,7 +41,7 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
     // Remove defineConfig wrapper if present
     if (exportContent.startsWith('defineConfig')) {
       const defineMatch = exportContent.match(
-        /defineConfig\s*\(\s*({[\s\S]*})\s*\)/
+        /defineConfig\s*\(\s*({[\s\S]*})\s*\)/,
       );
       if (defineMatch) {
         exportContent = defineMatch[1];
@@ -105,7 +105,7 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
         redirects: extractBooleanValue(buildBody, 'redirects'),
         inlineStylesheets: extractStringValue(
           buildBody,
-          'inlineStylesheets'
+          'inlineStylesheets',
         ) as 'always' | 'auto' | 'never' | undefined,
       };
     }
@@ -118,6 +118,60 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
     // Check for integrations (mark as present if we find integrations array)
     if (/integrations\s*:\s*\[/.test(configBody)) {
       config.integrations = [];
+    }
+
+    // Parse legacy object
+    const legacyMatch = configBody.match(/legacy\s*:\s*{([^}]*)}/);
+    if (legacyMatch) {
+      const legacyBody = legacyMatch[1];
+      config.legacy = {
+        collectionsBackwardsCompat: extractBooleanValue(
+          legacyBody,
+          'collectionsBackwardsCompat',
+        ),
+      };
+    }
+
+    // Parse session object (Astro 6+)
+    const sessionMatch = configBody.match(/session\s*:\s*{/);
+    if (sessionMatch && sessionMatch.index !== undefined) {
+      const sessionStart = sessionMatch.index + sessionMatch[0].length;
+      const sessionBody = extractBalancedBraceContent(configBody, sessionStart);
+      if (sessionBody) {
+        config.session = {
+          driver: extractStringValue(sessionBody, 'driver'),
+          ttl: extractNumberValue(sessionBody, 'ttl'),
+          options: extractObjectPresence(sessionBody, 'options'),
+          cookie: extractObjectPresence(sessionBody, 'cookie'),
+        };
+      }
+    }
+
+    // Parse experimental object
+    const experimentalMatch = configBody.match(/experimental\s*:\s*{([^}]*)}/);
+    if (experimentalMatch) {
+      const experimentalBody = experimentalMatch[1];
+      config.experimental = {
+        contentIntellisense: extractBooleanValue(
+          experimentalBody,
+          'contentIntellisense',
+        ),
+        responsiveImages: extractBooleanValue(
+          experimentalBody,
+          'responsiveImages',
+        ),
+        clientPrerender: extractBooleanValue(
+          experimentalBody,
+          'clientPrerender',
+        ),
+        envDirectives: extractBooleanValue(experimentalBody, 'envDirectives'),
+        svg: extractBooleanValue(experimentalBody, 'svg'),
+        logger: extractExperimentalValue(experimentalBody, 'logger'),
+        svgOptimizer: extractExperimentalValue(
+          experimentalBody,
+          'svgOptimizer',
+        ),
+      };
     }
 
     // Clean up undefined values
@@ -152,6 +206,42 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
         delete config.build;
       }
     }
+
+    if (config.legacy) {
+      Object.keys(config.legacy).forEach((key) => {
+        const legacyKey = key as keyof NonNullable<AstroConfig['legacy']>;
+        if (config.legacy && config.legacy[legacyKey] === undefined) {
+          delete config.legacy[legacyKey];
+        }
+      });
+      if (Object.keys(config.legacy).length === 0) {
+        delete config.legacy;
+      }
+    }
+
+    if (config.session) {
+      Object.keys(config.session).forEach((key) => {
+        const sessionKey = key as keyof NonNullable<AstroConfig['session']>;
+        if (config.session && config.session[sessionKey] === undefined) {
+          delete config.session[sessionKey];
+        }
+      });
+      if (Object.keys(config.session).length === 0) {
+        delete config.session;
+      }
+    }
+
+    if (config.experimental) {
+      Object.keys(config.experimental).forEach((key) => {
+        const expKey = key as keyof NonNullable<AstroConfig['experimental']>;
+        if (config.experimental && config.experimental[expKey] === undefined) {
+          delete config.experimental[expKey];
+        }
+      });
+      if (Object.keys(config.experimental).length === 0) {
+        delete config.experimental;
+      }
+    }
   } catch {
     // Return empty config on parse error
     return {};
@@ -170,17 +260,17 @@ function extractStringValue(content: string, key: string): string | undefined {
   // Match key followed by colon, then capture everything between quotes
   // Use word boundary to ensure we match the exact key
   const singleQuoteMatch = content.match(
-    new RegExp(`\\b${escapedKey}\\s*:\\s*'([^']*)'`)
+    new RegExp(`\\b${escapedKey}\\s*:\\s*'([^']*)'`),
   );
   if (singleQuoteMatch) return singleQuoteMatch[1];
 
   const doubleQuoteMatch = content.match(
-    new RegExp(`\\b${escapedKey}\\s*:\\s*"([^"]*)"`)
+    new RegExp(`\\b${escapedKey}\\s*:\\s*"([^"]*)"`),
   );
   if (doubleQuoteMatch) return doubleQuoteMatch[1];
 
   const backtickMatch = content.match(
-    new RegExp(`\\b${escapedKey}\\s*:\\s*\`([^\`]*)\``)
+    new RegExp(`\\b${escapedKey}\\s*:\\s*\`([^\`]*)\``),
   );
   if (backtickMatch) return backtickMatch[1];
 
@@ -200,7 +290,7 @@ function extractNumberValue(content: string, key: string): number | undefined {
  */
 function extractBooleanValue(
   content: string,
-  key: string
+  key: string,
 ): boolean | undefined {
   const match = content.match(new RegExp(`${key}\\s*:\\s*(true|false)`));
   return match ? match[1] === 'true' : undefined;
@@ -211,10 +301,62 @@ function extractBooleanValue(
  */
 function extractStringOrBooleanValue(
   content: string,
-  key: string
+  key: string,
 ): string | boolean | undefined {
   // Try boolean first
   const boolMatch = content.match(new RegExp(`${key}\\s*:\\s*(true|false)`));
+  if (boolMatch) {
+    return boolMatch[1] === 'true';
+  }
+
+  // Try string
+  return extractStringValue(content, key);
+}
+
+/**
+ * Extracts content between balanced braces starting from a given position.
+ */
+function extractBalancedBraceContent(
+  content: string,
+  startIndex: number,
+): string | null {
+  let depth = 1;
+  let i = startIndex;
+
+  while (i < content.length && depth > 0) {
+    if (content[i] === '{') depth++;
+    if (content[i] === '}') depth--;
+    i++;
+  }
+
+  if (depth === 0) {
+    return content.substring(startIndex, i - 1);
+  }
+
+  return null;
+}
+
+/**
+ * Detects if a key has an object value (returns empty object if present)
+ */
+function extractObjectPresence(
+  content: string,
+  key: string,
+): Record<string, unknown> | undefined {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = content.match(new RegExp(`\\b${escapedKey}\\s*:\\s*{`));
+  return match ? {} : undefined;
+}
+
+/**
+ * Extracts an experimental field value (string, boolean, or presence marker)
+ */
+function extractExperimentalValue(
+  content: string,
+  key: string,
+): string | boolean | undefined {
+  // Try boolean first
+  const boolMatch = content.match(new RegExp(`\\b${key}\\s*:\\s*(true|false)`));
   if (boolMatch) {
     return boolMatch[1] === 'true';
   }

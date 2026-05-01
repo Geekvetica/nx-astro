@@ -345,9 +345,65 @@ Optimize your CI pipeline with affected detection:
 ## Requirements
 
 - **Nx**: 21.6.4 or higher
-- **Astro**: 5.0.0 or higher
-- **Node.js**: 18.0.0 or higher
+- **Astro**: 5.x or 6.x
+- **Node.js**: 22.12.0 or higher
 - **TypeScript**: 5.9.0 or higher
+
+## Version Support
+
+| nx-astro | Astro | Node.js   | Status |
+| -------- | ----- | --------- | ------ |
+| 1.x      | 5.x   | >=22.12.0 | Active |
+| 1.x      | 6.x   | >=22.12.0 | Active |
+
+### Astro Version Selection
+
+When initializing the plugin, you can specify which major Astro version to install:
+
+```bash
+# Install with Astro 6.x (default)
+nx g @geekvetica/nx-astro:init
+
+# Install with Astro 5.x
+nx g @geekvetica/nx-astro:init --astro-version=5
+
+# Install with Astro 6.x explicitly
+nx g @geekvetica/nx-astro:init --astro-version=6
+```
+
+The plugin will automatically detect an existing Astro installation and use that version range.
+
+### Migrating from Astro 5 to Astro 6
+
+If you have an existing project using Astro 5 and want to upgrade to Astro 6:
+
+1. Update your workspace dependencies:
+
+   ```bash
+   pnpm add -D astro@^6.2.0 @astrojs/node@^10.0.0
+   ```
+
+2. Ensure Node.js version is 22.12.0 or higher
+
+3. Update content collections to use the Content Layer API (legacy collections are removed in Astro 6)
+
+4. If you need a migration helper, enable the legacy compatibility flag in your `astro.config.mjs`:
+
+   ```js
+   export default defineConfig({
+     legacy: {
+       collectionsBackwardsCompat: true,
+     },
+   });
+   ```
+
+5. Key breaking changes in Astro 6:
+   - Node 18/20 support dropped (requires Node 22.12.0+)
+   - Vite 7.0 (check Vite plugin compatibility)
+   - Zod 4.0 (update content schemas if using custom validation)
+   - `Astro.glob()` removed (use `import.meta.glob()` instead)
+   - CJS config files removed (use `.mjs` or `.ts`)
+   - Legacy content collections removed (migrate to Content Layer API)
 
 ## Generators
 
