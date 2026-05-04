@@ -642,11 +642,17 @@ function createTestProject() {
       `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive`,
       {
         cwd: dirname(projectDirectory),
-        stdio: 'inherit',
+        stdio: 'pipe',
         env: process.env,
       },
     );
   } catch (error: unknown) {
+    if (error instanceof Error && 'stdout' in error) {
+      console.error(
+        'create-nx-workspace stdout:',
+        (error as { stdout?: Buffer }).stdout?.toString(),
+      );
+    }
     if (error instanceof Error && 'stderr' in error) {
       console.error(
         'create-nx-workspace stderr:',
