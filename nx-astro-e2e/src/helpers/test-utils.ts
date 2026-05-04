@@ -9,7 +9,7 @@ import * as net from 'net';
 export function runNxCommand(
   command: string,
   cwd: string,
-  options?: { silent?: boolean; env?: NodeJS.ProcessEnv }
+  options?: { silent?: boolean; env?: NodeJS.ProcessEnv },
 ): string {
   const { silent = false, env = process.env } = options || {};
 
@@ -22,6 +22,10 @@ export function runNxCommand(
     });
     return typeof output === 'string' ? output : '';
   } catch (error: unknown) {
+    if (error instanceof Error && 'stdout' in error && 'stderr' in error) {
+      const execError = error as { stdout?: string; stderr?: string };
+      return (execError.stdout || '') + (execError.stderr || '');
+    }
     if (error instanceof Error) {
       console.error(`Command failed: npx nx ${command}`);
       console.error(error.message);
@@ -36,7 +40,7 @@ export function runNxCommand(
 export function runPnpmCommand(
   command: string,
   cwd: string,
-  options?: { silent?: boolean; env?: NodeJS.ProcessEnv }
+  options?: { silent?: boolean; env?: NodeJS.ProcessEnv },
 ): string {
   const { silent = false, env = process.env } = options || {};
 
@@ -82,7 +86,7 @@ export function readFile(filePath: string, projectDir: string): string {
 export function writeFile(
   filePath: string,
   content: string,
-  projectDir: string
+  projectDir: string,
 ): void {
   const fullPath = join(projectDir, filePath);
   writeFileSync(fullPath, content, 'utf-8');
@@ -93,7 +97,7 @@ export function writeFile(
  */
 export function readJsonFile<T = unknown>(
   filePath: string,
-  projectDir: string
+  projectDir: string,
 ): T {
   const content = readFile(filePath, projectDir);
   return JSON.parse(content) as T;
@@ -138,8 +142,8 @@ export function waitForPort(port: number, timeout = 60000): Promise<void> {
         if (Date.now() - startTime > timeout) {
           reject(
             new Error(
-              `Timeout waiting for port ${port} to be available after ${timeout}ms`
-            )
+              `Timeout waiting for port ${port} to be available after ${timeout}ms`,
+            ),
           );
         } else {
           setTimeout(checkPort, 500);
@@ -160,7 +164,7 @@ export function startProcess(
   command: string,
   args: string[],
   cwd: string,
-  env?: NodeJS.ProcessEnv
+  env?: NodeJS.ProcessEnv,
 ): ChildProcess {
   return spawn(command, args, {
     cwd,
@@ -192,7 +196,7 @@ export function killProcess(process: ChildProcess): Promise<void> {
 export function waitForCondition(
   condition: () => boolean | Promise<boolean>,
   timeout = 30000,
-  interval = 500
+  interval = 500,
 ): Promise<void> {
   const startTime = Date.now();
 

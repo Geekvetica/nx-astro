@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { dirname, join } from 'path';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import {
   fileExists,
@@ -394,31 +394,21 @@ describe('nx-astro e2e', () => {
     it('should cache build results', () => {
       logStep('Running build again to test caching...');
 
-      // Run second build - should use cache
       const output = runNxCommand(`build ${testAppName}`, projectDirectory, {
         silent: true,
       });
 
-      // Comprehensive cache check with detailed diagnostics
       const hasCacheHit =
         output.includes('cache') ||
         output.includes('[existing outputs match the cache]') ||
         output.includes('[local cache]') ||
-        output.includes('restored from cache');
+        output.includes('restored from cache') ||
+        output.includes('Nx read the output from the cache') ||
+        output.includes('outputs match the cache');
 
       if (!hasCacheHit) {
-        // Enhanced diagnostics when test fails
         console.error('Expected cache hit but got full rebuild');
         console.error('Build output:', output);
-        console.error(
-          'Output includes "Executing:":',
-          output.includes('Executing:'),
-        );
-        console.error('Output includes "Syncing":', output.includes('Syncing'));
-        console.error(
-          'Output includes "Build completed":',
-          output.includes('Build completed'),
-        );
       }
 
       expect(hasCacheHit).toBe(true);
@@ -637,14 +627,52 @@ function createTestProject() {
     recursive: true,
   });
 
-  execSync(
-    `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit`,
-    {
-      cwd: dirname(projectDirectory),
-      stdio: 'inherit',
-      env: process.env,
-    },
-  );
+  // Note: create-nx-workspace may fail in CI with ERR_PNPM_IGNORED_BUILDS
+  // if nx build scripts are not allowed. The test handles this by patching
+  // pnpm-workspace.yaml and re-running install if needed.
+  let workspaceCreated = false;
+  let attempts = 0;
+  const maxAttempts = 2;
+
+  while (!workspaceCreated && attempts < maxAttempts) {
+    attempts++;
+    try {
+      execSync(
+        `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit`,
+        {
+          cwd: dirname(projectDirectory),
+          stdio: 'inherit',
+          env: process.env,
+        },
+      );
+      workspaceCreated = true;
+    } catch (error) {
+      if (attempts >= maxAttempts) {
+        throw error;
+      }
+      // Patch pnpm-workspace.yaml to allow nx build scripts
+      const pnpmWorkspacePath = join(projectDirectory, 'pnpm-workspace.yaml');
+      if (existsSync(pnpmWorkspacePath)) {
+        const content = readFileSync(pnpmWorkspacePath, 'utf-8');
+        if (!content.includes('onlyBuiltDependencies')) {
+          console.log(
+            'Patching pnpm-workspace.yaml to allow nx build scripts...',
+          );
+          writeFileSync(
+            pnpmWorkspacePath,
+            content + '\nonlyBuiltDependencies:\n  - nx\n',
+          );
+          // Re-run install to allow nx build scripts
+          execSync('pnpm install --no-frozen-lockfile', {
+            cwd: projectDirectory,
+            stdio: 'inherit',
+            env: process.env,
+          });
+          workspaceCreated = true;
+        }
+      }
+    }
+  }
   console.log(`Created test project in "${projectDirectory}"`);
 
   // Ensure tsconfig.base.json exists at workspace root (required for hybrid TypeScript configuration)
