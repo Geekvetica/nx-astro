@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { dirname, join } from 'path';
-import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import {
   fileExists,
@@ -627,51 +627,22 @@ function createTestProject() {
     recursive: true,
   });
 
-  // Note: create-nx-workspace may fail in CI with ERR_PNPM_IGNORED_BUILDS
-  // if nx build scripts are not allowed. The test handles this by patching
-  // pnpm-workspace.yaml and re-running install if needed.
-  let workspaceCreated = false;
-  let attempts = 0;
-  const maxAttempts = 2;
+  const parentDir = dirname(projectDirectory);
+  const parentNpmrcPath = join(parentDir, '.npmrc');
 
-  while (!workspaceCreated && attempts < maxAttempts) {
-    attempts++;
-    try {
-      execSync(
-        `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit`,
-        {
-          cwd: dirname(projectDirectory),
-          stdio: 'inherit',
-          env: process.env,
-        },
-      );
-      workspaceCreated = true;
-    } catch (error) {
-      if (attempts >= maxAttempts) {
-        throw error;
-      }
-      // Patch pnpm-workspace.yaml to allow nx build scripts
-      const pnpmWorkspacePath = join(projectDirectory, 'pnpm-workspace.yaml');
-      if (existsSync(pnpmWorkspacePath)) {
-        const content = readFileSync(pnpmWorkspacePath, 'utf-8');
-        if (!content.includes('onlyBuiltDependencies')) {
-          console.log(
-            'Patching pnpm-workspace.yaml to allow nx build scripts...',
-          );
-          writeFileSync(
-            pnpmWorkspacePath,
-            content + '\nonlyBuiltDependencies:\n  - nx\n',
-          );
-          // Re-run install to allow nx build scripts
-          execSync('pnpm install --no-frozen-lockfile', {
-            cwd: projectDirectory,
-            stdio: 'inherit',
-            env: process.env,
-          });
-          workspaceCreated = true;
-        }
-      }
-    }
+  writeFileSync(parentNpmrcPath, 'only-built-dependencies[]=nx\n');
+
+  try {
+    execSync(
+      `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit`,
+      {
+        cwd: parentDir,
+        stdio: 'inherit',
+        env: process.env,
+      },
+    );
+  } finally {
+    rmSync(parentNpmrcPath, { force: true });
   }
   console.log(`Created test project in "${projectDirectory}"`);
 
