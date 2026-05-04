@@ -627,23 +627,17 @@ function createTestProject() {
     recursive: true,
   });
 
-  const parentDir = dirname(projectDirectory);
-  const parentNpmrcPath = join(parentDir, '.npmrc');
-
-  writeFileSync(parentNpmrcPath, 'only-built-dependencies[]=nx\n');
-
-  try {
-    execSync(
-      `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit`,
-      {
-        cwd: parentDir,
-        stdio: 'inherit',
-        env: process.env,
+  execSync(
+    `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
+    {
+      cwd: dirname(projectDirectory),
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        npm_config_dangerously_allow_all_builds: 'true',
       },
-    );
-  } finally {
-    rmSync(parentNpmrcPath, { force: true });
-  }
+    },
+  );
   console.log(`Created test project in "${projectDirectory}"`);
 
   // Ensure tsconfig.base.json exists at workspace root (required for hybrid TypeScript configuration)
