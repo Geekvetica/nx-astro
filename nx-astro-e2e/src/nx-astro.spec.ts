@@ -1,6 +1,7 @@
 import { execSync } from 'child_process';
 import { dirname, join } from 'path';
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { tmpdir } from 'os';
 import {
   fileExists,
   logStep,
@@ -625,7 +626,7 @@ describe('Sample test', () => {
  */
 function createTestProject() {
   const projectName = 'test-project';
-  const projectDirectory = join(process.cwd(), 'tmp', projectName);
+  const projectDirectory = join(tmpdir(), 'nx-astro-e2e', projectName);
 
   // Ensure projectDirectory is empty
   rmSync(projectDirectory, {

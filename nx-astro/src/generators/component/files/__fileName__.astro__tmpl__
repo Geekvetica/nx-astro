@@ -2,8 +2,6 @@
 export interface Props {
   // Add your props here
 }
-
-const props = Astro.props;
 ---
 
 <div>
