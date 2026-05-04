@@ -637,30 +637,14 @@ function createTestProject() {
     recursive: true,
   });
 
-  try {
-    execSync(
-      `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive`,
-      {
-        cwd: dirname(projectDirectory),
-        stdio: 'pipe',
-        env: process.env,
-      },
-    );
-  } catch (error: unknown) {
-    if (error instanceof Error && 'stdout' in error) {
-      console.error(
-        'create-nx-workspace stdout:',
-        (error as { stdout?: Buffer }).stdout?.toString(),
-      );
-    }
-    if (error instanceof Error && 'stderr' in error) {
-      console.error(
-        'create-nx-workspace stderr:',
-        (error as { stderr?: Buffer }).stderr?.toString(),
-      );
-    }
-    throw error;
-  }
+  execSync(
+    `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit`,
+    {
+      cwd: dirname(projectDirectory),
+      stdio: 'inherit',
+      env: process.env,
+    },
+  );
   console.log(`Created test project in "${projectDirectory}"`);
 
   // Ensure tsconfig.base.json exists at workspace root (required for hybrid TypeScript configuration)
