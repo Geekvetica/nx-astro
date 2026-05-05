@@ -628,7 +628,7 @@ function createTestProject() {
   });
 
   execSync(
-    `pnpm dlx --allow-build=nx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
+    `npx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
     {
       cwd: dirname(projectDirectory),
       stdio: 'inherit',
