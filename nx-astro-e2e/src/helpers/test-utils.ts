@@ -14,7 +14,7 @@ export function runNxCommand(
   const { silent = false, env = process.env } = options || {};
 
   try {
-    const output = execSync(`npx nx ${command}`, {
+    const output = execSync(`pnpm exec nx ${command}`, {
       cwd,
       env,
       encoding: 'utf-8',
@@ -27,7 +27,7 @@ export function runNxCommand(
       return (execError.stdout || '') + (execError.stderr || '');
     }
     if (error instanceof Error) {
-      console.error(`Command failed: npx nx ${command}`);
+      console.error(`Command failed: pnpm exec nx ${command}`);
       console.error(error.message);
     }
     throw error;

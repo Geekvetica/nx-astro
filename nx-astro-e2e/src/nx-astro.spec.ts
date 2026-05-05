@@ -32,7 +32,7 @@ describe('nx-astro e2e', () => {
       'geekvetica-nx-astro-0.0.0-e2e.tgz',
     );
 
-    execSync(`pnpm add -Dw "${tarballPath}"`, {
+    execSync(`pnpm add -Dw --allow-build=nx "${tarballPath}"`, {
       cwd: projectDirectory,
       stdio: 'inherit',
       env: process.env,
@@ -628,7 +628,7 @@ function createTestProject() {
   });
 
   execSync(
-    `pnpm dlx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
+    `pnpm dlx --allow-build=nx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
     {
       cwd: dirname(projectDirectory),
       stdio: 'inherit',

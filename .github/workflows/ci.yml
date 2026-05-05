@@ -159,9 +159,9 @@ jobs:
       - name: Run lint on affected projects
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            npx nx affected -t lint --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3
+            pnpm exec nx affected -t lint --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3
           else
-            npx nx run-many -t lint --all --parallel=3
+            pnpm exec nx run-many -t lint --all --parallel=3
           fi
 
   # ===========================================================================
@@ -216,9 +216,9 @@ jobs:
       - name: Run tests on affected projects
         run: |
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            npx nx affected -t test --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3 --configuration=ci
+            pnpm exec nx affected -t test --base=origin/${{ github.base_ref }} --head=HEAD --parallel=3 --configuration=ci
           else
-            npx nx run-many -t test --all --parallel=3 --configuration=ci
+            pnpm exec nx run-many -t test --all --parallel=3 --configuration=ci
           fi
 
       - name: Upload coverage reports
@@ -315,7 +315,7 @@ jobs:
             ${{ runner.os }}-nx-cache-
 
       - name: Build nx-astro plugin
-        run: npx nx build nx-astro
+        run: pnpm exec nx build nx-astro
 
       - name: Verify build outputs
         run: |
@@ -406,7 +406,7 @@ jobs:
             ${{ runner.os }}-nx-cache-
 
       - name: Run E2E tests
-        run: npx nx e2e nx-astro-e2e
+        run: pnpm exec nx e2e nx-astro-e2e
 
   # ===========================================================================
   # Job 6: CI Success Check
