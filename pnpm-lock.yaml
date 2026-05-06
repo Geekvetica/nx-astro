@@ -22,8 +22,8 @@ importers:
         specifier: ^0.9.9
         version: 0.9.9(prettier@3.8.3)(typescript@5.9.3)
       '@eslint/js':
-        specifier: ^9.8.0
-        version: 9.37.0
+        specifier: ^9.39.4
+        version: 9.39.4
       '@nx/eslint':
         specifier: 22.7.1
         version: 22.7.1(@babel/traverse@7.29.0)(@nx/jest@22.7.1(@babel/traverse@7.29.0)(@swc-node/register@1.11.1(@swc/core@1.15.33(@swc/helpers@0.5.21))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(@types/node@25.6.0)(babel-plugin-macros@3.1.0)(nx@22.7.1(@swc-node/register@1.11.1(@swc/core@1.15.33(@swc/helpers@0.5.21))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.15.33(@swc/helpers@0.5.21)))(ts-node@10.9.2(@swc/core@1.15.33(@swc/helpers@0.5.21))(@types/node@25.6.0)(typescript@5.9.3))(typescript@5.9.3)(verdaccio@6.5.2(typanion@3.14.0)))(@swc-node/register@1.11.1(@swc/core@1.15.33(@swc/helpers@0.5.21))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.15.33(@swc/helpers@0.5.21))(@zkochan/js-yaml@0.0.7)(eslint@9.37.0)(nx@22.7.1(@swc-node/register@1.11.1(@swc/core@1.15.33(@swc/helpers@0.5.21))(@swc/types@0.1.26)(typescript@5.9.3))(@swc/core@1.15.33(@swc/helpers@0.5.21)))(verdaccio@6.5.2(typanion@3.14.0))
@@ -1144,6 +1144,10 @@ packages:
 
   '@eslint/js@9.37.0':
     resolution: {integrity: sha512-jaS+NJ+hximswBG6pjNX0uEJZkrT0zwpVi3BA3vX22aFGjJjmgSTSmPpZCRKmoBL5VY/M6p0xsSJx7rk7sy5gg==}
+    engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@eslint/js@9.39.4':
+    resolution: {integrity: sha512-nE7DEIchvtiFTwBw4Lfbu59PG+kCofhjsKaCWzxTpt4lfRjRMqG6uMBzKXuEcyXhOHoUp9riAm7/aWYGhXZ9cw==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
 
   '@eslint/object-schema@2.1.7':
@@ -7908,6 +7912,8 @@ snapshots:
       - supports-color
 
   '@eslint/js@9.37.0': {}
+
+  '@eslint/js@9.39.4': {}
 
   '@eslint/object-schema@2.1.7': {}
 
