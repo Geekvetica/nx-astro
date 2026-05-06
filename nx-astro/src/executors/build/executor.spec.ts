@@ -474,7 +474,7 @@ describe('Build Executor', () => {
     it('should generate package.json and lockfile when enabled', async () => {
       const options: BuildExecutorSchema = {
         generatePackageJson: true,
-        outputPath: 'dist/apps/my-app',
+        outputPath: 'dist',
       };
 
       const result = await buildExecutor(options, context);
@@ -482,17 +482,20 @@ describe('Build Executor', () => {
       expect(result.success).toBe(true);
       expect(mockCreatePackageJson).toHaveBeenCalled();
       expect(mockCreateLockFile).toHaveBeenCalled();
-      expect(mockMkdirSync).toHaveBeenCalledWith('dist/apps/my-app', {
-        recursive: true,
-      });
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/workspace/apps/my-app/dist',
+        {
+          recursive: true,
+        },
+      );
       expect(mockWriteFileSync).toHaveBeenCalledTimes(2);
       expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('dist/apps/my-app/package.json'),
+        '/workspace/apps/my-app/dist/package.json',
         expect.any(String),
         expect.any(Object),
       );
       expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('dist/apps/my-app/pnpm-lock.yaml'),
+        '/workspace/apps/my-app/dist/pnpm-lock.yaml',
         'lockfile-content',
         expect.any(Object),
       );
@@ -501,7 +504,7 @@ describe('Build Executor', () => {
     it('should not write lockfile for bun workspaces', async () => {
       const options: BuildExecutorSchema = {
         generatePackageJson: true,
-        outputPath: 'dist/apps/my-app',
+        outputPath: 'dist',
       };
 
       mockDetectPackageManager.mockReturnValue('bun');
@@ -511,12 +514,15 @@ describe('Build Executor', () => {
       const result = await buildExecutor(options, context);
 
       expect(result.success).toBe(true);
-      expect(mockMkdirSync).toHaveBeenCalledWith('dist/apps/my-app', {
-        recursive: true,
-      });
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/workspace/apps/my-app/dist',
+        {
+          recursive: true,
+        },
+      );
       expect(mockWriteFileSync).toHaveBeenCalledTimes(1);
       expect(mockWriteFileSync).toHaveBeenCalledWith(
-        expect.stringContaining('dist/apps/my-app/package.json'),
+        '/workspace/apps/my-app/dist/package.json',
         expect.any(String),
         expect.any(Object),
       );
@@ -528,7 +534,7 @@ describe('Build Executor', () => {
         includeDevDependenciesInPackageJson: true,
         skipOverrides: true,
         skipPackageManager: true,
-        outputPath: 'dist/apps/my-app',
+        outputPath: 'dist',
       };
 
       await buildExecutor(options, context);
@@ -564,6 +570,56 @@ describe('Build Executor', () => {
       expect(mockCreatePackageJson).not.toHaveBeenCalled();
       expect(mockCreateLockFile).not.toHaveBeenCalled();
       expect(mockWriteFileSync).not.toHaveBeenCalled();
+    });
+
+    it('should use absolute output path as is for package artifacts', async () => {
+      const options: BuildExecutorSchema = {
+        generatePackageJson: true,
+        outputPath: '/tmp/build-output',
+      };
+
+      const result = await buildExecutor(options, context);
+
+      expect(result.success).toBe(true);
+      expect(mockMkdirSync).toHaveBeenCalledWith('/tmp/build-output', {
+        recursive: true,
+      });
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        '/tmp/build-output/package.json',
+        expect.any(String),
+        expect.any(Object),
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        '/tmp/build-output/pnpm-lock.yaml',
+        'lockfile-content',
+        expect.any(Object),
+      );
+    });
+
+    it('should use Astro default dist path under project root when outputPath is not provided', async () => {
+      const options: BuildExecutorSchema = {
+        generatePackageJson: true,
+      };
+
+      const result = await buildExecutor(options, context);
+
+      expect(result.success).toBe(true);
+      expect(mockMkdirSync).toHaveBeenCalledWith(
+        '/workspace/apps/my-app/dist',
+        {
+          recursive: true,
+        },
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        '/workspace/apps/my-app/dist/package.json',
+        expect.any(String),
+        expect.any(Object),
+      );
+      expect(mockWriteFileSync).toHaveBeenCalledWith(
+        '/workspace/apps/my-app/dist/pnpm-lock.yaml',
+        'lockfile-content',
+        expect.any(Object),
+      );
     });
   });
 });

@@ -346,8 +346,10 @@ Optimize your CI pipeline with affected detection:
 
 - **Nx**: 21.6.4 or higher
 - **Astro**: 5.x or 6.x
-- **Node.js**: 22.12.0 or higher
+- **Node.js**: 22.12.0 or higher (project-wide minimum for all supported Astro versions)
 - **TypeScript**: 5.9.0 or higher
+
+Astro 5.x is still supported by this plugin, but it uses the same Node.js 22.12.0+ baseline as Astro 6.x.
 
 ## Version Support
 
@@ -372,6 +374,8 @@ nx g @geekvetica/nx-astro:init --astro-version=6
 ```
 
 The plugin will automatically detect an existing Astro installation and use that version range.
+
+Note: regardless of Astro major version selection, this plugin requires Node.js 22.12.0 or higher.
 
 ### Migrating from Astro 5 to Astro 6
 

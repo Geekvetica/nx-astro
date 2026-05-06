@@ -15,6 +15,16 @@ export interface BuildExecutorOutput {
   error?: string;
 }
 
+function resolveBuildOutputPath(
+  projectRoot: string,
+  outputPath?: string,
+): string {
+  const astroOutputPath = outputPath || 'dist';
+  return path.isAbsolute(astroOutputPath)
+    ? astroOutputPath
+    : path.resolve(projectRoot, astroOutputPath);
+}
+
 export default async function buildExecutor(
   options: BuildExecutorSchema,
   context: ExecutorContext,
@@ -100,8 +110,10 @@ export default async function buildExecutor(
     logger.info('Build completed successfully');
 
     if (options.generatePackageJson) {
-      const outputPath =
-        options.outputPath || path.join('dist', projectConfig.root);
+      const resolvedOutputPath = resolveBuildOutputPath(
+        projectRoot,
+        options.outputPath,
+      );
       const packageJson = createPackageJson(projectName, context.projectGraph, {
         target: context.targetName,
         root: context.root,
@@ -117,17 +129,17 @@ export default async function buildExecutor(
         packageManager,
       );
 
-      mkdirSync(outputPath, { recursive: true });
+      mkdirSync(resolvedOutputPath, { recursive: true });
 
       writeFileSync(
-        path.join(outputPath, 'package.json'),
+        path.join(resolvedOutputPath, 'package.json'),
         `${JSON.stringify(packageJson, null, 2)}\n`,
         {
           encoding: 'utf-8',
         },
       );
       if (packageManager !== 'bun' && lockFile) {
-        writeFileSync(path.join(outputPath, lockFileName), lockFile, {
+        writeFileSync(path.join(resolvedOutputPath, lockFileName), lockFile, {
           encoding: 'utf-8',
         });
       }
