@@ -23,7 +23,7 @@
   "dependencies": {
     "@astrojs/node": "^10.0.6",
     "@nx/devkit": "22.7.1",
-    "astro": "^6.1.6"
+    "astro": "^6.3.1"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
