@@ -30,7 +30,7 @@ Before triggering a release, ensure:
 2. All CI checks are passing on the `main` branch
 3. The `main` branch is up to date
 4. Required secrets are configured:
-   - `NPM_TOKEN` - Authentication token for npm registry
+   - `NPM_TOKEN` - Automation token from an npm account with publish permission to the `@geekvetica` scope
    - `GITHUB_TOKEN` - Automatically provided by GitHub Actions
 
 ## How to Trigger a Release
@@ -91,10 +91,12 @@ Steps:
 ```
 
 **What it checks:**
+
 - Current branch is `main`
 - No uncommitted changes
 
 **Why it matters:**
+
 - Prevents accidental releases from feature branches
 - Ensures consistent release source
 
@@ -111,6 +113,7 @@ Steps:
 ```
 
 **What it validates:**
+
 - No linting errors
 - All unit tests pass
 - Code coverage meets thresholds
@@ -118,6 +121,7 @@ Steps:
 - E2E tests verify plugin functionality
 
 **Why it matters:**
+
 - Ensures we only release working code
 - Prevents broken versions from being published
 
@@ -144,6 +148,7 @@ Steps:
 5. **GitHub Release**: Creates release with changelog and installation instructions
 
 **Key files modified:**
+
 - `nx-astro/package.json` - Version bumped
 - `dist/nx-astro/package.json` - Built package version
 - `CHANGELOG.md` - Updated with new version (if configured)
@@ -159,11 +164,13 @@ Steps:
 ```
 
 **What it validates:**
+
 - Package is available on npm registry
 - GitHub release was created successfully
 - Release assets are accessible
 
 **Why it matters:**
+
 - Catches publishing failures early
 - Ensures users can install the new version
 
@@ -190,6 +197,7 @@ npx nx release version --specifier=prerelease --preid=beta
 The release workflow generates a changelog based on:
 
 - **Conventional Commits**: Commit messages following the format:
+
   ```
   <type>(<scope>): <subject>
   ```
@@ -203,13 +211,16 @@ The release workflow generates a changelog based on:
   - `chore`: Build/tooling changes
 
 - **Example Changelog Entry**:
+
   ```markdown
   ## 1.1.0
 
   ### Features
+
   - feat(application): add portfolio template option
 
   ### Bug Fixes
+
   - fix(build): correct output path resolution on Windows
   ```
 
@@ -224,11 +235,13 @@ npm publish --access public
 ```
 
 **Package Details:**
+
 - **Package Name**: `@geekvetica/nx-astro`
 - **Registry**: https://registry.npmjs.org
 - **Access**: Public (anyone can install)
 
 **After Publishing:**
+
 - Package is available at: https://www.npmjs.com/package/@geekvetica/nx-astro
 - Users can install: `npm install @geekvetica/nx-astro`
 
@@ -244,21 +257,26 @@ A GitHub release is automatically created with:
   - Link to documentation
 
 **Example Release Body:**
+
 ```markdown
 # nx-astro v1.0.0
 
 ## Features
+
 - Add support for Astro 5.0
 - New portfolio template
 
 ## Bug Fixes
+
 - Fix build output path on Windows
 
 ## Installation
 
 \`\`\`bash
 npm install @geekvetica/nx-astro@1.0.0
+
 # or
+
 pnpm add @geekvetica/nx-astro@1.0.0
 \`\`\`
 
@@ -272,6 +290,7 @@ See the [README](https://github.com/geekvetica/nx-astro) for usage instructions.
 After a successful release:
 
 1. **Verify npm Package**
+
    ```bash
    # Check package is available
    npm view @geekvetica/nx-astro
@@ -284,6 +303,7 @@ After a successful release:
    ```
 
 2. **Test Installation**
+
    ```bash
    # Create test workspace
    npx create-nx-workspace@latest test-install --preset=apps
@@ -317,6 +337,7 @@ npm deprecate @geekvetica/nx-astro@1.0.0 "Critical bug, please upgrade to 1.0.1"
 ```
 
 **When to use:**
+
 - Non-critical bugs that users should be aware of
 - Security vulnerabilities (also publish fix immediately)
 - Package works but has known issues
@@ -329,6 +350,7 @@ npm unpublish @geekvetica/nx-astro@1.0.0
 ```
 
 **When to use:**
+
 - Critical breaking bugs that make the package unusable
 - Accidental publish with secrets or sensitive data
 - Within 72 hours of publish
@@ -343,6 +365,7 @@ npm unpublish @geekvetica/nx-astro@1.0.0
 4. Announce fix to users
 
 **Steps:**
+
 ```bash
 # 1. Fix the issue locally
 git checkout main
@@ -367,6 +390,7 @@ npm deprecate @geekvetica/nx-astro@1.0.0 "Critical bug fixed in 1.0.1"
 **Symptom:** Validate job fails
 **Cause:** Not on `main` branch
 **Solution:**
+
 ```bash
 git checkout main
 git pull origin main
@@ -378,6 +402,7 @@ git pull origin main
 **Symptom:** Test job fails
 **Cause:** Tests failing on `main`
 **Solution:**
+
 1. Fix failing tests
 2. Push to `main`
 3. Wait for CI to pass
@@ -387,12 +412,25 @@ git pull origin main
 
 **Symptom:** npm publish fails
 **Possible Causes:**
+
 - `NPM_TOKEN` not set or expired
+- `NPM_TOKEN` belongs to an account without publish permission for `@geekvetica/nx-astro`
 - Network issues
 - Version already published
 
+**Common Error Pattern:**
+
+- `npm error code E404`
+- `404 Not Found - PUT https://registry.npmjs.org/@geekvetica%2fnx-astro`
+
+This often indicates an authorization problem for a scoped package rather than a missing package.
+
 **Solution:**
+
 ```bash
+# Verify npm authentication in CI context
+npm whoami
+
 # Check if version already exists
 npm view @geekvetica/nx-astro versions
 
@@ -400,18 +438,21 @@ npm view @geekvetica/nx-astro versions
 # 1. Login to npmjs.com
 # 2. Go to Access Tokens
 # 3. Generate new Automation token
-# 4. Update NPM_TOKEN secret in GitHub
+# 4. Ensure token owner can publish @geekvetica/nx-astro
+# 5. Update NPM_TOKEN secret in GitHub
 ```
 
 ### Release Fails at GitHub Release
 
 **Symptom:** GitHub release creation fails
 **Possible Causes:**
+
 - Tag already exists
 - Insufficient permissions
 - Network issues
 
 **Solution:**
+
 ```bash
 # Check if tag exists
 git ls-remote --tags origin
@@ -434,24 +475,28 @@ Recommended release cadence:
 For critical security issues:
 
 1. Create hotfix branch from `main`
+
    ```bash
    git checkout main
    git checkout -b hotfix/security-fix
    ```
 
 2. Fix issue with minimal changes
+
    ```bash
    # Make focused fix
    git commit -m "fix: critical security vulnerability"
    ```
 
 3. Push and create PR
+
    ```bash
    git push origin hotfix/security-fix
    # Create PR, get quick review
    ```
 
 4. Merge and release immediately
+
    ```bash
    # After merge, trigger patch release
    # Skip normal testing cycle if necessary

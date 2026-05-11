@@ -41,6 +41,12 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (for example: v2.0.0)'
+        required: true
+        type: string
 
 # Only allow one release at a time
 concurrency:
@@ -49,9 +55,9 @@ concurrency:
 
 # Permissions required for npm provenance with OIDC
 permissions:
-  contents: write        # Create releases
-  packages: write        # Publish packages
-  id-token: write        # OIDC token for npm provenance
+  contents: write # Create releases
+  packages: write # Publish packages
+  id-token: write # OIDC token for npm provenance
 
 env:
   NODE_VERSION: '20.x'
@@ -130,9 +136,39 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RAW_TAG="${{ inputs.tag }}"
+            if [ -z "$RAW_TAG" ]; then
+              echo "✗ Missing required input: tag"
+              exit 1
+            fi
+
+            if [[ ! "$RAW_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "✗ Invalid tag format: $RAW_TAG"
+              echo "Expected format: v<major>.<minor>.<patch> (optional prerelease suffix)"
+              exit 1
+            fi
+
+            VERSION=${RAW_TAG#v}
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
+
+      - name: Verify npm authentication and package access
+        run: |
+          if ! npm whoami >/dev/null 2>&1; then
+            echo "✗ npm authentication failed"
+            echo "Check NPM_TOKEN secret and ensure it is a valid Automation token."
+            exit 1
+          fi
+
+          echo "✓ npm authentication is valid"
+          npm view @geekvetica/nx-astro version || true
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to npm with provenance
         run: |
@@ -198,7 +234,18 @@ jobs:
       - name: Get version from tag
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            RAW_TAG="${{ inputs.tag }}"
+            if [ -z "$RAW_TAG" ]; then
+              echo "✗ Missing required input: tag"
+              exit 1
+            fi
+
+            VERSION=${RAW_TAG#v}
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Extract changelog
