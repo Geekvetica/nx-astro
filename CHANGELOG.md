@@ -1,3 +1,29 @@
+# 2.0.0 (2026-05-11)
+
+### 🚀 Features
+
+- add Astro 6.2 support with backward compatibility for Astro 5.x ([5710f62](https://github.com/Geekvetica/nx-astro/commit/5710f62))
+- **build:** add optional package artifacts for Astro builds ([#38](https://github.com/Geekvetica/nx-astro/issues/38))
+
+### 🩹 Fixes
+
+- review comments ([743745e](https://github.com/Geekvetica/nx-astro/commit/743745e))
+- update CI to use Node.js 22.x required by Astro 6 ([4b49145](https://github.com/Geekvetica/nx-astro/commit/4b49145))
+- address PR review feedback ([#97](https://github.com/Geekvetica/nx-astro/pull/97))
+- **build:** add missing @nx/js runtime dependency ([8204081](https://github.com/Geekvetica/nx-astro/commit/8204081))
+- **build:** align generated package artifacts with Astro outDir resolution ([0ea04d8](https://github.com/Geekvetica/nx-astro/commit/0ea04d8))
+- **ci:** use pnpm exec nx and allow nx build scripts in e2e bootstrap ([b09702c](https://github.com/Geekvetica/nx-astro/commit/b09702c))
+- **e2e:** move test workspace to OS tmpdir to avoid gitignore conflict with create-nx-workspace@latest ([dd45625](https://github.com/Geekvetica/nx-astro/commit/dd45625))
+- **e2e:** add --skipGit to create-nx-workspace and remove debug code ([cd0142e](https://github.com/Geekvetica/nx-astro/commit/cd0142e))
+- **e2e:** handle pnpm 10+ build script restrictions and improve cache test ([4adfe27](https://github.com/Geekvetica/nx-astro/commit/4adfe27))
+- **e2e:** preconfigure pnpm build policy for workspace bootstrap ([2c7cc73](https://github.com/Geekvetica/nx-astro/commit/2c7cc73))
+- **e2e:** allow pnpm nx bootstrap during create-nx-workspace ([3e99aae](https://github.com/Geekvetica/nx-astro/commit/3e99aae))
+- **e2e:** use npx for workspace bootstrap to avoid pnpm config conflict ([faf1b95](https://github.com/Geekvetica/nx-astro/commit/faf1b95))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski @pwojciechowski
+
 ## 1.0.8 (2025-10-22)
 
 ### 🚀 Features
