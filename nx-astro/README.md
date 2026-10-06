@@ -347,7 +347,7 @@ Optimize your CI pipeline with affected detection:
 - **Nx**: 21.6.4 or higher
 - **Astro**: 5.x, 6.x, or 7.x
 - **Node.js**: 22.12.0 or higher (project-wide minimum for all supported Astro versions)
-- **TypeScript**: 5.9.0 or higher
+- **TypeScript**: 5.9.x or 6.x (`astro check` does not support TypeScript 7 yet)
 
 Astro 5.x and 6.x are still supported by this plugin, but they use the same Node.js 22.12.0+ baseline as Astro 7.x.
 
