@@ -77,14 +77,16 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
       | 'ignore'
       | undefined;
 
-    // Parse Astro 7+ top-level options
+    // Parse Astro 7+ top-level options. Only look at top-level properties so
+    // same-named keys nested in other objects (e.g. vite.define) are ignored.
+    const topLevelBody = extractTopLevelContent(configBody);
     config.compressHTML = extractStringOrBooleanValue(
-      configBody,
+      topLevelBody,
       'compressHTML',
     ) as boolean | 'jsx' | undefined;
-    config.fetchFile = /\bfetchFile\s*:\s*null\b/.test(configBody)
+    config.fetchFile = /\bfetchFile\s*:\s*null\b/.test(topLevelBody)
       ? null
-      : extractStringValue(configBody, 'fetchFile');
+      : extractStringValue(topLevelBody, 'fetchFile');
 
     // Parse server object
     const serverMatch = configBody.match(/server\s*:\s*{([^}]*)}/);
@@ -343,6 +345,54 @@ function extractBalancedBraceContent(
   }
 
   return null;
+}
+
+/**
+ * Returns the given object body with all nested object, array and call
+ * contents removed, leaving only its top-level properties.
+ * String literals are skipped so brackets inside them are not counted.
+ */
+function extractTopLevelContent(content: string): string {
+  let result = '';
+  let depth = 0;
+  let quote: string | null = null;
+
+  for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+
+    if (quote) {
+      if (depth === 0) result += char;
+      if (char === '\\') {
+        if (depth === 0 && i + 1 < content.length) result += content[i + 1];
+        i++;
+      } else if (char === quote) {
+        quote = null;
+      }
+      continue;
+    }
+
+    if (char === '"' || char === "'" || char === '`') {
+      quote = char;
+      if (depth === 0) result += char;
+      continue;
+    }
+
+    if (char === '{' || char === '[' || char === '(') {
+      if (depth === 0) result += char;
+      depth++;
+      continue;
+    }
+
+    if (char === '}' || char === ']' || char === ')') {
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) result += char;
+      continue;
+    }
+
+    if (depth === 0) result += char;
+  }
+
+  return result;
 }
 
 /**

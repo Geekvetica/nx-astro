@@ -254,6 +254,48 @@ describe('astro-config-parser', () => {
       expect(config.fetchFile).toBeNull();
     });
 
+    it('should ignore nested compressHTML and fetchFile keys', () => {
+      const config = parseAstroConfig(`
+        export default defineConfig({
+          compressHTML: 'jsx',
+          fetchFile: 'app.ts',
+          vite: {
+            define: {
+              compressHTML: false,
+              fetchFile: null,
+            },
+          },
+        });
+      `);
+
+      expect(config.compressHTML).toBe('jsx');
+      expect(config.fetchFile).toBe('app.ts');
+    });
+
+    it('should not pick up compressHTML or fetchFile defined only in nested objects', () => {
+      const config = parseAstroConfig(`
+        export default defineConfig({
+          output: 'static',
+          vite: { define: { compressHTML: false, fetchFile: null } },
+          integrations: [someIntegration({ fetchFile: 'other.ts' })],
+        });
+      `);
+
+      expect(config).not.toHaveProperty('compressHTML');
+      expect(config).not.toHaveProperty('fetchFile');
+    });
+
+    it('should not treat brackets inside strings as nesting', () => {
+      const config = parseAstroConfig(`
+        export default {
+          site: 'https://example.com/{x}',
+          fetchFile: 'entry.ts'
+        };
+      `);
+
+      expect(config.fetchFile).toBe('entry.ts');
+    });
+
     it('should leave compressHTML and fetchFile undefined when not set', () => {
       const config = parseAstroConfig(`
         export default {
