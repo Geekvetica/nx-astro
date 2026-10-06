@@ -77,16 +77,19 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
       | 'ignore'
       | undefined;
 
-    // Parse Astro 7+ top-level options. Only look at top-level properties so
-    // same-named keys nested in other objects (e.g. vite.define) are ignored.
-    const topLevelBody = extractTopLevelContent(configBody);
-    config.compressHTML = extractStringOrBooleanValue(
-      topLevelBody,
-      'compressHTML',
-    ) as boolean | 'jsx' | undefined;
-    config.fetchFile = /\bfetchFile\s*:\s*null\b/.test(topLevelBody)
-      ? null
-      : extractStringValue(topLevelBody, 'fetchFile');
+    // Parse Astro 7+ top-level options. Only real top-level properties are
+    // considered: same-named keys nested in other objects (e.g. vite.define)
+    // or appearing inside other string values are ignored.
+    const compressHTML = extractTopLevelLiteral(configBody, 'compressHTML');
+    if (compressHTML === 'jsx' || typeof compressHTML === 'boolean') {
+      config.compressHTML = compressHTML;
+    }
+    const fetchFile = extractTopLevelLiteral(configBody, 'fetchFile');
+    if (typeof fetchFile === 'string') {
+      config.fetchFile = fetchFile;
+    } else if (fetchFile === null) {
+      config.fetchFile = null;
+    }
 
     // Parse server object
     const serverMatch = configBody.match(/server\s*:\s*{([^}]*)}/);
@@ -348,12 +351,13 @@ function extractBalancedBraceContent(
 }
 
 /**
- * Returns the given object body with all nested object, array and call
- * contents removed, leaving only its top-level properties.
- * String literals are skipped so brackets inside them are not counted.
+ * Returns a copy of an object body where everything except top-level
+ * property syntax is blanked out with spaces: string literal contents and the
+ * contents of nested objects, arrays and calls. Character positions are
+ * preserved so matches can be mapped back to the original text.
  */
-function extractTopLevelContent(content: string): string {
-  let result = '';
+function maskNonTopLevelContent(content: string): string {
+  const masked = content.split('');
   let depth = 0;
   let quote: string | null = null;
 
@@ -361,38 +365,75 @@ function extractTopLevelContent(content: string): string {
     const char = content[i];
 
     if (quote) {
-      if (depth === 0) result += char;
       if (char === '\\') {
-        if (depth === 0 && i + 1 < content.length) result += content[i + 1];
+        masked[i] = ' ';
+        if (i + 1 < content.length) masked[i + 1] = ' ';
         i++;
-      } else if (char === quote) {
+        continue;
+      }
+      if (char === quote) {
         quote = null;
+        if (depth > 0) masked[i] = ' ';
+      } else {
+        masked[i] = ' ';
       }
       continue;
     }
 
     if (char === '"' || char === "'" || char === '`') {
       quote = char;
-      if (depth === 0) result += char;
+      if (depth > 0) masked[i] = ' ';
       continue;
     }
 
     if (char === '{' || char === '[' || char === '(') {
-      if (depth === 0) result += char;
+      if (depth > 0) masked[i] = ' ';
       depth++;
       continue;
     }
 
     if (char === '}' || char === ']' || char === ')') {
       depth = Math.max(0, depth - 1);
-      if (depth === 0) result += char;
+      if (depth > 0) masked[i] = ' ';
       continue;
     }
 
-    if (depth === 0) result += char;
+    if (depth > 0) masked[i] = ' ';
   }
 
-  return result;
+  return masked.join('');
+}
+
+/**
+ * Reads the literal value (string, boolean or null) of a top-level property
+ * in an object body. Returns undefined if the property is missing or its
+ * value is not a literal.
+ */
+function extractTopLevelLiteral(
+  content: string,
+  key: string,
+): string | boolean | null | undefined {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const keyMatch = new RegExp(`(?:^|,)\\s*${escapedKey}\\s*:\\s*`).exec(
+    maskNonTopLevelContent(content),
+  );
+  if (!keyMatch) {
+    return undefined;
+  }
+
+  const value = content.slice(keyMatch.index + keyMatch[0].length);
+  const literalMatch = value.match(
+    /^(?:'([^']*)'|"([^"]*)"|`([^`]*)`|(true|false|null)\b)/,
+  );
+  if (!literalMatch) {
+    return undefined;
+  }
+
+  const [, single, double, backtick, keyword] = literalMatch;
+  if (keyword === 'true') return true;
+  if (keyword === 'false') return false;
+  if (keyword === 'null') return null;
+  return single ?? double ?? backtick;
 }
 
 /**

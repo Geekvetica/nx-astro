@@ -285,6 +285,43 @@ describe('astro-config-parser', () => {
       expect(config).not.toHaveProperty('fetchFile');
     });
 
+    it('should ignore option names that appear inside other string values', () => {
+      const config = parseAstroConfig(`
+        export default {
+          compressHTML: 'jsx',
+          fetchFile: 'app.ts',
+          site: 'https://example.com/?compressHTML: false&fetchFile: null'
+        };
+      `);
+
+      expect(config.compressHTML).toBe('jsx');
+      expect(config.fetchFile).toBe('app.ts');
+    });
+
+    it('should not pick up option names that only appear inside strings', () => {
+      const config = parseAstroConfig(`
+        export default {
+          site: 'https://example.com/?compressHTML: false&fetchFile: null'
+        };
+      `);
+
+      expect(config).not.toHaveProperty('compressHTML');
+      expect(config).not.toHaveProperty('fetchFile');
+    });
+
+    it('should handle escaped quotes in other string values', () => {
+      const config = parseAstroConfig(`
+        export default {
+          base: 'it\\'s, fetchFile: null',
+          compressHTML: true,
+          fetchFile: "src/entry.ts"
+        };
+      `);
+
+      expect(config.compressHTML).toBe(true);
+      expect(config.fetchFile).toBe('src/entry.ts');
+    });
+
     it('should not treat brackets inside strings as nesting', () => {
       const config = parseAstroConfig(`
         export default {

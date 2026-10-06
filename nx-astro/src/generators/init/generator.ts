@@ -176,12 +176,22 @@ function resolveNodeVersion(astroVersion: '5' | '6' | '7' | 'latest'): string {
 /**
  * Picks an @astrojs/node range whose peer requirement is met by every Astro
  * version the existing range allows, based on the range's lower bound.
+ * For `||` ranges the lowest alternative decides; ranges spanning several
+ * majors or that cannot be parsed get no adapter.
  */
 function resolveNodeVersionFromRange(astroRange: string): string | undefined {
-  const lowerBound = parseLowerBound(astroRange);
-  if (!lowerBound) {
+  const lowerBounds = astroRange.split('||').map(parseLowerBound);
+  if (lowerBounds.length === 0 || lowerBounds.some((bound) => !bound)) {
     return undefined;
   }
+
+  const bounds = lowerBounds as [number, number, number][];
+  if (bounds.some((bound) => bound[0] !== bounds[0][0])) {
+    return undefined;
+  }
+  const lowerBound = bounds.reduce((lowest, bound) =>
+    compareVersions(bound, lowest) < 0 ? bound : lowest,
+  );
 
   const candidates = NODE_ADAPTER_COMPATIBILITY[String(lowerBound[0])];
   return candidates?.find(

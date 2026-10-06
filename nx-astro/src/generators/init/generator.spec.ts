@@ -276,6 +276,9 @@ describe('init generator', () => {
       ['^6.3.0', '^10.1.0'],
       ['^5.17.3', '^9.5.4'],
       ['>=5.0.0 <8.0.0', '>=9.0.0 <9.1.0'],
+      ['^7.3.6 || 7.1.0', '>=11.0.1 <11.1.3'],
+      ['7.1.0 || ^7.3.6', '>=11.0.1 <11.1.3'],
+      ['^7.2.1 || ^7.3.0', '^11.1.7'],
     ])(
       'should add an @astrojs/node range compatible with existing astro %s',
       async (astroRange, expectedNodeRange) => {
@@ -292,6 +295,22 @@ describe('init generator', () => {
         expect(packageJson.devDependencies['@astrojs/node']).toBe(
           expectedNodeRange,
         );
+      },
+    );
+
+    it.each(['^6.0.0 || ^7.0.0', '^7.0.0 || latest'])(
+      'should not add @astrojs/node for compound astro range %s it cannot satisfy',
+      async (astroRange) => {
+        updateJson(tree, 'package.json', (json) => {
+          json.devDependencies = json.devDependencies || {};
+          json.devDependencies['astro'] = astroRange;
+          return json;
+        });
+
+        await initGenerator(tree, {});
+
+        const packageJson = readJson(tree, 'package.json');
+        expect(packageJson.devDependencies['@astrojs/node']).toBeUndefined();
       },
     );
 
