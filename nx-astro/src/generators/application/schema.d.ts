@@ -36,5 +36,5 @@ export interface ApplicationGeneratorSchema {
    * Major Astro version to target
    * @default "latest"
    */
-  astroVersion?: '5' | '6' | 'latest';
+  astroVersion?: '5' | '6' | '7' | 'latest';
 }

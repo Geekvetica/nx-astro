@@ -214,6 +214,57 @@ describe('astro-config-parser', () => {
       expect(config.legacy?.collectionsBackwardsCompat).toBe(false);
     });
 
+    it('should parse compressHTML jsx mode (Astro 7+)', () => {
+      const config = parseAstroConfig(`
+        export default {
+          compressHTML: 'jsx'
+        };
+      `);
+
+      expect(config.compressHTML).toBe('jsx');
+    });
+
+    it('should parse compressHTML boolean value', () => {
+      const config = parseAstroConfig(`
+        export default {
+          compressHTML: false
+        };
+      `);
+
+      expect(config.compressHTML).toBe(false);
+    });
+
+    it('should parse fetchFile entrypoint (Astro 7+)', () => {
+      const config = parseAstroConfig(`
+        export default {
+          fetchFile: 'app.ts'
+        };
+      `);
+
+      expect(config.fetchFile).toBe('app.ts');
+    });
+
+    it('should parse fetchFile set to null', () => {
+      const config = parseAstroConfig(`
+        export default {
+          fetchFile: null
+        };
+      `);
+
+      expect(config.fetchFile).toBeNull();
+    });
+
+    it('should leave compressHTML and fetchFile undefined when not set', () => {
+      const config = parseAstroConfig(`
+        export default {
+          output: 'static'
+        };
+      `);
+
+      expect(config).not.toHaveProperty('compressHTML');
+      expect(config).not.toHaveProperty('fetchFile');
+    });
+
     it('should parse session config with Astro 6 shape', () => {
       const configContent = `
         export default {

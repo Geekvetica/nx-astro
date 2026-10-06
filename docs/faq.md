@@ -119,8 +119,8 @@ See the [Migration Guide](./migration-guide.md) for detailed instructions.
 ### What versions are supported?
 
 - **Nx**: 21.6.4+
-- **Astro**: 5.0.0+
-- **Node.js**: 18.0.0+
+- **Astro**: 5.x, 6.x, 7.x
+- **Node.js**: 22.12.0+
 - **TypeScript**: 5.9.0+
 
 ---

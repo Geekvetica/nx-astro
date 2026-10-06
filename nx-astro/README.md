@@ -345,11 +345,11 @@ Optimize your CI pipeline with affected detection:
 ## Requirements
 
 - **Nx**: 21.6.4 or higher
-- **Astro**: 5.x or 6.x
+- **Astro**: 5.x, 6.x, or 7.x
 - **Node.js**: 22.12.0 or higher (project-wide minimum for all supported Astro versions)
 - **TypeScript**: 5.9.0 or higher
 
-Astro 5.x is still supported by this plugin, but it uses the same Node.js 22.12.0+ baseline as Astro 6.x.
+Astro 5.x and 6.x are still supported by this plugin, but they use the same Node.js 22.12.0+ baseline as Astro 7.x.
 
 ## Version Support
 
@@ -357,25 +357,56 @@ Astro 5.x is still supported by this plugin, but it uses the same Node.js 22.12.
 | -------- | ----- | --------- | ------ |
 | 1.x      | 5.x   | >=22.12.0 | Active |
 | 1.x      | 6.x   | >=22.12.0 | Active |
+| 2.x      | 5.x   | >=22.12.0 | Active |
+| 2.x      | 6.x   | >=22.12.0 | Active |
+| 2.x      | 7.x   | >=22.12.0 | Active |
 
 ### Astro Version Selection
 
 When initializing the plugin, you can specify which major Astro version to install:
 
 ```bash
-# Install with Astro 6.x (default)
+# Install with Astro 7.x (default)
 nx g @geekvetica/nx-astro:init
+
+# Install with Astro 7.x explicitly
+nx g @geekvetica/nx-astro:init --astro-version=7
+
+# Install with Astro 6.x
+nx g @geekvetica/nx-astro:init --astro-version=6
 
 # Install with Astro 5.x
 nx g @geekvetica/nx-astro:init --astro-version=5
-
-# Install with Astro 6.x explicitly
-nx g @geekvetica/nx-astro:init --astro-version=6
 ```
 
 The plugin will automatically detect an existing Astro installation and use that version range.
 
 Note: regardless of Astro major version selection, this plugin requires Node.js 22.12.0 or higher.
+
+### Migrating from Astro 6 to Astro 7
+
+If you have an existing project using Astro 6 and want to upgrade to Astro 7:
+
+1. Update your workspace dependencies:
+
+   ```bash
+   pnpm add -D astro@^7.3.6 @astrojs/node@^11.1.7
+   ```
+
+   Update any other `@astrojs/*` integrations to their Astro 7 compatible majors as well.
+
+2. Node.js requirement is unchanged (22.12.0+)
+
+3. Key breaking changes in Astro 7:
+   - Vite 8 (check Vite plugin compatibility)
+   - Rust-based compiler replaces the Go compiler and is stricter about invalid HTML (e.g. unclosed tags now error). Remove `experimental.rustCompiler` if set.
+   - `compressHTML` defaults to `'jsx'`. Set `compressHTML: true` to keep the previous HTML-aware whitespace handling.
+   - Markdown is rendered by Sätteri by default. To keep remark/rehype plugins, install `@astrojs/markdown-remark` and set `markdown.processor: unified()`.
+   - Advanced routing is stable and uses `src/fetch.ts` as its entrypoint. Move `experimental.advancedRouting.fetchFile` to the top-level `fetchFile` option (or set `fetchFile: null` to disable it).
+   - `@astrojs/db` and the `astro db` / `astro login` / `astro link` CLI commands are removed.
+   - Deprecated `astro:transitions` helpers (`TRANSITION_*` constants, `isTransition*Event()`, `createAnimationScope()`) are removed.
+
+4. `astro dev` now detaches into the background when an AI coding agent is detected. The nx-astro `dev` executor keeps the server in the foreground (it sets `ASTRO_DEV_BACKGROUND=0`) so Nx can supervise it. Set `ASTRO_DEV_BACKGROUND=1` yourself to opt back in.
 
 ### Migrating from Astro 5 to Astro 6
 

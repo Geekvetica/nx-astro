@@ -77,6 +77,15 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
       | 'ignore'
       | undefined;
 
+    // Parse Astro 7+ top-level options
+    config.compressHTML = extractStringOrBooleanValue(
+      configBody,
+      'compressHTML',
+    ) as boolean | 'jsx' | undefined;
+    config.fetchFile = /\bfetchFile\s*:\s*null\b/.test(configBody)
+      ? null
+      : extractStringValue(configBody, 'fetchFile');
+
     // Parse server object
     const serverMatch = configBody.match(/server\s*:\s*{([^}]*)}/);
     if (serverMatch) {

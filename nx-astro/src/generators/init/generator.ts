@@ -12,7 +12,10 @@ const PLUGIN_NAME = '@geekvetica/nx-astro';
 const ASTRO_VERSIONS: Record<string, { astro: string; node: string }> = {
   '5': { astro: '^5.14.5', node: '^9.5.0' },
   '6': { astro: '^6.2.0', node: '^10.0.0' },
+  '7': { astro: '^7.3.6', node: '^11.1.7' },
 };
+
+const LATEST_ASTRO_MAJOR = '7';
 
 const DEFAULT_PLUGIN_OPTIONS = {
   devTargetName: 'dev',
@@ -97,7 +100,10 @@ function addPluginToNxJson(tree: Tree): void {
   });
 }
 
-function addDependencies(tree: Tree, astroVersion: '5' | '6' | 'latest'): void {
+function addDependencies(
+  tree: Tree,
+  astroVersion: '5' | '6' | '7' | 'latest',
+): void {
   const packageJson = readJson(tree, 'package.json');
   const existingDependencies = packageJson.dependencies || {};
   const existingDevDependencies = packageJson.devDependencies || {};
@@ -129,13 +135,15 @@ function addDependencies(tree: Tree, astroVersion: '5' | '6' | 'latest'): void {
   }
 }
 
-function resolveVersionRange(astroVersion: '5' | '6' | 'latest'): string {
-  const resolved = astroVersion === 'latest' ? '6' : astroVersion;
+function resolveVersionRange(astroVersion: '5' | '6' | '7' | 'latest'): string {
+  const resolved =
+    astroVersion === 'latest' ? LATEST_ASTRO_MAJOR : astroVersion;
   return ASTRO_VERSIONS[resolved].astro;
 }
 
-function resolveNodeVersion(astroVersion: '5' | '6' | 'latest'): string {
-  const resolved = astroVersion === 'latest' ? '6' : astroVersion;
+function resolveNodeVersion(astroVersion: '5' | '6' | '7' | 'latest'): string {
+  const resolved =
+    astroVersion === 'latest' ? LATEST_ASTRO_MAJOR : astroVersion;
   return ASTRO_VERSIONS[resolved].node;
 }
 

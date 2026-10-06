@@ -78,6 +78,20 @@ export interface AstroConfig {
   trailingSlash?: 'always' | 'never' | 'ignore';
 
   /**
+   * HTML whitespace compression mode.
+   * - 'jsx': JSX-style whitespace stripping (default in Astro 7+)
+   * - true: HTML-aware compression (default in Astro 5/6)
+   * - false: Preserve all whitespace
+   */
+  compressHTML?: boolean | 'jsx';
+
+  /**
+   * Advanced routing entrypoint, relative to srcDir (Astro 7+).
+   * Defaults to 'fetch.ts'. Set to null to disable the entrypoint.
+   */
+  fetchFile?: string | null;
+
+  /**
    * Output mode for the Astro project
    * - static: Pre-rendered static site
    * - server: Full server-side rendering
@@ -167,9 +181,12 @@ export interface AstroConfig {
   vite?: Record<string, unknown>;
 
   /**
-   * Markdown configuration
+   * Markdown configuration.
+   * In Astro 7+, `processor` selects the Markdown pipeline (Sätteri by default).
    */
-  markdown?: Record<string, unknown>;
+  markdown?: Record<string, unknown> & {
+    processor?: unknown;
+  };
 
   /**
    * Experimental features
