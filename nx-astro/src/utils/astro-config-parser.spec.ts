@@ -212,6 +212,94 @@ describe('astro-config-parser', () => {
       expect(elapsed).toBeLessThan(1000);
     });
 
+    it('should keep // inside strings and strip trailing line comments', () => {
+      const configContent = `
+        export default {
+          site: 'https://example.com', // the site
+          base: "/docs" // the base
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.site).toBe('https://example.com');
+      expect(config.base).toBe('/docs');
+    });
+
+    it('should strip line comments in files with Windows line endings', () => {
+      const configContent = [
+        'export default {',
+        "  // output: 'server',",
+        "  output: 'static',",
+        '};',
+      ].join('\r\n');
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.output).toBe('static');
+    });
+
+    it('should unwrap defineConfig with whitespace around the object', () => {
+      const configContent = `
+        import { defineConfig } from 'astro/config';
+        export default defineConfig ( {
+          output: 'server',
+          server: { port: 3000 },
+        } ) ;
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.output).toBe('server');
+      expect(config.server?.port).toBe(3000);
+    });
+
+    describe('linear time on crafted input', () => {
+      const parseWithin = (configContent: string, limitMs = 1000) => {
+        const start = performance.now();
+        const config = parseAstroConfig(configContent);
+        expect(performance.now() - start).toBeLessThan(limitMs);
+        return config;
+      };
+
+      it('should handle a line of many quote characters', () => {
+        parseWithin(
+          `export default { output: 'static' };\n${'"'.repeat(300_000)}`,
+        );
+      });
+
+      it('should handle a line of many // sequences', () => {
+        parseWithin(
+          `export default { output: 'static' };\n${'//'.repeat(300_000)}\r`,
+        );
+      });
+
+      it('should handle long whitespace after export default', () => {
+        parseWithin(`export default ${'  '.repeat(300_000)}`);
+      });
+
+      it('should handle many repeated defineConfig({{ openers', () => {
+        parseWithin(`export default ${'defineConfig({{'.repeat(50_000)}`);
+      });
+
+      it('should handle many repeated keys and braces in the config body', () => {
+        for (const chunk of [
+          'server : {',
+          'build: {',
+          'legacy:{',
+          'experimental: {',
+          'session: {',
+          'adapter: x(',
+          'output: ',
+          "site: '",
+          'port: 1',
+          ', base : ',
+        ]) {
+          parseWithin(`export default { ${chunk.repeat(30_000)} }`);
+        }
+      });
+    });
+
     it('should parse legacy config with collectionsBackwardsCompat', () => {
       const configContent = `
         export default {

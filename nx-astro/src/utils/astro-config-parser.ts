@@ -1,6 +1,76 @@
 import { AstroConfig } from '../types/astro-config';
 
 /**
+ * Reports whether a line has a quoted string ('...', "..." or `...`) that
+ * contains the given text. Pairs quotes like the lazy regex
+ * `/(['"`]).*?\1/g`, but in linear time.
+ */
+function hasStringLiteralContaining(line: string, text: string): boolean {
+  let position = 0;
+  while (position < line.length) {
+    const quote = line[position];
+    if (quote === "'" || quote === '"' || quote === '`') {
+      const end = line.indexOf(quote, position + 1);
+      if (end !== -1) {
+        if (line.slice(position, end + 1).includes(text)) {
+          return true;
+        }
+        position = end + 1;
+        continue;
+      }
+    }
+    position++;
+  }
+  return false;
+}
+
+/**
+ * Extracts `{ ... }` from `defineConfig ( { ... } )` in linear time.
+ * Like the greedy regex `/defineConfig\s*\(\s*({[\s\S]*})\s*\)/`, it uses
+ * the first well-formed `defineConfig(` opener and the last `}` that is
+ * followed only by whitespace and `)`.
+ */
+function extractDefineConfigObject(content: string): string | undefined {
+  const opener = /defineConfig\s*\(\s*\{/.exec(content);
+  if (!opener) {
+    return undefined;
+  }
+  const objectStart = opener.index + opener[0].length - 1;
+
+  for (
+    let close = content.lastIndexOf(')');
+    close > objectStart;
+    close = content.lastIndexOf(')', close - 1)
+  ) {
+    let objectEnd = close - 1;
+    while (objectEnd > objectStart && /\s/.test(content[objectEnd])) {
+      objectEnd--;
+    }
+    if (objectEnd > objectStart && content[objectEnd] === '}') {
+      return content.slice(objectStart, objectEnd + 1);
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Returns the text between an opener such as `server: {` and the next `}`,
+ * matching `/key\s*:\s*{([^}]*)}/` in linear time.
+ */
+function extractFlatObjectBody(
+  content: string,
+  opener: RegExp,
+): string | undefined {
+  const match = opener.exec(content);
+  if (!match) {
+    return undefined;
+  }
+  const bodyStart = match.index + match[0].length;
+  const bodyEnd = content.indexOf('}', bodyStart);
+  return bodyEnd === -1 ? undefined : content.slice(bodyStart, bodyEnd);
+}
+
+/**
  * Removes block comments in linear time. A lazy regex such as
  * `/\/\*[\s\S]*?\*\//g` is quadratic on many unclosed comment openers.
  * Like that regex, an unclosed opener and everything after it is kept.
@@ -38,33 +108,33 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
       .split('\n')
       .map((line) => {
         // Don't remove // that's inside a string
-        const stringMatch = line.match(/(['"`]).*?\1/g);
-        if (stringMatch && stringMatch.some((s) => s.includes('//'))) {
+        if (hasStringLiteralContaining(line, '//')) {
           // Line has // inside a string, don't strip it
           return line;
         }
         // Remove // comments
-        return line.replace(/\/\/.*$/, '');
+        const commentStart = line.indexOf('//');
+        return commentStart === -1 ? line : line.slice(0, commentStart);
       })
       .join('\n');
 
     // Extract the config object (everything between { and })
     // Handle both direct export and defineConfig wrapper
     // Find the last opening brace before the closing
-    const exportMatch = content.match(/export\s+default\s+([\s\S]+)$/);
+    const exportMatch = /export\s+default\s/.exec(content);
     if (!exportMatch) {
       return config;
     }
 
-    let exportContent = exportMatch[1].trim();
+    let exportContent = content
+      .slice(exportMatch.index + exportMatch[0].length)
+      .trim();
 
     // Remove defineConfig wrapper if present
     if (exportContent.startsWith('defineConfig')) {
-      const defineMatch = exportContent.match(
-        /defineConfig\s*\(\s*({[\s\S]*})\s*\)/,
-      );
-      if (defineMatch) {
-        exportContent = defineMatch[1];
+      const defineConfigObject = extractDefineConfigObject(exportContent);
+      if (defineConfigObject !== undefined) {
+        exportContent = defineConfigObject;
       }
     }
 
@@ -106,9 +176,8 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
     }
 
     // Parse server object
-    const serverMatch = configBody.match(/server\s*:\s*{([^}]*)}/);
-    if (serverMatch) {
-      const serverBody = serverMatch[1];
+    const serverBody = extractFlatObjectBody(configBody, /server\s*:\s*{/);
+    if (serverBody !== undefined) {
       config.server = {
         port: extractNumberValue(serverBody, 'port'),
         host: extractStringOrBooleanValue(serverBody, 'host'),
@@ -117,9 +186,8 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
     }
 
     // Parse build object
-    const buildMatch = configBody.match(/build\s*:\s*{([^}]*)}/);
-    if (buildMatch) {
-      const buildBody = buildMatch[1];
+    const buildBody = extractFlatObjectBody(configBody, /build\s*:\s*{/);
+    if (buildBody !== undefined) {
       config.build = {
         format: extractStringValue(buildBody, 'format') as
           'file' | 'directory' | undefined,
@@ -147,9 +215,8 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
     }
 
     // Parse legacy object
-    const legacyMatch = configBody.match(/legacy\s*:\s*{([^}]*)}/);
-    if (legacyMatch) {
-      const legacyBody = legacyMatch[1];
+    const legacyBody = extractFlatObjectBody(configBody, /legacy\s*:\s*{/);
+    if (legacyBody !== undefined) {
       config.legacy = {
         collectionsBackwardsCompat: extractBooleanValue(
           legacyBody,
@@ -174,9 +241,11 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
     }
 
     // Parse experimental object
-    const experimentalMatch = configBody.match(/experimental\s*:\s*{([^}]*)}/);
-    if (experimentalMatch) {
-      const experimentalBody = experimentalMatch[1];
+    const experimentalBody = extractFlatObjectBody(
+      configBody,
+      /experimental\s*:\s*{/,
+    );
+    if (experimentalBody !== undefined) {
       config.experimental = {
         contentIntellisense: extractBooleanValue(
           experimentalBody,
