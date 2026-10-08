@@ -105,7 +105,9 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
   try {
     // Remove comments (but preserve // inside strings)
     const content = stripBlockComments(configContent) // Multi-line comments first
-      .split('\n')
+      // Split on every JavaScript line terminator, so a line comment never
+      // runs past a CR, LINE SEPARATOR or PARAGRAPH SEPARATOR line ending
+      .split(/\r\n|[\n\r\u2028\u2029]/)
       .map((line) => {
         // Don't remove // that's inside a string
         if (hasStringLiteralContaining(line, '//')) {

@@ -239,6 +239,26 @@ describe('astro-config-parser', () => {
       expect(config.output).toBe('static');
     });
 
+    it.each([
+      ['CR', '\r'],
+      ['LINE SEPARATOR', '\u2028'],
+      ['PARAGRAPH SEPARATOR', '\u2029'],
+    ])(
+      'should strip line comments in files with %s line endings',
+      (_name, lineEnding) => {
+        const configContent = [
+          'export default defineConfig({',
+          "  // output: 'static',",
+          "  output: 'server',",
+          '});',
+        ].join(lineEnding);
+
+        const config = parseAstroConfig(configContent);
+
+        expect(config.output).toBe('server');
+      },
+    );
+
     it('should unwrap defineConfig with whitespace around the object', () => {
       const configContent = `
         import { defineConfig } from 'astro/config';
