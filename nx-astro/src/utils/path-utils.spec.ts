@@ -36,7 +36,7 @@ describe('path-utils', () => {
     });
 
     it('should run in linear time on long runs of inner slashes', () => {
-      const input = `a${'/'.repeat(100_000)}a`;
+      const input = `a${'/'.repeat(300_000)}a`;
 
       const start = performance.now();
       const result = normalizeProjectRoot(input);
@@ -100,7 +100,7 @@ describe('path-utils', () => {
     });
 
     it('should run in linear time on long runs of inner slashes', () => {
-      const fragment = `a${'/'.repeat(100_000)}a`;
+      const fragment = `a${'/'.repeat(300_000)}a`;
 
       const start = performance.now();
       const result = joinPathFragments('apps', fragment);
