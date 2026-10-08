@@ -290,11 +290,14 @@ jobs:
 
           # Check if CHANGELOG.md exists
           if [ -f "CHANGELOG.md" ]; then
-            # Extract changelog section for this version using awk
+            # Extract the section for this version. nx release writes "# x.y.0"
+            # headings for major and minor versions and "## x.y.z" for patches,
+            # so a section ends at the next "# " or "## " version heading. The
+            # version is compared exactly, not as a regex.
             CHANGELOG=$(awk -v ver="$VERSION" '
-              /^## / {
+              /^##? [0-9]/ {
                 if (found) exit;
-                if ($0 ~ ver) found=1;
+                if ($2 == ver) found=1;
                 next;
               }
               found { print }
