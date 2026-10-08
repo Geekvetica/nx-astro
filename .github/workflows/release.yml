@@ -30,6 +30,8 @@
 # Security:
 #   - Short-lived OIDC credentials, nothing to rotate or leak
 #   - A human approves every release with 2FA before it is public
+#   - Only release commits on main are staged (see "Verify release tag")
+#   - v* tags are protected by a GitHub tag ruleset (admins only)
 #   - Minimal permissions with id-token for OIDC
 #
 # Provenance:
@@ -72,6 +74,7 @@ jobs:
   # Job 1: Run Tests and Lint
   # ===========================================================================
   # Purpose:
+  #   - Refuse tags that are not `nx release` release commits on main
   #   - Run linting and unit tests before publishing
   #   - E2E tests are skipped in release workflow (they run in CI)
   #   - Fail fast if any tests fail
@@ -87,6 +90,38 @@ jobs:
         with:
           ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
+
+      - name: Verify release tag
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          # Only stage tags created by `nx release`: the tag must point to the
+          # release commit for its version, and that commit must be on main.
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "✗ Invalid tag format: $TAG"
+            exit 1
+          fi
+          VERSION=${TAG#v}
+
+          SUBJECT=$(git log -1 --format=%s HEAD)
+          if [ "$SUBJECT" != "chore(release): publish $VERSION" ]; then
+            echo "✗ $TAG does not point to a release commit (subject: $SUBJECT)"
+            exit 1
+          fi
+
+          PACKAGE_VERSION=$(jq -r .version nx-astro/package.json)
+          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+            echo "✗ nx-astro/package.json has version $PACKAGE_VERSION, expected $VERSION"
+            exit 1
+          fi
+
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "✗ $TAG is not on main"
+            exit 1
+          fi
+
+          echo "✓ $TAG is the release commit for $VERSION on main"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6

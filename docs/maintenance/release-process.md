@@ -389,14 +389,20 @@ npm deprecate @geekvetica/nx-astro@1.0.0 "Critical bug fixed in 1.0.1"
 
 ### Release Fails at Validation
 
-**Symptom:** Validate job fails
-**Cause:** Not on `main` branch
-**Solution:**
+**Symptom:** The "Verify release tag" step fails
+**Cause:** The tag is not a release created by `nx release`. The step requires that:
+
+- the tag matches `v<major>.<minor>.<patch>` (optional prerelease suffix)
+- it points to a commit with the subject `chore(release): publish <version>`
+- `nx-astro/package.json` in that commit has the same version
+- the commit is on `main`
+
+**Solution:** Create releases only with `pnpx nx release` on an up-to-date `main`, then push the commit and tag:
 
 ```bash
 git checkout main
 git pull origin main
-# Re-run workflow
+pnpx nx release
 ```
 
 ### Release Fails at Tests
@@ -527,6 +533,13 @@ Requirements the workflow already meets:
 - `id-token: write` permission
 - npm >= 11.15.0 for `npm stage publish` (installed by the publish job)
 - `repository.url` in `nx-astro/package.json` matches `https://github.com/Geekvetica/nx-astro`
+
+### Release Tag Protection
+
+Two checks make sure only real releases are staged:
+
+- **Workflow:** the "Verify release tag" step refuses any tag that is not a `chore(release): publish <version>` commit on `main` with a matching package version.
+- **GitHub tag ruleset** `release-tags`: only repository admins can create, move or delete `v*` tags.
 
 ### GitHub Secrets
 
