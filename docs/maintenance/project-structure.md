@@ -580,10 +580,12 @@ Located in root `package.json`:
 
 ```json
 {
+  "dependencies": {
+    "@nx/devkit": "23.3.0"
+  },
   "devDependencies": {
-    "@nx/devkit": "^23.0.0",
-    "@nx/jest": "^23.0.0",
-    "@nx/js": "^23.0.0",
+    "@nx/jest": "23.3.0",
+    "@nx/js": "23.3.0",
     "typescript": "6.0.3",
     "jest": "^30.4.2",
     "@types/node": "25.6.2"
