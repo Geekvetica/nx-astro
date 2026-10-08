@@ -1,3 +1,21 @@
+## 3.0.1 (2026-10-08)
+
+### 🩹 Fixes
+
+- stop inferring an Astro project from the e2e fixture ([#176](https://github.com/Geekvetica/nx-astro/pull/176))
+- **ci:** extract release notes for '#' and '##' changelog headings ([#178](https://github.com/Geekvetica/nx-astro/pull/178))
+- **nx-astro:** use npm's normalized repository URL ([#172](https://github.com/Geekvetica/nx-astro/pull/172))
+- **nx-astro:** strip slashes and block comments in linear time ([56406c2](https://github.com/Geekvetica/nx-astro/commit/56406c2))
+- **nx-astro:** do not follow symlinks when importing a project ([930b2d0](https://github.com/Geekvetica/nx-astro/commit/930b2d0))
+- **nx-astro:** parse Astro config in linear time throughout ([eac34ce](https://github.com/Geekvetica/nx-astro/commit/eac34ce))
+- **nx-astro:** do not block when an imported file is swapped for a FIFO ([299180f](https://github.com/Geekvetica/nx-astro/commit/299180f))
+- **nx-astro:** keep skipping unreachable project package.json files ([dc0bca4](https://github.com/Geekvetica/nx-astro/commit/dc0bca4))
+- **nx-astro:** split Astro config lines on every line terminator ([aa1545b](https://github.com/Geekvetica/nx-astro/commit/aa1545b))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski @pwojciechowski
+
 # 3.0.0 (2026-10-08)
 
 ### 🚀 Features
