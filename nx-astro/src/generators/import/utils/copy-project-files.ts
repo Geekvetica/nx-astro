@@ -1,5 +1,14 @@
 import { Tree, joinPathFragments } from '@nx/devkit';
-import { readdirSync, statSync, readFileSync, existsSync } from 'fs';
+import {
+  closeSync,
+  constants,
+  Dirent,
+  existsSync,
+  fstatSync,
+  openSync,
+  readdirSync,
+  readFileSync,
+} from 'fs';
 import { join, relative } from 'path';
 import { shouldIncludeFile } from './file-filter';
 
@@ -113,10 +122,11 @@ function copyDirectory(
   sourceBasePath: string,
   tree: Tree,
 ): void {
-  // Read directory contents
-  let entries: string[];
+  // Read directory contents with their types, so entries are classified
+  // without following symlinks and without a separate stat call
+  let entries: Dirent[];
   try {
-    entries = readdirSync(currentPath);
+    entries = readdirSync(currentPath, { withFileTypes: true });
   } catch (error) {
     // If we can't read the directory, skip it
     return;
@@ -124,7 +134,7 @@ function copyDirectory(
 
   // Process each entry
   for (const entry of entries) {
-    const fullPath = join(currentPath, entry);
+    const fullPath = join(currentPath, entry.name);
     const relativePath = relative(sourceBasePath, fullPath);
 
     // Check if this file/directory should be included
@@ -132,24 +142,21 @@ function copyDirectory(
       continue; // Skip excluded files/directories
     }
 
-    // Check if entry is a directory or file
-    let stats;
-    try {
-      stats = statSync(fullPath);
-    } catch (error) {
-      // Skip if we can't stat the file
-      continue;
-    }
-
-    if (stats.isDirectory()) {
-      // Recursively copy directory
+    if (entry.isSymbolicLink()) {
+      // Never follow symlinks: they may point outside the source project
+      console.warn(`Warning: Skipping symbolic link ${relativePath}`);
+    } else if (entry.isDirectory()) {
+      // Recursively copy directory. Node cannot open a directory without
+      // following a symlink, so a directory swapped for a symlink between
+      // listing and recursion is not detected; this needs concurrent write
+      // access to the source project.
       copyDirectory(fullPath, targetBasePath, sourceBasePath, tree);
-    } else if (stats.isFile()) {
+    } else if (entry.isFile()) {
       // Copy file
       const targetFilePath = joinPathFragments(targetBasePath, relativePath);
 
       try {
-        const content = readFileSync(fullPath);
+        const content = readRegularFile(fullPath);
         tree.write(targetFilePath, content);
       } catch (error) {
         // Log warning but continue (don't fail entire import for one file)
@@ -160,6 +167,32 @@ function copyDirectory(
         );
       }
     }
-    // Skip symlinks and other special files
+    // Skip other special files (sockets, FIFOs, devices)
+  }
+}
+
+/**
+ * Reads a regular file without following a symlink at its path.
+ *
+ * Opening with O_NOFOLLOW and checking the opened descriptor closes the
+ * window in which the file could be replaced by a symlink after it was
+ * listed. O_NOFOLLOW is unavailable on Windows, where 0 leaves flags as-is.
+ *
+ * @param filePath - Absolute path to the file
+ * @returns File content
+ * @throws If the path is a symlink (ELOOP) or not a regular file
+ */
+function readRegularFile(filePath: string): Buffer {
+  const fd = openSync(
+    filePath,
+    constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0),
+  );
+  try {
+    if (!fstatSync(fd).isFile()) {
+      throw new Error('not a regular file');
+    }
+    return readFileSync(fd);
+  } finally {
+    closeSync(fd);
   }
 }
