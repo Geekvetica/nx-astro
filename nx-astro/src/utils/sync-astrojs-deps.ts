@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { logger } from '@nx/devkit';
 import { join } from 'path';
 
@@ -153,15 +153,21 @@ export function syncAstrojsDependencies(
 /**
  * Reads a UTF-8 file, returning undefined when it does not exist.
  *
+ * Reads first and only checks existence after a failed read, so there is no
+ * check-then-use race. A failed read counts as "missing" whenever existsSync
+ * reports the path as absent (for example EACCES on a parent directory),
+ * which keeps the earlier existsSync-first behavior; other errors, such as
+ * reading a directory, are thrown.
+ *
  * @param filePath - Path of the file to read
- * @returns File content, or undefined if the file or a parent directory is missing
+ * @returns File content, or undefined if the file does not exist
  */
 function readFileIfExists(filePath: string): string | undefined {
   try {
     return readFileSync(filePath, 'utf-8');
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
-    if (code === 'ENOENT' || code === 'ENOTDIR') {
+    if (code === 'ENOENT' || code === 'ENOTDIR' || !existsSync(filePath)) {
       return undefined;
     }
     throw error;
