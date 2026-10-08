@@ -34,6 +34,8 @@ import { shouldIncludeFile } from './file-filter';
  * - IDE directories (.vscode/, .idea/)
  * - OS files (.DS_Store, Thumbs.db)
  * - Actual environment files (.env, .env.local)
+ * - Symbolic links, to files or directories (skipped with a warning, since
+ *   they can point outside the source project)
  *
  * @param sourcePath - Absolute path to source directory on file system
  * @param targetPath - Target path in workspace (relative to workspace root)

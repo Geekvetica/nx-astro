@@ -216,6 +216,7 @@ The generator excludes:
 - OS files (`.DS_Store`, `Thumbs.db`)
 - Log files (`*.log`)
 - Environment files (`.env`, `.env.local`)
+- Symbolic links, to files or directories: they are skipped with a `Warning: Skipping symbolic link <path>` message, because they can point outside the project. Copy the files they point to into the project before importing if you need them.
 
 ## Generated Configuration
 
@@ -462,7 +463,7 @@ rm -rf apps/my-app
 
 - Check if files are in the exclusion list (node_modules, .git, etc.)
 - Verify file permissions
-- Check for symlinks (not copied by default)
+- Check the output for `Warning: Skipping symbolic link` messages: symlinks are never copied
 - Review the file filter rules in the generator source
 
 ### TypeScript Path Mapping Not Working
