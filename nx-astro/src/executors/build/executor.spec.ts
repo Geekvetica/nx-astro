@@ -575,22 +575,22 @@ describe('Build Executor', () => {
     it('should use absolute output path as is for package artifacts', async () => {
       const options: BuildExecutorSchema = {
         generatePackageJson: true,
-        outputPath: '/tmp/build-output',
+        outputPath: '/virtual/build-output',
       };
 
       const result = await buildExecutor(options, context);
 
       expect(result.success).toBe(true);
-      expect(mockMkdirSync).toHaveBeenCalledWith('/tmp/build-output', {
+      expect(mockMkdirSync).toHaveBeenCalledWith('/virtual/build-output', {
         recursive: true,
       });
       expect(mockWriteFileSync).toHaveBeenCalledWith(
-        '/tmp/build-output/package.json',
+        '/virtual/build-output/package.json',
         expect.any(String),
         expect.any(Object),
       );
       expect(mockWriteFileSync).toHaveBeenCalledWith(
-        '/tmp/build-output/pnpm-lock.yaml',
+        '/virtual/build-output/pnpm-lock.yaml',
         'lockfile-content',
         expect.any(Object),
       );
