@@ -89,7 +89,8 @@
         "checkTargetName": "check",
         "testTargetName": "test",
         "syncTargetName": "sync"
-      }
+      },
+      "exclude": ["nx-astro-e2e/fixtures/**"]
     }
   ],
   "neverConnectToCloud": true,
