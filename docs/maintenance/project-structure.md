@@ -184,6 +184,7 @@ types/
 ```
 
 **Purpose:**
+
 - Shared type definitions
 - Interfaces for options and configurations
 - Type utilities
@@ -205,6 +206,7 @@ utils/
 ```
 
 **Purpose:**
+
 - Shared utilities used by generators and executors
 - File system operations
 - Configuration parsing and manipulation
@@ -215,21 +217,18 @@ utils/
 Located in `nx-astro/src/plugin.ts`:
 
 ```typescript
-// Plugin registration and configuration
-export const createNodes: CreateNodes = [
+// Plugin registration: processes all matching config files in one call.
+// Typed with the V2 names, which both Nx 22 and Nx 23 export.
+export const createNodesV2: CreateNodesV2<AstroPluginOptions> = [
   '**/astro.config.{mjs,js,ts}',
-  (configFilePath, options, context) => {
-    // Infer Nx targets from Astro configuration
-    // Register executors for Astro projects
-  }
-];
-
-export const createNodesV2: CreateNodesV2 = [
-  // V2 implementation
+  async (configFiles, options, context) => {
+    // Infer Nx targets from each Astro configuration
+  },
 ];
 ```
 
 **Purpose:**
+
 - Nx plugin registration
 - Automatic target inference
 - Project graph integration
@@ -237,6 +236,7 @@ export const createNodesV2: CreateNodesV2 = [
 ### Configuration Files
 
 **executors.json** - Registry of executors:
+
 ```json
 {
   "executors": {
@@ -250,6 +250,7 @@ export const createNodesV2: CreateNodesV2 = [
 ```
 
 **generators.json** - Registry of generators:
+
 ```json
 {
   "generators": {
@@ -263,6 +264,7 @@ export const createNodesV2: CreateNodesV2 = [
 ```
 
 **plugin-options.json** - Plugin configuration schema:
+
 ```json
 {
   "$schema": "http://json-schema.org/draft-07/schema",
@@ -482,6 +484,7 @@ import { something } from '@geekvetica/nx-astro/utils';
 ### Jest Configuration
 
 **jest.preset.js** - Workspace preset:
+
 ```javascript
 module.exports = {
   testMatch: ['**/__tests__/**/*.[jt]s?(x)', '**/?(*.)+(spec|test).[jt]s?(x)'],
@@ -491,6 +494,7 @@ module.exports = {
 ```
 
 **nx-astro/jest.config.ts** - Plugin tests:
+
 ```typescript
 export default {
   displayName: 'nx-astro',
@@ -516,6 +520,7 @@ coverage/
 ```
 
 **Coverage Thresholds** (in CI):
+
 - Statements: 80%+
 - Branches: 80%+
 - Functions: 80%+
@@ -528,11 +533,13 @@ coverage/
 Located in `.github/workflows/`:
 
 **ci.yml** - Continuous Integration:
+
 - Triggers: Push to main, pull requests
 - Jobs: Setup, Lint, Test, Build, E2E
 - Duration: ~20 minutes
 
 **release.yml** - Automated Release:
+
 - Triggers: Manual workflow dispatch
 - Jobs: Validate, Test, Release, Validate Release
 - Duration: ~40 minutes
@@ -573,13 +580,15 @@ Located in root `package.json`:
 
 ```json
 {
+  "dependencies": {
+    "@nx/devkit": "23.3.0"
+  },
   "devDependencies": {
-    "@nx/devkit": "^21.0.0",
-    "@nx/jest": "^21.0.0",
-    "@nx/js": "^21.0.0",
-    "typescript": "~5.6.0",
-    "jest": "^29.7.0",
-    "@types/node": "^20.0.0"
+    "@nx/jest": "23.3.0",
+    "@nx/js": "23.3.0",
+    "typescript": "6.0.3",
+    "jest": "^30.4.2",
+    "@types/node": "25.6.2"
   }
 }
 ```
@@ -591,11 +600,12 @@ Located in `nx-astro/package.json`:
 ```json
 {
   "dependencies": {
-    "@nx/devkit": "*"
+    "@nx/devkit": ">=22.0.0 <24.0.0",
+    "@nx/js": ">=22.0.0 <24.0.0"
   },
   "peerDependencies": {
-    "nx": ">=21.0.0",
-    "astro": ">=5.0.0"
+    "nx": ">=22.0.0 <24.0.0",
+    "astro": ">=5.0.0 <8.0.0"
   }
 }
 ```
@@ -603,6 +613,7 @@ Located in `nx-astro/package.json`:
 ### Version Management
 
 Dependency versions are managed in:
+
 - `nx-astro/src/utils/versions.ts` - Runtime version constraints
 - `package.json` files - Build-time dependencies
 
@@ -673,12 +684,7 @@ export async function myGenerator(tree: Tree, options: Schema) {
   const normalizedOptions = normalizeOptions(options);
 
   // 2. Generate files from templates
-  generateFiles(
-    tree,
-    path.join(__dirname, 'files'),
-    projectRoot,
-    normalizedOptions
-  );
+  generateFiles(tree, path.join(__dirname, 'files'), projectRoot, normalizedOptions);
 
   // 3. Update workspace configuration
   updateProjectConfiguration(tree, options.name, config);
@@ -698,10 +704,7 @@ export async function myGenerator(tree: Tree, options: Schema) {
 ```typescript
 import { ExecutorContext } from '@nx/devkit';
 
-export async function myExecutor(
-  options: Schema,
-  context: ExecutorContext
-): Promise<{ success: boolean }> {
+export async function myExecutor(options: Schema, context: ExecutorContext): Promise<{ success: boolean }> {
   // 1. Validate options
   validateOptions(options);
 

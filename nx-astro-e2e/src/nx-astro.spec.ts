@@ -59,6 +59,19 @@ describe('nx-astro e2e', () => {
         stdio: 'inherit',
       });
     });
+
+    it('[169-S03] resolves a single @nx/devkit version in an Nx 23 host', () => {
+      logStep('Verifying a single @nx/devkit version is installed...');
+      const output = execSync('pnpm ls @nx/devkit --depth Infinity --json', {
+        cwd: projectDirectory,
+        encoding: 'utf-8',
+      });
+
+      const versions = collectPackageVersions(JSON.parse(output), '@nx/devkit');
+
+      expect(versions.size).toBe(1);
+      expect([...versions][0]).toMatch(/^23\./);
+    });
   });
 
   describe('init generator', () => {
@@ -679,4 +692,38 @@ function createTestProject() {
   }
 
   return projectDirectory;
+}
+
+interface PnpmLsNode {
+  version?: string;
+  dependencies?: Record<string, PnpmLsNode>;
+  devDependencies?: Record<string, PnpmLsNode>;
+  optionalDependencies?: Record<string, PnpmLsNode>;
+}
+
+/**
+ * Collects every resolved version of a package from `pnpm ls --json` output
+ * @returns The distinct versions of the package found anywhere in the tree
+ */
+function collectPackageVersions(
+  nodes: PnpmLsNode[],
+  packageName: string,
+): Set<string> {
+  const versions = new Set<string>();
+  const visit = (node: PnpmLsNode) => {
+    for (const children of [
+      node.dependencies,
+      node.devDependencies,
+      node.optionalDependencies,
+    ]) {
+      for (const [name, child] of Object.entries(children ?? {})) {
+        if (name === packageName && child.version) {
+          versions.add(child.version);
+        }
+        visit(child);
+      }
+    }
+  };
+  nodes.forEach(visit);
+  return versions;
 }
