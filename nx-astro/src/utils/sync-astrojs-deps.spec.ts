@@ -1,4 +1,5 @@
 import { vol } from 'memfs';
+import * as fs from 'fs';
 import { logger } from '@nx/devkit';
 import { syncAstrojsDependencies } from './sync-astrojs-deps';
 
@@ -191,6 +192,35 @@ describe('syncAstrojsDependencies', () => {
         syncAstrojsDependencies('apps/my-app', '/workspace'),
       ).toThrow();
       expect(logger.warn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('project package.json not reachable', () => {
+    it('should warn and skip when the file cannot be reached, as when existsSync returned false', () => {
+      // Arrange: a permission error on a parent directory, where the file
+      // does not appear to exist
+      vol.fromJSON({
+        '/workspace/package.json': JSON.stringify({
+          dependencies: { astro: '^5.0.0' },
+        }),
+      });
+      const eacces = Object.assign(new Error('EACCES: permission denied'), {
+        code: 'EACCES',
+      });
+      const readFileSync = jest
+        .spyOn(fs, 'readFileSync')
+        .mockImplementationOnce(() => {
+          throw eacces;
+        });
+
+      // Act
+      syncAstrojsDependencies('apps/my-app', '/workspace');
+
+      // Assert
+      expect(logger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('package.json not found'),
+      );
+      readFileSync.mockRestore();
     });
   });
 
