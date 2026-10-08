@@ -211,6 +211,62 @@ describe('copyProjectFiles', () => {
     });
   });
 
+  describe('symbolic links', () => {
+    it('should not copy symlinked files, even when they point outside the source', () => {
+      const sourcePath = '/source-project';
+      const targetPath = 'apps/target-project';
+
+      vol.fromJSON({
+        [`${sourcePath}/README.md`]: '# My Project',
+        '/outside/secret.txt': 'secret',
+      });
+      vol.symlinkSync('/outside/secret.txt', `${sourcePath}/linked-secret.txt`);
+
+      copyProjectFiles(sourcePath, targetPath, tree);
+
+      expect(tree.exists(`${targetPath}/README.md`)).toBe(true);
+      expect(tree.exists(`${targetPath}/linked-secret.txt`)).toBe(false);
+    });
+
+    it('should not follow symlinked directories', () => {
+      const sourcePath = '/source-project';
+      const targetPath = 'apps/target-project';
+
+      vol.fromJSON({
+        [`${sourcePath}/src/index.ts`]: 'export {};',
+        '/outside/dir/file.txt': 'outside',
+      });
+      vol.symlinkSync('/outside/dir', `${sourcePath}/linked-dir`);
+
+      copyProjectFiles(sourcePath, targetPath, tree);
+
+      expect(tree.exists(`${targetPath}/src/index.ts`)).toBe(true);
+      expect(tree.exists(`${targetPath}/linked-dir/file.txt`)).toBe(false);
+    });
+
+    it('should warn about each skipped symlink', () => {
+      const sourcePath = '/source-project';
+      const targetPath = 'apps/target-project';
+      const warn = jest
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+
+      vol.fromJSON({
+        [`${sourcePath}/README.md`]: '# My Project',
+        '/outside/secret.txt': 'secret',
+      });
+      vol.symlinkSync('/outside/secret.txt', `${sourcePath}/linked-secret.txt`);
+
+      copyProjectFiles(sourcePath, targetPath, tree);
+
+      expect(warn).toHaveBeenCalledTimes(1);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Skipping symbolic link linked-secret.txt'),
+      );
+      warn.mockRestore();
+    });
+  });
+
   describe('error handling', () => {
     it('should throw if source path does not exist', () => {
       const sourcePath = '/nonexistent';
