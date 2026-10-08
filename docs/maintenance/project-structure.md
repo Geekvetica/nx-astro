@@ -217,17 +217,13 @@ utils/
 Located in `nx-astro/src/plugin.ts`:
 
 ```typescript
-// Plugin registration and configuration
-export const createNodes: CreateNodes = [
+// Plugin registration: processes all matching config files in one call.
+// Typed with the V2 names, which both Nx 22 and Nx 23 export.
+export const createNodesV2: CreateNodesV2<AstroPluginOptions> = [
   '**/astro.config.{mjs,js,ts}',
-  (configFilePath, options, context) => {
-    // Infer Nx targets from Astro configuration
-    // Register executors for Astro projects
+  async (configFiles, options, context) => {
+    // Infer Nx targets from each Astro configuration
   },
-];
-
-export const createNodesV2: CreateNodesV2 = [
-  // V2 implementation
 ];
 ```
 
@@ -589,8 +585,8 @@ Located in root `package.json`:
     "@nx/jest": "^23.0.0",
     "@nx/js": "^23.0.0",
     "typescript": "6.0.3",
-    "jest": "^29.7.0",
-    "@types/node": "^20.0.0"
+    "jest": "^30.4.2",
+    "@types/node": "25.6.2"
   }
 }
 ```
