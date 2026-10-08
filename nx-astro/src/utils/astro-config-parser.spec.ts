@@ -184,6 +184,34 @@ describe('astro-config-parser', () => {
       expect(config.output).toBe('static');
     });
 
+    it('should strip several block comments, including multi-line ones', () => {
+      const configContent = `
+        /* header
+           comment */
+        export default {
+          /* output: 'server', */
+          output: 'static', /* trailing */
+          outDir: './build'
+        };
+      `;
+
+      const config = parseAstroConfig(configContent);
+
+      expect(config.output).toBe('static');
+      expect(config.outDir).toBe('./build');
+    });
+
+    it('should strip block comments in linear time on unclosed comment openers', () => {
+      const configContent = `export default { output: 'static' }; ${'/*a'.repeat(100_000)}`;
+
+      const start = performance.now();
+      const config = parseAstroConfig(configContent);
+      const elapsed = performance.now() - start;
+
+      expect(config.output).toBe('static');
+      expect(elapsed).toBeLessThan(1000);
+    });
+
     it('should parse legacy config with collectionsBackwardsCompat', () => {
       const configContent = `
         export default {

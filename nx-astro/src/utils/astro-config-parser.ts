@@ -1,6 +1,27 @@
 import { AstroConfig } from '../types/astro-config';
 
 /**
+ * Removes block comments in linear time. A lazy regex such as
+ * `/\/\*[\s\S]*?\*\//g` is quadratic on many unclosed comment openers.
+ * Like that regex, an unclosed opener and everything after it is kept.
+ */
+function stripBlockComments(content: string): string {
+  let result = '';
+  let position = 0;
+  let start = content.indexOf('/*');
+  while (start !== -1) {
+    const end = content.indexOf('*/', start + 2);
+    if (end === -1) {
+      break;
+    }
+    result += content.slice(position, start);
+    position = end + 2;
+    start = content.indexOf('/*', position);
+  }
+  return result + content.slice(position);
+}
+
+/**
  * Parses an Astro configuration file content and extracts configuration values.
  * This uses a simple regex-based approach to extract common configuration values
  * without requiring a full JavaScript parser or evaluation.
@@ -13,8 +34,7 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
 
   try {
     // Remove comments (but preserve // inside strings)
-    const content = configContent
-      .replace(/\/\*[\s\S]*?\*\//g, '') // Multi-line comments first
+    const content = stripBlockComments(configContent) // Multi-line comments first
       .split('\n')
       .map((line) => {
         // Don't remove // that's inside a string
