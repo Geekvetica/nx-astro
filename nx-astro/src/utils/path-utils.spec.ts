@@ -30,6 +30,21 @@ describe('path-utils', () => {
     it('should handle empty string', () => {
       expect(normalizeProjectRoot('')).toBe('');
     });
+
+    it('should keep slashes inside the path', () => {
+      expect(normalizeProjectRoot('//apps//my-app//')).toBe('apps//my-app');
+    });
+
+    it('should run in linear time on long runs of inner slashes', () => {
+      const input = `a${'/'.repeat(100_000)}a`;
+
+      const start = performance.now();
+      const result = normalizeProjectRoot(input);
+      const elapsed = performance.now() - start;
+
+      expect(result).toBe(input);
+      expect(elapsed).toBeLessThan(1000);
+    });
   });
 
   describe('getProjectNameFromPath', () => {
@@ -82,6 +97,17 @@ describe('path-utils', () => {
 
     it('should return empty string for no fragments', () => {
       expect(joinPathFragments()).toBe('');
+    });
+
+    it('should run in linear time on long runs of inner slashes', () => {
+      const fragment = `a${'/'.repeat(100_000)}a`;
+
+      const start = performance.now();
+      const result = joinPathFragments('apps', fragment);
+      const elapsed = performance.now() - start;
+
+      expect(result).toBe(`apps/${fragment}`);
+      expect(elapsed).toBeLessThan(1000);
     });
   });
 

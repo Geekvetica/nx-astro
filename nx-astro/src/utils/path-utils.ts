@@ -4,7 +4,23 @@
  * @returns The normalized project root path
  */
 export function normalizeProjectRoot(projectRoot: string): string {
-  return projectRoot.replace(/^\/+|\/+$/g, '');
+  return trimSlashes(projectRoot);
+}
+
+/**
+ * Removes leading and trailing forward slashes in linear time.
+ * A regex such as `/^\/+|\/+$/g` is quadratic on long runs of inner slashes.
+ */
+function trimSlashes(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value[start] === '/') {
+    start++;
+  }
+  while (end > start && value[end - 1] === '/') {
+    end--;
+  }
+  return value.slice(start, end);
 }
 
 /**
@@ -28,7 +44,7 @@ export function getProjectNameFromPath(configPath: string): string {
 export function joinPathFragments(...fragments: string[]): string {
   return fragments
     .filter((fragment) => fragment !== '')
-    .map((fragment) => fragment.replace(/^\/+|\/+$/g, ''))
+    .map(trimSlashes)
     .filter((fragment) => fragment !== '')
     .join('/');
 }
