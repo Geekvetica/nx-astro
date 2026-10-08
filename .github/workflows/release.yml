@@ -3,28 +3,33 @@
 # =============================================================================
 #
 # Purpose:
-#   Automated npm publishing with provenance after local versioning.
+#   Automated npm staged publishing with provenance after local versioning.
 #
 # Workflow:
 #   1. Developer runs `pnpx nx release` locally to version and create git tag
 #   2. Developer pushes tag to GitHub: `git push --tags`
 #   3. This workflow automatically triggers on tag push
-#   4. Workflow builds, tests, and publishes to npm with provenance
+#   4. Workflow builds, tests, and stages the version on npm with provenance
 #   5. Workflow creates GitHub release
+#   6. Maintainer approves the staged version on npmjs.com (2FA), which
+#      makes it public
 #
 # Triggers:
 #   - Automatic: Push of version tags (v*.*.*)
-#   - Manual: workflow_dispatch with an existing tag (re-publishes that tag)
+#   - Manual: workflow_dispatch with an existing tag (re-stages that tag)
 #
 # Authentication (npm Trusted Publishing):
 #   - No npm token is stored in the repository
 #   - npm trusts this workflow (Geekvetica/nx-astro, release.yml) via OIDC
 #   - Configure on npmjs.com: package Settings -> Trusted Publisher -> GitHub Actions
-#   - Requires npm >= 11.5.1 (Node 24 ships a compatible npm)
+#   - The trusted publisher allows staged publishing only ("Allow npm publish"
+#     unchecked), so this workflow can never make a version public by itself
+#   - Requires npm >= 11.15.0 for `npm stage publish`
 #   - GITHUB_TOKEN: Automatically provided by GitHub Actions
 #
 # Security:
 #   - Short-lived OIDC credentials, nothing to rotate or leak
+#   - A human approves every release with 2FA before it is public
 #   - Minimal permissions with id-token for OIDC
 #
 # Provenance:
@@ -102,14 +107,14 @@ jobs:
         run: pnpx nx run-many -t test --all --parallel=3 --configuration=ci
 
   # ===========================================================================
-  # Job 2: Publish to npm
+  # Job 2: Stage on npm
   # ===========================================================================
   # Purpose:
-  #   - Publish to npm registry with provenance
-  #   - Verify package is available
+  #   - Stage the version on the npm registry with provenance
+  #   - Point the maintainer to the approval step
   # ===========================================================================
   publish:
-    name: Publish to npm
+    name: Stage on npm
     runs-on: ubuntu-latest
     timeout-minutes: 10
     needs: test
@@ -132,6 +137,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install npm with staged publishing support
+        run: |
+          npm install -g npm@^11.15.0
+          npm --version
 
       - name: Build plugin
         run: pnpx nx build nx-astro
@@ -160,44 +170,34 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
-      - name: Publish to npm with provenance
+      - name: Stage on npm with provenance
         run: |
-          # Publish the built package from dist directory via npm Trusted
+          # Stage the built package from dist directory via npm Trusted
           # Publishing: npm exchanges this job's OIDC token for a short-lived
-          # publish credential, so no NPM_TOKEN secret is needed. Provenance
-          # attestations are generated automatically. This requires:
+          # credential, so no NPM_TOKEN secret is needed. A staged version is
+          # not public until a maintainer approves it with 2FA. This requires:
           #   - id-token: write permission (set above)
           #   - A trusted publisher for release.yml configured on npmjs.com
-          #   - npm >= 11.5.1
-          npm --version
+          #   - npm >= 11.15.0
           cd dist/nx-astro
-          npm publish --access public --provenance
+          npm stage publish --access public --provenance
 
-      - name: Wait for npm registry propagation
-        run: sleep 30
-
-      - name: Verify npm package
+      - name: Point to approval
         run: |
-          PACKAGE_NAME="@geekvetica/nx-astro"
           VERSION="${{ steps.version.outputs.version }}"
-
-          # Verify the package is available
-          PUBLISHED_VERSION=$(npm view $PACKAGE_NAME version)
-          echo "Published version on npm: $PUBLISHED_VERSION"
-
-          if [ "$PUBLISHED_VERSION" = "$VERSION" ]; then
-            echo "✓ Package successfully published to npm"
-          else
-            echo "✗ Version mismatch: expected $VERSION, got $PUBLISHED_VERSION"
-            exit 1
-          fi
-
-      - name: Notify on success
-        if: success()
-        run: |
-          echo "✓ Successfully published version ${{ steps.version.outputs.version }}"
-          echo "NPM: https://www.npmjs.com/package/@geekvetica/nx-astro"
-          echo "Verify provenance: npm audit signatures"
+          {
+            echo "### @geekvetica/nx-astro@$VERSION is staged on npm"
+            echo
+            echo "It is not public yet. Approve it with 2FA in the **Staged Packages** tab:"
+            echo "https://www.npmjs.com/package/@geekvetica/nx-astro"
+            echo
+            echo "After approval, verify with:"
+            echo '```'
+            echo "npm view @geekvetica/nx-astro@$VERSION version"
+            echo "npm audit signatures"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "✓ Staged version $VERSION; approve it on npmjs.com to publish"
 
   # ===========================================================================
   # Job 3: Create GitHub Release

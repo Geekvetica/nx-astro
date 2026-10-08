@@ -283,9 +283,10 @@ validate (check branch, conditions)
    - Push commits and tags to repository
 
 5. **npm Publishing**
-   - Publish from dist directory
+   - Stage the version from the dist directory (`npm stage publish`)
    - Set public access
    - Authenticate with npm Trusted Publishing (OIDC, no stored token)
+   - A maintainer approves the staged version on npmjs.com with 2FA
 
 6. **GitHub Release**
    - Create GitHub release from git tag
@@ -354,7 +355,7 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
 
 ## Required Secrets
 
-No npm token is required. The release workflow publishes with npm Trusted Publishing (OIDC), so the only credential is the `GITHUB_TOKEN` that GitHub Actions provides automatically. See [npm Trusted Publishing](maintenance/release-process.md#npm-trusted-publishing) for the one-time setup on npmjs.com.
+No npm token is required. The release workflow stages releases with npm Trusted Publishing (OIDC), so the only credential is the `GITHUB_TOKEN` that GitHub Actions provides automatically. See [npm Trusted Publishing](maintenance/release-process.md#npm-trusted-publishing) for the one-time setup on npmjs.com.
 
 ### GITHUB_TOKEN
 
@@ -520,7 +521,7 @@ git commit -m "chore: update pnpm lock file"
 **Solutions:**
 
 - Verify the trusted publisher on npmjs.com matches `Geekvetica/nx-astro` and `release.yml`
-- Check the publish step prints npm 11.5.1 or newer
+- Check the "Install npm" step prints npm 11.15.0 or newer
 - Ensure the workflow still has `id-token: write` permission
 
 #### 6. GitHub Release Creation Failed
