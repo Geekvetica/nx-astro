@@ -176,7 +176,9 @@ function copyDirectory(
  *
  * Opening with O_NOFOLLOW and checking the opened descriptor closes the
  * window in which the file could be replaced by a symlink after it was
- * listed. O_NOFOLLOW is unavailable on Windows, where 0 leaves flags as-is.
+ * listed. O_NONBLOCK keeps a file swapped for a FIFO from blocking the open;
+ * the regular-file check then rejects it. Both flags are unavailable on
+ * Windows, where 0 leaves the flags as-is.
  *
  * @param filePath - Absolute path to the file
  * @returns File content
@@ -185,7 +187,9 @@ function copyDirectory(
 function readRegularFile(filePath: string): Buffer {
   const fd = openSync(
     filePath,
-    constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0),
+    constants.O_RDONLY |
+      (constants.O_NOFOLLOW ?? 0) |
+      (constants.O_NONBLOCK ?? 0),
   );
   try {
     if (!fstatSync(fd).isFile()) {
