@@ -14,18 +14,18 @@
 #
 # Triggers:
 #   - Automatic: Push of version tags (v*.*.*)
+#   - Manual: workflow_dispatch with an existing tag (re-publishes that tag)
 #
-# Required Secrets:
-#   - NPM_TOKEN: Automation token for npm registry (required for provenance)
-#     - Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-#     - Create a new "Automation" token (not Classic)
-#     - Add it to GitHub repository secrets as NPM_TOKEN
+# Authentication (npm Trusted Publishing):
+#   - No npm token is stored in the repository
+#   - npm trusts this workflow (Geekvetica/nx-astro, release.yml) via OIDC
+#   - Configure on npmjs.com: package Settings -> Trusted Publisher -> GitHub Actions
+#   - Requires npm >= 11.5.1 (Node 24 ships a compatible npm)
 #   - GITHUB_TOKEN: Automatically provided by GitHub Actions
 #
 # Security:
-#   - Uses OIDC for npm provenance attestations
+#   - Short-lived OIDC credentials, nothing to rotate or leak
 #   - Minimal permissions with id-token for OIDC
-#   - Secrets are never exposed in logs
 #
 # Provenance:
 #   - Publishes with npm provenance statements
@@ -53,14 +53,14 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-# Permissions required for npm provenance with OIDC
+# Permissions required for npm Trusted Publishing (OIDC)
 permissions:
   contents: write # Create releases
   packages: write # Publish packages
-  id-token: write # OIDC token for npm provenance
+  id-token: write # OIDC token for npm Trusted Publishing and provenance
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '24.x'
 
 jobs:
   # ===========================================================================
@@ -80,6 +80,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Setup pnpm
@@ -116,6 +117,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -157,34 +160,18 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
-      - name: Verify npm authentication and package access
-        run: |
-          if ! npm whoami >/dev/null 2>&1; then
-            echo "✗ npm authentication failed"
-            echo "Check NPM_TOKEN secret and ensure it is a valid Automation token."
-            exit 1
-          fi
-
-          echo "✓ npm authentication is valid"
-          npm view @geekvetica/nx-astro version || true
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish to npm with provenance
         run: |
-          # Publish the built package from dist directory with provenance
-          # The --provenance flag generates a signed attestation that:
-          #   - Links the package to its source repository
-          #   - Records the GitHub Actions workflow that built it
-          #   - Creates a verifiable chain of custody
-          # This requires:
-          #   - Publishing from GitHub Actions (OIDC authentication)
+          # Publish the built package from dist directory via npm Trusted
+          # Publishing: npm exchanges this job's OIDC token for a short-lived
+          # publish credential, so no NPM_TOKEN secret is needed. Provenance
+          # attestations are generated automatically. This requires:
           #   - id-token: write permission (set above)
-          #   - An automation token in NPM_TOKEN secret
+          #   - A trusted publisher for release.yml configured on npmjs.com
+          #   - npm >= 11.5.1
+          npm --version
           cd dist/nx-astro
           npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Wait for npm registry propagation
         run: sleep 30
@@ -229,6 +216,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.tag || github.ref }}
           fetch-depth: 0
 
       - name: Get version from tag

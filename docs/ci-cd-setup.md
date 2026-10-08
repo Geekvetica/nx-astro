@@ -285,7 +285,7 @@ validate (check branch, conditions)
 5. **npm Publishing**
    - Publish from dist directory
    - Set public access
-   - Use NPM_TOKEN for authentication
+   - Authenticate with npm Trusted Publishing (OIDC, no stored token)
 
 6. **GitHub Release**
    - Create GitHub release from git tag
@@ -354,31 +354,7 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
 
 ## Required Secrets
 
-### NPM_TOKEN
-
-**Purpose:** Authenticates with npm registry for publishing
-
-**How to Create:**
-
-1. Log in to [npmjs.com](https://www.npmjs.com)
-2. Go to Account Settings → Access Tokens
-3. Click "Generate New Token"
-4. Select "Automation" type
-5. Copy the token
-
-**How to Add to GitHub:**
-
-1. Go to repository Settings → Secrets and variables → Actions
-2. Click "New repository secret"
-3. Name: `NPM_TOKEN`
-4. Value: Paste your npm token
-5. Click "Add secret"
-
-**Security:**
-
-- Token is only accessible to GitHub Actions
-- Never exposed in logs
-- Has publish permissions only
+No npm token is required. The release workflow publishes with npm Trusted Publishing (OIDC), so the only credential is the `GITHUB_TOKEN` that GitHub Actions provides automatically. See [npm Trusted Publishing](maintenance/release-process.md#npm-trusted-publishing) for the one-time setup on npmjs.com.
 
 ### GITHUB_TOKEN
 
@@ -539,14 +515,13 @@ git commit -m "chore: update pnpm lock file"
 
 #### 5. NPM Publish Failed
 
-**Symptom:** "Unable to authenticate need: npm_token"
+**Symptom:** npm publish fails with `E404` or `ENEEDAUTH`
 
 **Solutions:**
 
-- Verify `NPM_TOKEN` secret is set correctly
-- Check token has publish permissions
-- Ensure token hasn't expired
-- Regenerate token if needed
+- Verify the trusted publisher on npmjs.com matches `Geekvetica/nx-astro` and `release.yml`
+- Check the publish step prints npm 11.5.1 or newer
+- Ensure the workflow still has `id-token: write` permission
 
 #### 6. GitHub Release Creation Failed
 

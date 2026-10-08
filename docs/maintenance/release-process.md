@@ -29,9 +29,7 @@ Before triggering a release, ensure:
 1. You have write access to the repository
 2. All CI checks are passing on the `main` branch
 3. The `main` branch is up to date
-4. Required secrets are configured:
-   - `NPM_TOKEN` - Automation token from an npm account with publish permission to the `@geekvetica` scope
-   - `GITHUB_TOKEN` - Automatically provided by GitHub Actions
+4. npm Trusted Publishing is configured for `@geekvetica/nx-astro` (see [npm Trusted Publishing](#npm-trusted-publishing)). No npm token secret is needed.
 
 ## How to Trigger a Release
 
@@ -413,8 +411,9 @@ git pull origin main
 **Symptom:** npm publish fails
 **Possible Causes:**
 
-- `NPM_TOKEN` not set or expired
-- `NPM_TOKEN` belongs to an account without publish permission for `@geekvetica/nx-astro`
+- Trusted publisher on npmjs.com is missing or does not match `Geekvetica/nx-astro` and `release.yml`
+- npm in the workflow is older than 11.5.1 (check the `npm --version` output of the publish step)
+- `repository.url` in `nx-astro/package.json` no longer matches the GitHub repository
 - Network issues
 - Version already published
 
@@ -428,18 +427,12 @@ This often indicates an authorization problem for a scoped package rather than a
 **Solution:**
 
 ```bash
-# Verify npm authentication in CI context
-npm whoami
-
 # Check if version already exists
 npm view @geekvetica/nx-astro versions
 
-# If token expired, regenerate on npmjs.com:
-# 1. Login to npmjs.com
-# 2. Go to Access Tokens
-# 3. Generate new Automation token
-# 4. Ensure token owner can publish @geekvetica/nx-astro
-# 5. Update NPM_TOKEN secret in GitHub
+# After fixing the trusted publisher settings, publish the existing tag again
+# (the manual run checks out the tag and uses the workflow file from main)
+gh workflow run release.yml -f tag=v1.0.0
 ```
 
 ### Release Fails at GitHub Release
@@ -509,14 +502,28 @@ For critical security issues:
 
 ## Configuration Reference
 
+### npm Trusted Publishing
+
+The release workflow publishes through [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers). npm trusts the workflow via OIDC and issues a short-lived publish credential for each run, so there is no npm token to store, rotate or leak. Provenance attestations are generated automatically.
+
+One-time setup on npmjs.com (package owner):
+
+1. Open `@geekvetica/nx-astro` → **Settings** → **Trusted Publisher** → **GitHub Actions**
+2. Organization or user: `Geekvetica`
+3. Repository: `nx-astro`
+4. Workflow filename: `release.yml`
+5. Environment: leave empty
+6. Recommended after the first successful trusted publish: under **Publishing access**, require two-factor authentication and disallow tokens
+
+Requirements the workflow already meets:
+
+- `id-token: write` permission
+- Node.js 24 (bundles npm >= 11.5.1)
+- `repository.url` in `nx-astro/package.json` matches `https://github.com/Geekvetica/nx-astro`
+
 ### GitHub Secrets
 
-Required secrets in repository settings:
-
-- **NPM_TOKEN**: npm authentication token
-  - Type: Automation token
-  - Scope: Read and Publish
-  - Generate at: https://www.npmjs.com/settings/tokens
+No npm secret is required. `GITHUB_TOKEN` is provided automatically by GitHub Actions.
 
 ### Workflow Permissions
 
