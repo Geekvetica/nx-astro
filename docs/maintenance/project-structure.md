@@ -605,7 +605,7 @@ Located in `nx-astro/package.json`:
   },
   "peerDependencies": {
     "nx": ">=22.0.0 <24.0.0",
-    "astro": ">=5.0.0 <7.0.0"
+    "astro": ">=5.0.0 <8.0.0"
   }
 }
 ```
