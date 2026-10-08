@@ -755,7 +755,7 @@ To trigger a release:
 ## Requirements
 
 - Node.js 18.x or 20.x
-- Nx 21.x or later
+- Nx 22.x or 23.x
 - Astro 5.x or later
 - Package manager: bun, pnpm, yarn, or npm
 

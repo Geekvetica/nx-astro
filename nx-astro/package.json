@@ -43,12 +43,12 @@
     "provenance": true
   },
   "dependencies": {
-    "@nx/devkit": "22.7.1",
-    "@nx/js": "22.7.1",
+    "@nx/devkit": ">=22.0.0 <24.0.0",
+    "@nx/js": ">=22.0.0 <24.0.0",
     "tslib": "^2.3.0"
   },
   "peerDependencies": {
-    "nx": ">=21.0.0",
+    "nx": ">=22.0.0 <24.0.0",
     "astro": ">=5.0.0 <7.0.0"
   },
   "peerDependenciesMeta": {
