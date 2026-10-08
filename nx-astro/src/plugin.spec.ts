@@ -1,4 +1,4 @@
-import { CreateNodesContextV2 } from '@nx/devkit';
+import { CreateNodesContext } from '@nx/devkit';
 import { createNodesV2 } from './plugin';
 import { vol } from 'memfs';
 
@@ -7,7 +7,7 @@ jest.mock('fs', () => require('memfs').fs);
 jest.mock('fs/promises', () => require('memfs').fs.promises);
 
 describe('@geekvetica/nx-astro plugin', () => {
-  let context: CreateNodesContextV2;
+  let context: CreateNodesContext;
 
   beforeEach(() => {
     context = {

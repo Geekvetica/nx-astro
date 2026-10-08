@@ -1,6 +1,6 @@
 import {
-  CreateNodesV2,
-  CreateNodesContextV2,
+  CreateNodes,
+  CreateNodesContext,
   CreateNodesResult,
   TargetConfiguration,
 } from '@nx/devkit';
@@ -45,12 +45,12 @@ export const ASTRO_CONFIG_GLOB = '**/astro.config.{mjs,js,ts}';
  * }
  * ```
  */
-export const createNodesV2: CreateNodesV2<AstroPluginOptions> = [
+export const createNodesV2: CreateNodes<AstroPluginOptions> = [
   ASTRO_CONFIG_GLOB,
   async (
     configFiles: readonly string[],
     options: AstroPluginOptions | undefined,
-    context: CreateNodesContextV2,
+    context: CreateNodesContext,
   ): Promise<Array<[string, CreateNodesResult]>> => {
     const normalizedOptions = normalizeOptions(options);
 
@@ -97,7 +97,7 @@ export const createNodesV2: CreateNodesV2<AstroPluginOptions> = [
 async function createNodesForConfigFile(
   configFile: string,
   options: NormalizedOptions,
-  context: CreateNodesContextV2,
+  context: CreateNodesContext,
 ): Promise<CreateNodesResult> {
   const projectRoot = normalizeProjectRoot(dirname(configFile));
   const absoluteConfigPath = join(context.workspaceRoot, configFile);
