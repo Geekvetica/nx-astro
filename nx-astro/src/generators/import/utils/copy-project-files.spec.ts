@@ -1,6 +1,7 @@
 import { createTreeWithEmptyWorkspace } from '@nx/devkit/testing';
 import { Tree } from '@nx/devkit';
 import { vol } from 'memfs';
+import * as fs from 'fs';
 import { copyProjectFiles } from './copy-project-files';
 
 // Mock the fs module
@@ -242,6 +243,57 @@ describe('copyProjectFiles', () => {
 
       expect(tree.exists(`${targetPath}/src/index.ts`)).toBe(true);
       expect(tree.exists(`${targetPath}/linked-dir/file.txt`)).toBe(false);
+    });
+
+    it('should not copy a file swapped for a symlink after it was listed', () => {
+      const sourcePath = '/source-project';
+      const targetPath = 'apps/target-project';
+      const warn = jest
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      vol.fromJSON({
+        [`${sourcePath}/README.md`]: '# My Project',
+        '/outside/secret.txt': 'secret',
+      });
+      const realOpenSync = fs.openSync;
+      const openSync = jest
+        .spyOn(fs, 'openSync')
+        .mockImplementationOnce((path, flags) => {
+          // Simulate the race: swap the listed file just before it is opened
+          vol.unlinkSync(path as string);
+          vol.symlinkSync('/outside/secret.txt', path as string);
+          return realOpenSync(path, flags);
+        });
+
+      copyProjectFiles(sourcePath, targetPath, tree);
+
+      expect(tree.exists(`${targetPath}/README.md`)).toBe(false);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Could not copy file README.md'),
+      );
+      openSync.mockRestore();
+      warn.mockRestore();
+    });
+
+    it('should not copy an entry that is no longer a regular file when opened', () => {
+      const sourcePath = '/source-project';
+      const targetPath = 'apps/target-project';
+      const warn = jest
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      vol.fromJSON({ [`${sourcePath}/README.md`]: '# My Project' });
+      const fstatSync = jest
+        .spyOn(fs, 'fstatSync')
+        .mockImplementationOnce(() => ({ isFile: () => false }) as fs.Stats);
+
+      copyProjectFiles(sourcePath, targetPath, tree);
+
+      expect(tree.exists(`${targetPath}/README.md`)).toBe(false);
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining('Could not copy file README.md'),
+      );
+      fstatSync.mockRestore();
+      warn.mockRestore();
     });
 
     it('should warn about each skipped symlink', () => {
