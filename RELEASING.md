@@ -7,7 +7,8 @@ This document describes how to release new versions of `@geekvetica/nx-astro` to
 We use a hybrid release process that combines local control with automated CI/CD publishing:
 
 1. **Local versioning**: Run `nx release` locally to create version, changelog, and git tag
-2. **Automated publishing**: Push the tag to GitHub, and GitHub Actions automatically publishes to npm with provenance
+2. **Automated staging**: Push the tag to GitHub, and GitHub Actions stages the version on npm with provenance
+3. **Approval**: Approve the staged version with 2FA on npmjs.com to make it public
 
 This approach gives you:
 
@@ -23,23 +24,11 @@ Before creating a release:
 2. Your working directory is clean (no uncommitted changes)
 3. All tests pass locally: `pnpm test`
 4. Build succeeds: `pnpm build`
-5. GitHub repository has `NPM_TOKEN` secret configured
+5. npm Trusted Publishing is configured for the package (one-time setup)
 
-### Setting up NPM_TOKEN (One-time setup)
+### npm Trusted Publishing (One-time setup)
 
-The GitHub Actions workflow requires an npm Automation token:
-
-1. Create token at: https://www.npmjs.com/settings/[username]/tokens
-2. **IMPORTANT**: Select **"Automation"** token type (Classic tokens don't support provenance)
-3. Add to GitHub: Repository Settings → Secrets and variables → Actions → New repository secret
-   - Name: `NPM_TOKEN`
-   - Value: [paste your automation token]
-
-**Why Automation Token?** Publishing with npm provenance requires:
-
-- An Automation token (Classic tokens don't support provenance)
-- OIDC authentication from GitHub Actions
-- `id-token: write` permission (already configured in the workflow)
+The release workflow needs no npm token. npm trusts `release.yml` via OIDC and the workflow may only **stage** versions; a maintainer approves each one with 2FA. See [npm Trusted Publishing](docs/maintenance/release-process.md#npm-trusted-publishing) for the settings on npmjs.com.
 
 ## Release Process
 
@@ -85,15 +74,17 @@ git push && git push --tags
 git push --follow-tags
 ```
 
-### Step 3: GitHub Actions Publishes Automatically
+### Step 3: GitHub Actions Stages the Release
 
 Once you push the tag, GitHub Actions will automatically:
 
-1. ✅ Run linting and unit tests
-2. ✅ Build the package
-3. ✅ **Publish to npm with provenance**
-4. ✅ Verify the package is available on npm
+1. ✅ Verify the tag is a `chore(release): publish X.X.X` commit on `main`
+2. ✅ Run linting and unit tests
+3. ✅ Build the package
+4. ✅ **Stage the version on npm with provenance** (prereleases under the `next` dist-tag)
 5. ✅ Create GitHub release with changelog
+
+Then approve the staged version with 2FA in the **Staged Packages** tab on https://www.npmjs.com/package/@geekvetica/nx-astro. It is not public until you do.
 
 **Note:** E2E tests are not run in the release workflow (they run in your regular CI/PR checks).
 
@@ -110,7 +101,7 @@ Once you push the tag, GitHub Actions will automatically:
 
 ### Step 4: Verify the Release
 
-After the GitHub Actions workflow completes (usually 5-10 minutes):
+After the GitHub Actions workflow completes (usually 5-10 minutes) and you have approved the staged version:
 
 ```bash
 # Check the package on npm
@@ -206,15 +197,11 @@ git push --tags
 git push origin v0.9.0
 ```
 
-### "Unable to generate provenance" error in GitHub Actions
+### npm staging fails in GitHub Actions
 
-**Cause:** NPM_TOKEN secret is not configured or is a Classic token.
+**Cause:** The trusted publisher on npmjs.com is missing or does not match `Geekvetica/nx-astro` and `release.yml`.
 
-**Solution:**
-
-1. Create an **Automation token** (not Classic) at https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-2. Add it to GitHub repository secrets as `NPM_TOKEN`
-3. Verify the token type is "Automation"
+**Solution:** Fix the trusted publisher settings (see [npm Trusted Publishing](docs/maintenance/release-process.md#npm-trusted-publishing)), then stage the existing tag again with `gh workflow run release.yml -f tag=vX.X.X`.
 
 ### Package publishes to wrong registry
 
@@ -274,11 +261,12 @@ Before creating a release, verify:
 - [ ] Version bump type decided (patch/minor/major)
 - [ ] README is up to date
 - [ ] Breaking changes are documented (if any)
-- [ ] NPM_TOKEN secret configured in GitHub
+- [ ] npm Trusted Publishing configured (stage-only)
 
 After pushing tag:
 
 - [ ] GitHub Actions workflow succeeded
+- [ ] Staged version approved on npmjs.com (2FA)
 - [ ] Package published to npm: `npm view @geekvetica/nx-astro`
 - [ ] Provenance attestation present: `npm audit signatures`
 - [ ] GitHub release created

@@ -29,9 +29,7 @@ Before triggering a release, ensure:
 1. You have write access to the repository
 2. All CI checks are passing on the `main` branch
 3. The `main` branch is up to date
-4. Required secrets are configured:
-   - `NPM_TOKEN` - Automation token from an npm account with publish permission to the `@geekvetica` scope
-   - `GITHUB_TOKEN` - Automatically provided by GitHub Actions
+4. npm Trusted Publishing is configured for `@geekvetica/nx-astro` (see [npm Trusted Publishing](#npm-trusted-publishing)). No npm token secret is needed.
 
 ## How to Trigger a Release
 
@@ -229,10 +227,12 @@ The release workflow generates a changelog based on:
 The plugin is published to npm as `@geekvetica/nx-astro`:
 
 ```bash
-# Publishing happens from dist directory
+# The release workflow stages the version from the dist directory
 cd dist/nx-astro
-npm publish --access public
+npm stage publish --access public --provenance
 ```
+
+A staged version is **not public** until a maintainer approves it with 2FA, either in the **Staged Packages** tab on https://www.npmjs.com/package/@geekvetica/nx-astro or with `npm stage approve <stage-id>`. The workflow run summary links to the approval page.
 
 **Package Details:**
 
@@ -240,7 +240,7 @@ npm publish --access public
 - **Registry**: https://registry.npmjs.org
 - **Access**: Public (anyone can install)
 
-**After Publishing:**
+**After Approval:**
 
 - Package is available at: https://www.npmjs.com/package/@geekvetica/nx-astro
 - Users can install: `npm install @geekvetica/nx-astro`
@@ -287,9 +287,11 @@ See the [README](https://github.com/geekvetica/nx-astro) for usage instructions.
 
 ## Post-Release Steps
 
-After a successful release:
+After a successful release workflow run:
 
-1. **Verify npm Package**
+1. **Approve the staged version** on npmjs.com (Staged Packages tab, 2FA required). The GitHub release is already created at this point; the npm version is public only after approval.
+
+2. **Verify npm Package**
 
    ```bash
    # Check package is available
@@ -302,7 +304,7 @@ After a successful release:
    npm view @geekvetica/nx-astro versions
    ```
 
-2. **Test Installation**
+3. **Test Installation**
 
    ```bash
    # Create test workspace
@@ -316,12 +318,12 @@ After a successful release:
    npx nx g @geekvetica/nx-astro:init
    ```
 
-3. **Verify GitHub Release**
+4. **Verify GitHub Release**
    - Visit: https://github.com/geekvetica/nx-astro/releases
    - Confirm release appears
    - Verify changelog is correct
 
-4. **Monitor for Issues**
+5. **Monitor for Issues**
    - Watch GitHub Issues for bug reports
    - Monitor npm download stats
    - Check for installation errors
@@ -387,14 +389,20 @@ npm deprecate @geekvetica/nx-astro@1.0.0 "Critical bug fixed in 1.0.1"
 
 ### Release Fails at Validation
 
-**Symptom:** Validate job fails
-**Cause:** Not on `main` branch
-**Solution:**
+**Symptom:** The "Verify release tag" step fails
+**Cause:** The tag is not a release created by `nx release`. The step requires that:
+
+- the tag matches `v<major>.<minor>.<patch>` (optional prerelease suffix)
+- it points to a commit with the subject `chore(release): publish <version>`
+- `nx-astro/package.json` in that commit has the same version
+- the commit is on `main`
+
+**Solution:** Create releases only with `pnpx nx release` on an up-to-date `main`, then push the commit and tag:
 
 ```bash
 git checkout main
 git pull origin main
-# Re-run workflow
+pnpx nx release
 ```
 
 ### Release Fails at Tests
@@ -413,8 +421,10 @@ git pull origin main
 **Symptom:** npm publish fails
 **Possible Causes:**
 
-- `NPM_TOKEN` not set or expired
-- `NPM_TOKEN` belongs to an account without publish permission for `@geekvetica/nx-astro`
+- Trusted publisher on npmjs.com is missing or does not match `Geekvetica/nx-astro` and `release.yml`
+- npm in the workflow is older than 11.15.0 (check the `npm --version` output of the "Install npm" step)
+- The release was staged but not approved yet (check the Staged Packages tab on npmjs.com)
+- `repository.url` in `nx-astro/package.json` no longer matches the GitHub repository
 - Network issues
 - Version already published
 
@@ -428,18 +438,12 @@ This often indicates an authorization problem for a scoped package rather than a
 **Solution:**
 
 ```bash
-# Verify npm authentication in CI context
-npm whoami
-
 # Check if version already exists
 npm view @geekvetica/nx-astro versions
 
-# If token expired, regenerate on npmjs.com:
-# 1. Login to npmjs.com
-# 2. Go to Access Tokens
-# 3. Generate new Automation token
-# 4. Ensure token owner can publish @geekvetica/nx-astro
-# 5. Update NPM_TOKEN secret in GitHub
+# After fixing the trusted publisher settings, publish the existing tag again
+# (the manual run checks out the tag and uses the workflow file from main)
+gh workflow run release.yml -f tag=v1.0.0
 ```
 
 ### Release Fails at GitHub Release
@@ -509,14 +513,37 @@ For critical security issues:
 
 ## Configuration Reference
 
+### npm Trusted Publishing
+
+The release workflow uses [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers) with staged publishing. npm trusts the workflow via OIDC and issues a short-lived credential for each run, so there is no npm token to store, rotate or leak. The trusted publisher may only stage versions; a maintainer approves each one with 2FA before it becomes public. Provenance attestations are generated automatically.
+
+One-time setup on npmjs.com (package owner):
+
+1. Open `@geekvetica/nx-astro` → **Settings** → **Trusted Publisher** → **GitHub Actions**
+2. Organization or user: `Geekvetica`
+3. Repository: `nx-astro`
+4. Workflow filename: `release.yml`
+5. Environment: leave empty
+6. Leave **Allow npm publish** unchecked (stage-only) and **Allow npm dist-tag** unchecked
+7. Keep this as the only trusted publisher entry: a publish is authorized if it matches any entry, so an extra entry with direct publishing would bypass the approval step
+8. Under **Publishing access**, require two-factor authentication and disallow tokens
+
+Requirements the workflow already meets:
+
+- `id-token: write` permission
+- npm >= 11.15.0 for `npm stage publish` (installed by the publish job)
+- `repository.url` in `nx-astro/package.json` matches `https://github.com/Geekvetica/nx-astro`
+
+### Release Tag Protection
+
+Two checks make sure only real releases are staged:
+
+- **Workflow:** the "Verify release tag" step refuses any tag that is not a `chore(release): publish <version>` commit on `main` with a matching package version.
+- **GitHub tag ruleset** `release-tags`: only repository admins can create, move or delete `v*` tags.
+
 ### GitHub Secrets
 
-Required secrets in repository settings:
-
-- **NPM_TOKEN**: npm authentication token
-  - Type: Automation token
-  - Scope: Read and Publish
-  - Generate at: https://www.npmjs.com/settings/tokens
+No npm secret is required. `GITHUB_TOKEN` is provided automatically by GitHub Actions.
 
 ### Workflow Permissions
 

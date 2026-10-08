@@ -164,19 +164,16 @@ npx nx run-many -t test --all --parallel=3 --configuration=ci
 #### Caching Strategy
 
 1. **pnpm Store Cache**
-
    - Key: `${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}`
    - Speeds up dependency installation
    - Shared across all jobs
 
 2. **Node Modules Cache**
-
    - Key: `${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}`
    - Cached per project
    - Eliminates repeated installations
 
 3. **Nx Cache**
-
    - Key: `${{ runner.os }}-nx-cache-{job}-${{ github.sha }}`
    - Stores Nx computation cache
    - Separate cache per job type (lint, test, build, e2e)
@@ -265,35 +262,31 @@ validate (check branch, conditions)
 **Steps:**
 
 1. **Setup Environment**
-
    - Checkout with full git history (for changelog)
    - Setup pnpm and Node.js
    - Configure npm registry authentication
    - Configure git user for commits
 
 2. **Version Bump**
-
    - Use Nx release to bump version
    - Follow semantic versioning (semver)
    - Update package.json in dist directory
 
 3. **Changelog Generation**
-
    - Generate CHANGELOG.md from git commits
    - Include commit messages, authors, and references
    - Use conventional commits format
 
 4. **Git Operations**
-
    - Commit version changes: `chore(release): publish {version}`
    - Create git tag: `v{version}`
    - Push commits and tags to repository
 
 5. **npm Publishing**
-
-   - Publish from dist directory
+   - Stage the version from the dist directory (`npm stage publish`)
    - Set public access
-   - Use NPM_TOKEN for authentication
+   - Authenticate with npm Trusted Publishing (OIDC, no stored token)
+   - A maintainer approves the staged version on npmjs.com with 2FA
 
 6. **GitHub Release**
    - Create GitHub release from git tag
@@ -362,31 +355,7 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
 
 ## Required Secrets
 
-### NPM_TOKEN
-
-**Purpose:** Authenticates with npm registry for publishing
-
-**How to Create:**
-
-1. Log in to [npmjs.com](https://www.npmjs.com)
-2. Go to Account Settings → Access Tokens
-3. Click "Generate New Token"
-4. Select "Automation" type
-5. Copy the token
-
-**How to Add to GitHub:**
-
-1. Go to repository Settings → Secrets and variables → Actions
-2. Click "New repository secret"
-3. Name: `NPM_TOKEN`
-4. Value: Paste your npm token
-5. Click "Add secret"
-
-**Security:**
-
-- Token is only accessible to GitHub Actions
-- Never exposed in logs
-- Has publish permissions only
+No npm token is required. The release workflow stages releases with npm Trusted Publishing (OIDC), so the only credential is the `GITHUB_TOKEN` that GitHub Actions provides automatically. See [npm Trusted Publishing](maintenance/release-process.md#npm-trusted-publishing) for the one-time setup on npmjs.com.
 
 ### GITHUB_TOKEN
 
@@ -462,34 +431,27 @@ Configure branch protection for `main` branch:
 **GitHub Settings → Branches → Branch protection rules:**
 
 1. **Require pull request reviews**
-
    - Required approvals: 1
    - Dismiss stale reviews on new commits: ✓
 
 2. **Require status checks to pass**
-
    - Require branches to be up to date: ✓
    - Required status checks:
      - `CI Success` (this aggregates all CI jobs)
 
 3. **Require conversation resolution**
-
    - All conversations must be resolved: ✓
 
 4. **Require linear history** (optional)
-
    - Prevents merge commits: ✓
 
 5. **Include administrators**
-
    - Apply rules to admins: ✓
 
 6. **Restrict who can push**
-
    - Allow only maintainers to push directly
 
 7. **Allow force pushes**
-
    - Disable force pushes: ✗
 
 8. **Allow deletions**
@@ -554,14 +516,13 @@ git commit -m "chore: update pnpm lock file"
 
 #### 5. NPM Publish Failed
 
-**Symptom:** "Unable to authenticate need: npm_token"
+**Symptom:** npm publish fails with `E404` or `ENEEDAUTH`
 
 **Solutions:**
 
-- Verify `NPM_TOKEN` secret is set correctly
-- Check token has publish permissions
-- Ensure token hasn't expired
-- Regenerate token if needed
+- Verify the trusted publisher on npmjs.com matches `Geekvetica/nx-astro` and `release.yml`
+- Check the "Install npm" step prints npm 11.15.0 or newer
+- Ensure the workflow still has `id-token: write` permission
 
 #### 6. GitHub Release Creation Failed
 
@@ -645,7 +606,6 @@ act -l
    ```
 
 2. **Use conventional commits**
-
    - `feat:` - New features
    - `fix:` - Bug fixes
    - `docs:` - Documentation
@@ -653,13 +613,11 @@ act -l
    - `test:` - Test additions/changes
 
 3. **Keep PRs focused**
-
    - Single purpose per PR
    - Easier to review and test
    - Faster to merge
 
 4. **Respond to CI failures promptly**
-
    - Don't let PRs stagnate with failing checks
    - Ask for help if blocked
 
@@ -671,25 +629,21 @@ act -l
 ### For Maintainers
 
 1. **Review Dependabot PRs regularly**
-
    - Keep dependencies up to date
    - Review changelogs for breaking changes
    - Test major version updates thoroughly
 
 2. **Release regularly**
-
    - Don't let changes accumulate
    - Small, frequent releases are easier to debug
    - Communicate breaking changes clearly
 
 3. **Monitor CI performance**
-
    - Track build times
    - Optimize slow jobs
    - Update caching strategies as needed
 
 4. **Keep documentation current**
-
    - Update docs with workflow changes
    - Document new CI features
    - Explain troubleshooting steps

@@ -99,38 +99,24 @@ ls -la
 
 ### 8. Publish to npm
 
-**Option A: Using npm CLI**
+Do not publish from your machine. Push the release commit and tag; the release workflow stages the version on npm with provenance through Trusted Publishing:
 
 ```bash
-cd dist/nx-astro
-
-# Dry run first (verify what will be published)
-npm publish --dry-run
-
-# Actually publish (if dry run looks good)
-npm publish --access public
+git push --follow-tags
 ```
 
-**Option B: Using Nx Release** (if configured)
+- [ ] Release workflow succeeded: https://github.com/geekvetica/nx-astro/actions
+- [ ] Staged version approved with 2FA in the **Staged Packages** tab on https://www.npmjs.com/package/@geekvetica/nx-astro
 
-```bash
-npx nx release publish
-```
+To check what will be published before tagging, run `npm pack --dry-run` in `dist/nx-astro`. See [RELEASING.md](../RELEASING.md) for the full flow.
 
-### 9. Create GitHub Release
+### 9. Check the GitHub Release
 
-- [ ] Go to GitHub repository releases page
-- [ ] Click "Create a new release"
-- [ ] Select the tag created earlier (v0.1.0)
-- [ ] Release title: "v0.1.0 - [Brief Description]"
-- [ ] Copy relevant section from CHANGELOG.md
-- [ ] Add installation instructions:
-  ```bash
-  npm install --save-dev nx-astro@0.1.0
-  ```
-- [ ] Attach any relevant assets
-- [ ] Mark as pre-release if appropriate
-- [ ] Publish release
+The release workflow creates the GitHub release from the tag and the `CHANGELOG.md` entry.
+
+- [ ] Release `vX.X.X` exists on the GitHub releases page
+- [ ] Release notes match the CHANGELOG entry
+- [ ] Prereleases are marked as pre-release
 
 ## Post-Release Tasks
 

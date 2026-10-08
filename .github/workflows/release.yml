@@ -3,29 +3,37 @@
 # =============================================================================
 #
 # Purpose:
-#   Automated npm publishing with provenance after local versioning.
+#   Automated npm staged publishing with provenance after local versioning.
 #
 # Workflow:
 #   1. Developer runs `pnpx nx release` locally to version and create git tag
 #   2. Developer pushes tag to GitHub: `git push --tags`
 #   3. This workflow automatically triggers on tag push
-#   4. Workflow builds, tests, and publishes to npm with provenance
+#   4. Workflow builds, tests, and stages the version on npm with provenance
 #   5. Workflow creates GitHub release
+#   6. Maintainer approves the staged version on npmjs.com (2FA), which
+#      makes it public
 #
 # Triggers:
 #   - Automatic: Push of version tags (v*.*.*)
+#   - Manual: workflow_dispatch with an existing tag (re-stages that tag)
 #
-# Required Secrets:
-#   - NPM_TOKEN: Automation token for npm registry (required for provenance)
-#     - Go to https://www.npmjs.com/settings/YOUR_USERNAME/tokens
-#     - Create a new "Automation" token (not Classic)
-#     - Add it to GitHub repository secrets as NPM_TOKEN
+# Authentication (npm Trusted Publishing):
+#   - No npm token is stored in the repository
+#   - npm trusts this workflow (Geekvetica/nx-astro, release.yml) via OIDC
+#   - Configure on npmjs.com: package Settings -> Trusted Publisher -> GitHub Actions
+#   - The trusted publisher allows staged publishing only ("Allow npm publish"
+#     unchecked), so this workflow can never make a version public by itself
+#   - Requires npm >= 11.15.0 for `npm stage publish`
 #   - GITHUB_TOKEN: Automatically provided by GitHub Actions
 #
 # Security:
-#   - Uses OIDC for npm provenance attestations
-#   - Minimal permissions with id-token for OIDC
-#   - Secrets are never exposed in logs
+#   - Short-lived OIDC credentials, nothing to rotate or leak
+#   - A human approves every release with 2FA before it is public
+#   - Only release commits on main are staged (see "Verify release tag")
+#   - v* tags are protected by a GitHub tag ruleset (admins only)
+#   - Read-only by default; id-token only in the publish job and
+#     contents: write only in the GitHub release job
 #
 # Provenance:
 #   - Publishes with npm provenance statements
@@ -53,20 +61,19 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-# Permissions required for npm provenance with OIDC
+# Read-only by default; jobs that need more request it themselves
 permissions:
-  contents: write # Create releases
-  packages: write # Publish packages
-  id-token: write # OIDC token for npm provenance
+  contents: read
 
 env:
-  NODE_VERSION: '20.x'
+  NODE_VERSION: '24.x'
 
 jobs:
   # ===========================================================================
   # Job 1: Run Tests and Lint
   # ===========================================================================
   # Purpose:
+  #   - Refuse tags that are not `nx release` release commits on main
   #   - Run linting and unit tests before publishing
   #   - E2E tests are skipped in release workflow (they run in CI)
   #   - Fail fast if any tests fail
@@ -80,7 +87,40 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 0
+
+      - name: Verify release tag
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          # Only stage tags created by `nx release`: the tag must point to the
+          # release commit for its version, and that commit must be on main.
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "✗ Invalid tag format: $TAG"
+            exit 1
+          fi
+          VERSION=${TAG#v}
+
+          SUBJECT=$(git log -1 --format=%s HEAD)
+          if [ "$SUBJECT" != "chore(release): publish $VERSION" ]; then
+            echo "✗ $TAG does not point to a release commit (subject: $SUBJECT)"
+            exit 1
+          fi
+
+          PACKAGE_VERSION=$(jq -r .version nx-astro/package.json)
+          if [ "$PACKAGE_VERSION" != "$VERSION" ]; then
+            echo "✗ nx-astro/package.json has version $PACKAGE_VERSION, expected $VERSION"
+            exit 1
+          fi
+
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor HEAD origin/main; then
+            echo "✗ $TAG is not on main"
+            exit 1
+          fi
+
+          echo "✓ $TAG is the release commit for $VERSION on main"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -101,21 +141,26 @@ jobs:
         run: pnpx nx run-many -t test --all --parallel=3 --configuration=ci
 
   # ===========================================================================
-  # Job 2: Publish to npm
+  # Job 2: Stage on npm
   # ===========================================================================
   # Purpose:
-  #   - Publish to npm registry with provenance
-  #   - Verify package is available
+  #   - Stage the version on the npm registry with provenance
+  #   - Point the maintainer to the approval step
   # ===========================================================================
   publish:
-    name: Publish to npm
+    name: Stage on npm
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC token for npm Trusted Publishing and provenance
     timeout-minutes: 10
     needs: test
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -129,6 +174,11 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install npm with staged publishing support
+        run: |
+          npm install -g npm@^11.15.0
+          npm --version
 
       - name: Build plugin
         run: pnpx nx build nx-astro
@@ -157,60 +207,42 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Publishing version: $VERSION"
 
-      - name: Verify npm authentication and package access
-        run: |
-          if ! npm whoami >/dev/null 2>&1; then
-            echo "✗ npm authentication failed"
-            echo "Check NPM_TOKEN secret and ensure it is a valid Automation token."
-            exit 1
-          fi
-
-          echo "✓ npm authentication is valid"
-          npm view @geekvetica/nx-astro version || true
+      - name: Stage on npm with provenance
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Publish to npm with provenance
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          # Publish the built package from dist directory with provenance
-          # The --provenance flag generates a signed attestation that:
-          #   - Links the package to its source repository
-          #   - Records the GitHub Actions workflow that built it
-          #   - Creates a verifiable chain of custody
-          # This requires:
-          #   - Publishing from GitHub Actions (OIDC authentication)
-          #   - id-token: write permission (set above)
-          #   - An automation token in NPM_TOKEN secret
+          # Stage the built package from dist directory via npm Trusted
+          # Publishing: npm exchanges this job's OIDC token for a short-lived
+          # credential, so no NPM_TOKEN secret is needed. A staged version is
+          # not public until a maintainer approves it with 2FA. This requires:
+          #   - id-token: write permission (set on this job)
+          #   - A trusted publisher for release.yml configured on npmjs.com
+          #   - npm >= 11.15.0
+          # npm requires an explicit dist-tag for prerelease versions; keep
+          # them off `latest` by staging them under `next`.
+          DIST_TAG=latest
+          if [[ "$VERSION" == *-* ]]; then
+            DIST_TAG=next
+          fi
           cd dist/nx-astro
-          npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          npm stage publish --access public --provenance --tag "$DIST_TAG"
 
-      - name: Wait for npm registry propagation
-        run: sleep 30
-
-      - name: Verify npm package
+      - name: Point to approval
         run: |
-          PACKAGE_NAME="@geekvetica/nx-astro"
           VERSION="${{ steps.version.outputs.version }}"
-
-          # Verify the package is available
-          PUBLISHED_VERSION=$(npm view $PACKAGE_NAME version)
-          echo "Published version on npm: $PUBLISHED_VERSION"
-
-          if [ "$PUBLISHED_VERSION" = "$VERSION" ]; then
-            echo "✓ Package successfully published to npm"
-          else
-            echo "✗ Version mismatch: expected $VERSION, got $PUBLISHED_VERSION"
-            exit 1
-          fi
-
-      - name: Notify on success
-        if: success()
-        run: |
-          echo "✓ Successfully published version ${{ steps.version.outputs.version }}"
-          echo "NPM: https://www.npmjs.com/package/@geekvetica/nx-astro"
-          echo "Verify provenance: npm audit signatures"
+          {
+            echo "### @geekvetica/nx-astro@$VERSION is staged on npm"
+            echo
+            echo "It is not public yet. Approve it with 2FA in the **Staged Packages** tab:"
+            echo "https://www.npmjs.com/package/@geekvetica/nx-astro"
+            echo
+            echo "After approval, verify with:"
+            echo '```'
+            echo "npm view @geekvetica/nx-astro@$VERSION version"
+            echo "npm audit signatures"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "✓ Staged version $VERSION; approve it on npmjs.com to publish"
 
   # ===========================================================================
   # Job 3: Create GitHub Release
@@ -222,6 +254,8 @@ jobs:
   github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Create releases
     timeout-minutes: 5
     needs: publish
 
@@ -229,6 +263,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 0
 
       - name: Get version from tag
@@ -279,6 +314,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          # Explicit tag: on workflow_dispatch, GITHUB_REF is the branch
+          tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
           body: |
             # nx-astro v${{ steps.version.outputs.version }}
