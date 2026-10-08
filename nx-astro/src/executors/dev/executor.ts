@@ -91,11 +91,18 @@ export default async function devExecutor(
       );
       logger.info(`Executing: ${command} ${fullArgs.join(' ')}`);
 
-      // Spawn the dev server process
+      // Spawn the dev server process.
+      // Astro 7+ detaches `astro dev` into a background process when it detects
+      // an AI coding agent, which would make this task exit immediately and break
+      // Nx's process supervision. Keep it in the foreground unless the user
+      // explicitly opted in via ASTRO_DEV_BACKGROUND.
       const childProcess: ChildProcess = spawn(command, fullArgs, {
         cwd: context.root,
         stdio: 'inherit',
-        env: process.env,
+        env: {
+          ...process.env,
+          ASTRO_DEV_BACKGROUND: process.env.ASTRO_DEV_BACKGROUND ?? '0',
+        },
       });
 
       // Handle process events

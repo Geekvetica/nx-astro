@@ -12,6 +12,35 @@ const PLUGIN_NAME = '@geekvetica/nx-astro';
 const ASTRO_VERSIONS: Record<string, { astro: string; node: string }> = {
   '5': { astro: '^5.14.5', node: '^9.5.0' },
   '6': { astro: '^6.2.0', node: '^10.0.0' },
+  '7': { astro: '^7.3.6', node: '^11.1.7' },
+};
+
+const LATEST_ASTRO_MAJOR = '7';
+
+/**
+ * @astrojs/node ranges per Astro major, newest first. Each entry is used only
+ * when the workspace's Astro range cannot go below `minAstro`, which is the
+ * lowest Astro version every adapter release in `node` accepts as a peer.
+ */
+const NODE_ADAPTER_COMPATIBILITY: Record<
+  string,
+  { minAstro: string; node: string }[]
+> = {
+  '5': [
+    { minAstro: '5.17.3', node: '^9.5.4' },
+    { minAstro: '5.14.3', node: '>=9.4.6 <9.5.4' },
+    { minAstro: '5.7.0', node: '>=9.4.3 <9.4.6' },
+    { minAstro: '5.3.0', node: '>=9.1.0 <9.4.3' },
+    { minAstro: '5.0.0', node: '>=9.0.0 <9.1.0' },
+  ],
+  '6': [
+    { minAstro: '6.3.0', node: '^10.1.0' },
+    { minAstro: '6.0.0', node: '>=10.0.2 <10.1.0' },
+  ],
+  '7': [
+    { minAstro: '7.2.1', node: '^11.1.7' },
+    { minAstro: '7.0.0', node: '>=11.0.1 <11.1.3' },
+  ],
 };
 
 const DEFAULT_PLUGIN_OPTIONS = {
@@ -97,7 +126,10 @@ function addPluginToNxJson(tree: Tree): void {
   });
 }
 
-function addDependencies(tree: Tree, astroVersion: '5' | '6' | 'latest'): void {
+function addDependencies(
+  tree: Tree,
+  astroVersion: '5' | '6' | '7' | 'latest',
+): void {
   const packageJson = readJson(tree, 'package.json');
   const existingDependencies = packageJson.dependencies || {};
   const existingDevDependencies = packageJson.devDependencies || {};
@@ -129,23 +161,67 @@ function addDependencies(tree: Tree, astroVersion: '5' | '6' | 'latest'): void {
   }
 }
 
-function resolveVersionRange(astroVersion: '5' | '6' | 'latest'): string {
-  const resolved = astroVersion === 'latest' ? '6' : astroVersion;
+function resolveVersionRange(astroVersion: '5' | '6' | '7' | 'latest'): string {
+  const resolved =
+    astroVersion === 'latest' ? LATEST_ASTRO_MAJOR : astroVersion;
   return ASTRO_VERSIONS[resolved].astro;
 }
 
-function resolveNodeVersion(astroVersion: '5' | '6' | 'latest'): string {
-  const resolved = astroVersion === 'latest' ? '6' : astroVersion;
+function resolveNodeVersion(astroVersion: '5' | '6' | '7' | 'latest'): string {
+  const resolved =
+    astroVersion === 'latest' ? LATEST_ASTRO_MAJOR : astroVersion;
   return ASTRO_VERSIONS[resolved].node;
 }
 
+/**
+ * Picks an @astrojs/node range whose peer requirement is met by every Astro
+ * version the existing range allows, based on the range's lower bound.
+ * For `||` ranges the lowest alternative decides; ranges spanning several
+ * majors or that cannot be parsed get no adapter.
+ */
 function resolveNodeVersionFromRange(astroRange: string): string | undefined {
-  const majorMatch = astroRange.match(/^[\^~>=<]*\s*(\d+)/);
-  if (!majorMatch) {
+  const lowerBounds = astroRange.split('||').map(parseLowerBound);
+  if (lowerBounds.length === 0 || lowerBounds.some((bound) => !bound)) {
     return undefined;
   }
-  const major = majorMatch[1];
-  return ASTRO_VERSIONS[major]?.node;
+
+  const bounds = lowerBounds as [number, number, number][];
+  if (bounds.some((bound) => bound[0] !== bounds[0][0])) {
+    return undefined;
+  }
+  const lowerBound = bounds.reduce((lowest, bound) =>
+    compareVersions(bound, lowest) < 0 ? bound : lowest,
+  );
+
+  const candidates = NODE_ADAPTER_COMPATIBILITY[String(lowerBound[0])];
+  return candidates?.find(
+    ({ minAstro }) =>
+      compareVersions(lowerBound, parseLowerBound(minAstro) ?? [0, 0, 0]) >= 0,
+  )?.node;
+}
+
+function parseLowerBound(range: string): [number, number, number] | undefined {
+  const match = range
+    .trim()
+    .match(/^(?:\^|~|>=?|=)?\s*v?(\d+)(?:\.(\d+|x|\*))?(?:\.(\d+|x|\*))?/i);
+  if (!match) {
+    return undefined;
+  }
+  const toNumber = (part?: string) =>
+    part && /^\d+$/.test(part) ? Number(part) : 0;
+  return [Number(match[1]), toNumber(match[2]), toNumber(match[3])];
+}
+
+function compareVersions(
+  a: [number, number, number],
+  b: [number, number, number],
+): number {
+  for (let i = 0; i < 3; i++) {
+    if (a[i] !== b[i]) {
+      return a[i] - b[i];
+    }
+  }
+  return 0;
 }
 
 export default initGenerator;

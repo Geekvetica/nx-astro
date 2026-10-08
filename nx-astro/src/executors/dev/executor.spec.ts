@@ -110,6 +110,54 @@ describe('Dev Executor', () => {
       expect(result.success).toBe(true);
     });
 
+    it('should keep Astro dev server in the foreground by default', async () => {
+      const original = process.env.ASTRO_DEV_BACKGROUND;
+      delete process.env.ASTRO_DEV_BACKGROUND;
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      try {
+        await devExecutor({}, context);
+
+        const spawnOptions = mockSpawn.mock.calls[0][2];
+        expect(spawnOptions.env.ASTRO_DEV_BACKGROUND).toBe('0');
+      } finally {
+        if (original !== undefined) {
+          process.env.ASTRO_DEV_BACKGROUND = original;
+        }
+      }
+    });
+
+    it('should respect an explicit ASTRO_DEV_BACKGROUND value', async () => {
+      const original = process.env.ASTRO_DEV_BACKGROUND;
+      process.env.ASTRO_DEV_BACKGROUND = '1';
+
+      mockOn.mockImplementation((event: string, callback: any) => {
+        if (event === 'close') {
+          callback(0);
+        }
+        return mockChildProcess;
+      });
+
+      try {
+        await devExecutor({}, context);
+
+        const spawnOptions = mockSpawn.mock.calls[0][2];
+        expect(spawnOptions.env.ASTRO_DEV_BACKGROUND).toBe('1');
+      } finally {
+        if (original === undefined) {
+          delete process.env.ASTRO_DEV_BACKGROUND;
+        } else {
+          process.env.ASTRO_DEV_BACKGROUND = original;
+        }
+      }
+    });
+
     it('should use default port (4321) when not specified', async () => {
       const options: DevExecutorSchema = {};
 

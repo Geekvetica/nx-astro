@@ -9,6 +9,11 @@ export interface AstroVersionFlags {
   supportsCjsConfig: boolean;
   usesVite7: boolean;
   usesZod4: boolean;
+  usesVite8: boolean;
+  usesRustCompiler: boolean;
+  usesSatteriMarkdown: boolean;
+  supportsAstroDb: boolean;
+  defaultCompressHTML: boolean | 'jsx';
 }
 
 export function getCompatibilityFlags(majorVersion: number): AstroVersionFlags {
@@ -19,8 +24,13 @@ export function getCompatibilityFlags(majorVersion: number): AstroVersionFlags {
     requiresNode22: majorVersion >= 6,
     supportsLegacyContentCollections: majorVersion < 6,
     supportsCjsConfig: majorVersion < 6,
-    usesVite7: majorVersion >= 6,
+    usesVite7: majorVersion === 6,
     usesZod4: majorVersion >= 6,
+    usesVite8: majorVersion >= 7,
+    usesRustCompiler: majorVersion >= 7,
+    usesSatteriMarkdown: majorVersion >= 7,
+    supportsAstroDb: majorVersion < 7,
+    defaultCompressHTML: majorVersion >= 7 ? 'jsx' : true,
   };
 }
 

@@ -338,12 +338,17 @@ describe('nx-astro e2e', () => {
 
   describe('check executor', () => {
     beforeAll(() => {
-      // Install @astrojs/check as a prerequisite
+      // Install @astrojs/check as a prerequisite.
+      // TypeScript is pinned because `astro check` does not support TypeScript 7.
       logStep('Installing @astrojs/check for type checking...');
       try {
-        runPnpmCommand('add -D @astrojs/check typescript', projectDirectory, {
-          silent: true,
-        });
+        runPnpmCommand(
+          'add -D @astrojs/check typescript@~5.9.2',
+          projectDirectory,
+          {
+            silent: true,
+          },
+        );
       } catch {
         // If installation fails, we'll skip the check test
         console.warn('Failed to install @astrojs/check, check test may fail');

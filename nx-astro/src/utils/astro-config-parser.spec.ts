@@ -214,6 +214,136 @@ describe('astro-config-parser', () => {
       expect(config.legacy?.collectionsBackwardsCompat).toBe(false);
     });
 
+    it('should parse compressHTML jsx mode (Astro 7+)', () => {
+      const config = parseAstroConfig(`
+        export default {
+          compressHTML: 'jsx'
+        };
+      `);
+
+      expect(config.compressHTML).toBe('jsx');
+    });
+
+    it('should parse compressHTML boolean value', () => {
+      const config = parseAstroConfig(`
+        export default {
+          compressHTML: false
+        };
+      `);
+
+      expect(config.compressHTML).toBe(false);
+    });
+
+    it('should parse fetchFile entrypoint (Astro 7+)', () => {
+      const config = parseAstroConfig(`
+        export default {
+          fetchFile: 'app.ts'
+        };
+      `);
+
+      expect(config.fetchFile).toBe('app.ts');
+    });
+
+    it('should parse fetchFile set to null', () => {
+      const config = parseAstroConfig(`
+        export default {
+          fetchFile: null
+        };
+      `);
+
+      expect(config.fetchFile).toBeNull();
+    });
+
+    it('should ignore nested compressHTML and fetchFile keys', () => {
+      const config = parseAstroConfig(`
+        export default defineConfig({
+          compressHTML: 'jsx',
+          fetchFile: 'app.ts',
+          vite: {
+            define: {
+              compressHTML: false,
+              fetchFile: null,
+            },
+          },
+        });
+      `);
+
+      expect(config.compressHTML).toBe('jsx');
+      expect(config.fetchFile).toBe('app.ts');
+    });
+
+    it('should not pick up compressHTML or fetchFile defined only in nested objects', () => {
+      const config = parseAstroConfig(`
+        export default defineConfig({
+          output: 'static',
+          vite: { define: { compressHTML: false, fetchFile: null } },
+          integrations: [someIntegration({ fetchFile: 'other.ts' })],
+        });
+      `);
+
+      expect(config).not.toHaveProperty('compressHTML');
+      expect(config).not.toHaveProperty('fetchFile');
+    });
+
+    it('should ignore option names that appear inside other string values', () => {
+      const config = parseAstroConfig(`
+        export default {
+          compressHTML: 'jsx',
+          fetchFile: 'app.ts',
+          site: 'https://example.com/?compressHTML: false&fetchFile: null'
+        };
+      `);
+
+      expect(config.compressHTML).toBe('jsx');
+      expect(config.fetchFile).toBe('app.ts');
+    });
+
+    it('should not pick up option names that only appear inside strings', () => {
+      const config = parseAstroConfig(`
+        export default {
+          site: 'https://example.com/?compressHTML: false&fetchFile: null'
+        };
+      `);
+
+      expect(config).not.toHaveProperty('compressHTML');
+      expect(config).not.toHaveProperty('fetchFile');
+    });
+
+    it('should handle escaped quotes in other string values', () => {
+      const config = parseAstroConfig(`
+        export default {
+          base: 'it\\'s, fetchFile: null',
+          compressHTML: true,
+          fetchFile: "src/entry.ts"
+        };
+      `);
+
+      expect(config.compressHTML).toBe(true);
+      expect(config.fetchFile).toBe('src/entry.ts');
+    });
+
+    it('should not treat brackets inside strings as nesting', () => {
+      const config = parseAstroConfig(`
+        export default {
+          site: 'https://example.com/{x}',
+          fetchFile: 'entry.ts'
+        };
+      `);
+
+      expect(config.fetchFile).toBe('entry.ts');
+    });
+
+    it('should leave compressHTML and fetchFile undefined when not set', () => {
+      const config = parseAstroConfig(`
+        export default {
+          output: 'static'
+        };
+      `);
+
+      expect(config).not.toHaveProperty('compressHTML');
+      expect(config).not.toHaveProperty('fetchFile');
+    });
+
     it('should parse session config with Astro 6 shape', () => {
       const configContent = `
         export default {

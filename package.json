@@ -21,12 +21,12 @@
   },
   "private": true,
   "dependencies": {
-    "@astrojs/node": "^10.1.0",
+    "@astrojs/node": "^11.1.7",
     "@nx/devkit": "23.3.0",
-    "astro": "^6.3.2"
+    "astro": "^7.3.6"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.9",
+    "@astrojs/check": "^0.9.10",
     "@eslint/js": "^9.39.4",
     "@nx/eslint": "23.3.0",
     "@nx/eslint-plugin": "23.3.0",
