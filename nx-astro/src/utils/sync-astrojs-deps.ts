@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import { logger } from '@nx/devkit';
 import { join } from 'path';
 
@@ -88,8 +88,10 @@ export function syncAstrojsDependencies(
     'package.json',
   );
 
-  // Check if project package.json exists
-  if (!existsSync(projectPackageJsonPath)) {
+  // Read project package.json directly instead of checking existence first,
+  // which avoids a check-then-use race on the file
+  const projectContent = readFileIfExists(projectPackageJsonPath);
+  if (projectContent === undefined) {
     logger.warn(
       `package.json not found at ${projectRoot}/package.json. Skipping sync.`,
     );
@@ -104,8 +106,7 @@ export function syncAstrojsDependencies(
   // Extract astro and @astrojs/* dependencies from root
   const rootAstrojsDeps = extractAstrojsDependencies(rootPackageJson);
 
-  // Read project package.json
-  const projectContent = readFileSync(projectPackageJsonPath, 'utf-8');
+  // Parse project package.json
   const projectPackageJson = JSON.parse(projectContent);
 
   // Get current project dependencies AND devDependencies
@@ -147,6 +148,24 @@ export function syncAstrojsDependencies(
   logger.info(
     `Synced ${count} Astro-related ${word} to ${projectRoot}/package.json`,
   );
+}
+
+/**
+ * Reads a UTF-8 file, returning undefined when it does not exist.
+ *
+ * @param filePath - Path of the file to read
+ * @returns File content, or undefined if the file or a parent directory is missing
+ */
+function readFileIfExists(filePath: string): string | undefined {
+  try {
+    return readFileSync(filePath, 'utf-8');
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT' || code === 'ENOTDIR') {
+      return undefined;
+    }
+    throw error;
+  }
 }
 
 /**
