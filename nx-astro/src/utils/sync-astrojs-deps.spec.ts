@@ -23,6 +23,11 @@ describe('syncAstrojsDependencies', () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    // Restore spies even when an assertion failed
+    jest.restoreAllMocks();
+  });
+
   describe('basic synchronization', () => {
     it('should sync astro and @astrojs/* dependencies from root to project', () => {
       // Arrange
@@ -207,11 +212,9 @@ describe('syncAstrojsDependencies', () => {
       const eacces = Object.assign(new Error('EACCES: permission denied'), {
         code: 'EACCES',
       });
-      const readFileSync = jest
-        .spyOn(fs, 'readFileSync')
-        .mockImplementationOnce(() => {
-          throw eacces;
-        });
+      jest.spyOn(fs, 'readFileSync').mockImplementationOnce(() => {
+        throw eacces;
+      });
 
       // Act
       syncAstrojsDependencies('apps/my-app', '/workspace');
@@ -220,7 +223,28 @@ describe('syncAstrojsDependencies', () => {
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('package.json not found'),
       );
-      readFileSync.mockRestore();
+    });
+
+    it('should throw when reading fails for a file that exists', () => {
+      // Arrange: the file exists, but reading it is denied
+      vol.fromJSON({
+        '/workspace/package.json': JSON.stringify({
+          dependencies: { astro: '^5.0.0' },
+        }),
+        '/workspace/apps/my-app/package.json': JSON.stringify({}),
+      });
+      const eacces = Object.assign(new Error('EACCES: permission denied'), {
+        code: 'EACCES',
+      });
+      jest.spyOn(fs, 'readFileSync').mockImplementationOnce(() => {
+        throw eacces;
+      });
+
+      // Act & Assert
+      expect(() =>
+        syncAstrojsDependencies('apps/my-app', '/workspace'),
+      ).toThrow('EACCES');
+      expect(logger.warn).not.toHaveBeenCalled();
     });
   });
 

@@ -18,6 +18,8 @@ describe('copyProjectFiles', () => {
 
   afterEach(() => {
     vol.reset();
+    // Restore spies even when an assertion failed
+    jest.restoreAllMocks();
   });
 
   describe('basic file copying', () => {
@@ -256,14 +258,12 @@ describe('copyProjectFiles', () => {
         '/outside/secret.txt': 'secret',
       });
       const realOpenSync = fs.openSync;
-      const openSync = jest
-        .spyOn(fs, 'openSync')
-        .mockImplementationOnce((path, flags) => {
-          // Simulate the race: swap the listed file just before it is opened
-          vol.unlinkSync(path as string);
-          vol.symlinkSync('/outside/secret.txt', path as string);
-          return realOpenSync(path, flags);
-        });
+      jest.spyOn(fs, 'openSync').mockImplementationOnce((path, flags) => {
+        // Simulate the race: swap the listed file just before it is opened
+        vol.unlinkSync(path as string);
+        vol.symlinkSync('/outside/secret.txt', path as string);
+        return realOpenSync(path, flags);
+      });
 
       copyProjectFiles(sourcePath, targetPath, tree);
 
@@ -271,8 +271,6 @@ describe('copyProjectFiles', () => {
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('Could not copy file README.md'),
       );
-      openSync.mockRestore();
-      warn.mockRestore();
     });
 
     it('should not copy an entry that is no longer a regular file when opened', () => {
@@ -282,7 +280,7 @@ describe('copyProjectFiles', () => {
         .spyOn(console, 'warn')
         .mockImplementation(() => undefined);
       vol.fromJSON({ [`${sourcePath}/README.md`]: '# My Project' });
-      const fstatSync = jest
+      jest
         .spyOn(fs, 'fstatSync')
         .mockImplementationOnce(() => ({ isFile: () => false }) as fs.Stats);
 
@@ -292,8 +290,20 @@ describe('copyProjectFiles', () => {
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('Could not copy file README.md'),
       );
-      fstatSync.mockRestore();
-      warn.mockRestore();
+    });
+
+    it('should open files without following symlinks or blocking', () => {
+      const sourcePath = '/source-project';
+      const targetPath = 'apps/target-project';
+      vol.fromJSON({ [`${sourcePath}/README.md`]: '# My Project' });
+      const openSync = jest.spyOn(fs, 'openSync');
+
+      copyProjectFiles(sourcePath, targetPath, tree);
+
+      expect(openSync).toHaveBeenCalledTimes(1);
+      const flags = openSync.mock.calls[0][1] as number;
+      expect(flags & fs.constants.O_NOFOLLOW).toBe(fs.constants.O_NOFOLLOW);
+      expect(flags & fs.constants.O_NONBLOCK).toBe(fs.constants.O_NONBLOCK);
     });
 
     it('should warn about each skipped symlink', () => {
@@ -315,7 +325,6 @@ describe('copyProjectFiles', () => {
       expect(warn).toHaveBeenCalledWith(
         expect.stringContaining('Skipping symbolic link linked-secret.txt'),
       );
-      warn.mockRestore();
     });
   });
 
