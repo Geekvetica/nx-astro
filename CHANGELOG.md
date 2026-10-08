@@ -1,3 +1,21 @@
+# 3.0.0 (2026-10-08)
+
+### 🚀 Features
+
+- astro update ([7e276e5](https://github.com/Geekvetica/nx-astro/commit/7e276e5))
+- add Astro 7 support with new config options and dev server handling ([#168](https://github.com/Geekvetica/nx-astro/pull/168))
+- ⚠️ **nx-astro:** build on Nx 23 and support Nx 22–23 hosts ([#170](https://github.com/Geekvetica/nx-astro/pull/170), [#169](https://github.com/Geekvetica/nx-astro/issues/169))
+
+### ⚠️ Breaking Changes
+
+- **nx-astro:** build on Nx 23 and support Nx 22–23 hosts ([#170](https://github.com/Geekvetica/nx-astro/pull/170), [#169](https://github.com/Geekvetica/nx-astro/issues/169))
+  @geekvetica/nx-astro now requires Nx 22 or 23; Nx 21 is no longer supported.
+  Closes #169
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski @pwojciechowski
+
 # 2.0.0 (2026-05-11)
 
 ### 🚀 Features
