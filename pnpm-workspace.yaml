@@ -6,3 +6,10 @@ onlyBuiltDependencies:
   - nx
 
 strictPeerDependencies: false
+
+# Security fixes for transitive dependencies that their parents do not pick
+# up yet. Scoped to the vulnerable range so they never downgrade or jump a
+# major; remove an entry once `pnpm why <pkg>` shows only fixed versions.
+overrides:
+  compression@<1.8.2: ^1.8.2
+  undici@>=7.0.0 <7.29.1: ^7.29.1
