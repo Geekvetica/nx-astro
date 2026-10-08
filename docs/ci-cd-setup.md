@@ -164,19 +164,16 @@ npx nx run-many -t test --all --parallel=3 --configuration=ci
 #### Caching Strategy
 
 1. **pnpm Store Cache**
-
    - Key: `${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}`
    - Speeds up dependency installation
    - Shared across all jobs
 
 2. **Node Modules Cache**
-
    - Key: `${{ runner.os }}-node-modules-${{ hashFiles('**/pnpm-lock.yaml') }}`
    - Cached per project
    - Eliminates repeated installations
 
 3. **Nx Cache**
-
    - Key: `${{ runner.os }}-nx-cache-{job}-${{ github.sha }}`
    - Stores Nx computation cache
    - Separate cache per job type (lint, test, build, e2e)
@@ -265,32 +262,27 @@ validate (check branch, conditions)
 **Steps:**
 
 1. **Setup Environment**
-
    - Checkout with full git history (for changelog)
    - Setup pnpm and Node.js
    - Configure npm registry authentication
    - Configure git user for commits
 
 2. **Version Bump**
-
    - Use Nx release to bump version
    - Follow semantic versioning (semver)
    - Update package.json in dist directory
 
 3. **Changelog Generation**
-
    - Generate CHANGELOG.md from git commits
    - Include commit messages, authors, and references
    - Use conventional commits format
 
 4. **Git Operations**
-
    - Commit version changes: `chore(release): publish {version}`
    - Create git tag: `v{version}`
    - Push commits and tags to repository
 
 5. **npm Publishing**
-
    - Publish from dist directory
    - Set public access
    - Use NPM_TOKEN for authentication
@@ -462,34 +454,27 @@ Configure branch protection for `main` branch:
 **GitHub Settings → Branches → Branch protection rules:**
 
 1. **Require pull request reviews**
-
    - Required approvals: 1
    - Dismiss stale reviews on new commits: ✓
 
 2. **Require status checks to pass**
-
    - Require branches to be up to date: ✓
    - Required status checks:
      - `CI Success` (this aggregates all CI jobs)
 
 3. **Require conversation resolution**
-
    - All conversations must be resolved: ✓
 
 4. **Require linear history** (optional)
-
    - Prevents merge commits: ✓
 
 5. **Include administrators**
-
    - Apply rules to admins: ✓
 
 6. **Restrict who can push**
-
    - Allow only maintainers to push directly
 
 7. **Allow force pushes**
-
    - Disable force pushes: ✗
 
 8. **Allow deletions**
@@ -645,7 +630,6 @@ act -l
    ```
 
 2. **Use conventional commits**
-
    - `feat:` - New features
    - `fix:` - Bug fixes
    - `docs:` - Documentation
@@ -653,13 +637,11 @@ act -l
    - `test:` - Test additions/changes
 
 3. **Keep PRs focused**
-
    - Single purpose per PR
    - Easier to review and test
    - Faster to merge
 
 4. **Respond to CI failures promptly**
-
    - Don't let PRs stagnate with failing checks
    - Ask for help if blocked
 
@@ -671,25 +653,21 @@ act -l
 ### For Maintainers
 
 1. **Review Dependabot PRs regularly**
-
    - Keep dependencies up to date
    - Review changelogs for breaking changes
    - Test major version updates thoroughly
 
 2. **Release regularly**
-
    - Don't let changes accumulate
    - Small, frequent releases are easier to debug
    - Communicate breaking changes clearly
 
 3. **Monitor CI performance**
-
    - Track build times
    - Optimize slow jobs
    - Update caching strategies as needed
 
 4. **Keep documentation current**
-
    - Update docs with workflow changes
    - Document new CI features
    - Explain troubleshooting steps
