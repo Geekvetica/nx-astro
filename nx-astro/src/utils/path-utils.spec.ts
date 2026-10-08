@@ -35,13 +35,13 @@ describe('path-utils', () => {
   describe('getProjectNameFromPath', () => {
     it('should extract project name from config path', () => {
       expect(getProjectNameFromPath('apps/my-app/astro.config.mjs')).toBe(
-        'my-app'
+        'my-app',
       );
     });
 
     it('should handle nested directories', () => {
       expect(
-        getProjectNameFromPath('apps/frontend/my-app/astro.config.mjs')
+        getProjectNameFromPath('apps/frontend/my-app/astro.config.mjs'),
       ).toBe('my-app');
     });
 
@@ -51,10 +51,10 @@ describe('path-utils', () => {
 
     it('should handle different config file extensions', () => {
       expect(getProjectNameFromPath('apps/my-app/astro.config.js')).toBe(
-        'my-app'
+        'my-app',
       );
       expect(getProjectNameFromPath('apps/my-app/astro.config.ts')).toBe(
-        'my-app'
+        'my-app',
       );
     });
   });
@@ -62,13 +62,13 @@ describe('path-utils', () => {
   describe('joinPathFragments', () => {
     it('should join path fragments with forward slashes', () => {
       expect(joinPathFragments('apps', 'my-app', 'src')).toBe(
-        'apps/my-app/src'
+        'apps/my-app/src',
       );
     });
 
     it('should handle fragments with slashes', () => {
       expect(joinPathFragments('apps/', '/my-app', 'src/')).toBe(
-        'apps/my-app/src'
+        'apps/my-app/src',
       );
     });
 
@@ -100,7 +100,7 @@ describe('path-utils', () => {
       const result = resolveOutputPath(
         'apps/my-app',
         'dist/{projectName}',
-        'my-app'
+        'my-app',
       );
       expect(result).toBe('dist/my-app');
     });
@@ -109,7 +109,7 @@ describe('path-utils', () => {
       const result = resolveOutputPath(
         'apps/frontend/my-app',
         'dist/{projectName}/{projectRoot}',
-        'my-app'
+        'my-app',
       );
       expect(result).toBe('dist/my-app/apps/frontend/my-app');
     });

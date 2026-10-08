@@ -34,7 +34,7 @@ describe('copyProjectFiles', () => {
       expect(tree.exists(`${targetPath}/README.md`)).toBe(true);
       expect(tree.exists(`${targetPath}/package.json`)).toBe(true);
       expect(tree.read(`${targetPath}/README.md`, 'utf-8')).toBe(
-        '# My Project'
+        '# My Project',
       );
     });
 
@@ -52,7 +52,7 @@ describe('copyProjectFiles', () => {
 
       expect(tree.exists(`${targetPath}/src/index.ts`)).toBe(true);
       expect(tree.exists(`${targetPath}/src/components/Button.astro`)).toBe(
-        true
+        true,
       );
       expect(tree.exists(`${targetPath}/public/favicon.svg`)).toBe(true);
     });
@@ -87,7 +87,7 @@ describe('copyProjectFiles', () => {
 
       expect(tree.exists(`${targetPath}/src/index.ts`)).toBe(true);
       expect(tree.exists(`${targetPath}/node_modules/package/index.js`)).toBe(
-        false
+        false,
       );
     });
 
@@ -185,7 +185,7 @@ describe('copyProjectFiles', () => {
 
       // Should not throw
       expect(() =>
-        copyProjectFiles(sourcePath, targetPath, tree)
+        copyProjectFiles(sourcePath, targetPath, tree),
       ).not.toThrow();
     });
 
@@ -205,7 +205,7 @@ describe('copyProjectFiles', () => {
       expect(tree.exists(`${targetPath}/src/index.ts`)).toBe(true);
       expect(tree.exists(`${targetPath}/README.md`)).toBe(true);
       expect(tree.exists(`${targetPath}/node_modules/dep/index.js`)).toBe(
-        false
+        false,
       );
       expect(tree.exists(`${targetPath}/dist/bundle.js`)).toBe(false);
     });
@@ -217,7 +217,7 @@ describe('copyProjectFiles', () => {
       const targetPath = 'apps/target';
 
       expect(() => copyProjectFiles(sourcePath, targetPath, tree)).toThrow(
-        /does not exist/i
+        /does not exist/i,
       );
     });
 
@@ -226,7 +226,7 @@ describe('copyProjectFiles', () => {
       const targetPath = 'apps/target';
 
       expect(() => copyProjectFiles(sourcePath, targetPath, tree)).toThrow(
-        sourcePath
+        sourcePath,
       );
     });
   });
