@@ -44,7 +44,7 @@ export function joinPathFragments(...fragments: string[]): string {
 export function resolveOutputPath(
   projectRoot: string,
   pattern?: string,
-  projectName?: string
+  projectName?: string,
 ): string {
   const outputPattern = pattern || 'dist/{projectRoot}';
 

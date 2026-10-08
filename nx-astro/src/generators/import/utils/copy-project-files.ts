@@ -85,13 +85,13 @@ import { shouldIncludeFile } from './file-filter';
 export function copyProjectFiles(
   sourcePath: string,
   targetPath: string,
-  tree: Tree
+  tree: Tree,
 ): void {
   // Validate source exists
   if (!existsSync(sourcePath)) {
     throw new Error(
       `Source path does not exist: ${sourcePath}\n` +
-        `Please verify the path is correct.`
+        `Please verify the path is correct.`,
     );
   }
 
@@ -111,7 +111,7 @@ function copyDirectory(
   currentPath: string,
   targetBasePath: string,
   sourceBasePath: string,
-  tree: Tree
+  tree: Tree,
 ): void {
   // Read directory contents
   let entries: string[];
@@ -156,7 +156,7 @@ function copyDirectory(
         console.warn(
           `Warning: Could not copy file ${relativePath}: ${
             error instanceof Error ? error.message : String(error)
-          }`
+          }`,
         );
       }
     }

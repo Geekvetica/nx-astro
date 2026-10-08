@@ -60,10 +60,7 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
 
     // Parse simple string values
     config.output = extractStringValue(configBody, 'output') as
-      | 'static'
-      | 'server'
-      | 'hybrid'
-      | undefined;
+      'static' | 'server' | 'hybrid' | undefined;
     config.srcDir = extractStringValue(configBody, 'srcDir');
     config.publicDir = extractStringValue(configBody, 'publicDir');
     config.outDir = extractStringValue(configBody, 'outDir');
@@ -72,10 +69,7 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
     config.base = extractStringValue(configBody, 'base');
     config.root = extractStringValue(configBody, 'root');
     config.trailingSlash = extractStringValue(configBody, 'trailingSlash') as
-      | 'always'
-      | 'never'
-      | 'ignore'
-      | undefined;
+      'always' | 'never' | 'ignore' | undefined;
 
     // Parse Astro 7+ top-level options. Only real top-level properties are
     // considered: same-named keys nested in other objects (e.g. vite.define)
@@ -108,9 +102,7 @@ export function parseAstroConfig(configContent: string): Partial<AstroConfig> {
       const buildBody = buildMatch[1];
       config.build = {
         format: extractStringValue(buildBody, 'format') as
-          | 'file'
-          | 'directory'
-          | undefined,
+          'file' | 'directory' | undefined,
         client: extractStringValue(buildBody, 'client'),
         server: extractStringValue(buildBody, 'server'),
         assets: extractStringValue(buildBody, 'assets'),
