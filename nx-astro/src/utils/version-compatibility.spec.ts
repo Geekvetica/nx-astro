@@ -58,10 +58,15 @@ describe('version-compatibility', () => {
       expect(result.supportsLegacyContentCollections).toBe(false);
       expect(result.supportsCjsConfig).toBe(false);
       expect(result.usesVite7).toBe(true);
+      expect(result.usesVite8).toBe(false);
       expect(result.usesZod4).toBe(true);
+      expect(result.usesRustCompiler).toBe(false);
+      expect(result.usesSatteriMarkdown).toBe(false);
+      expect(result.supportsAstroDb).toBe(true);
+      expect(result.defaultCompressHTML).toBe(true);
     });
 
-    it('should handle unknown future versions with Astro 6+ flags', () => {
+    it('should return correct flags for Astro 7.x', () => {
       // Act
       const result = getCompatibilityFlags(7);
 
@@ -72,8 +77,26 @@ describe('version-compatibility', () => {
       expect(result.requiresNode22).toBe(true);
       expect(result.supportsLegacyContentCollections).toBe(false);
       expect(result.supportsCjsConfig).toBe(false);
-      expect(result.usesVite7).toBe(true);
+      expect(result.usesVite7).toBe(false);
+      expect(result.usesVite8).toBe(true);
       expect(result.usesZod4).toBe(true);
+      expect(result.usesRustCompiler).toBe(true);
+      expect(result.usesSatteriMarkdown).toBe(true);
+      expect(result.supportsAstroDb).toBe(false);
+      expect(result.defaultCompressHTML).toBe('jsx');
+    });
+
+    it('should handle unknown future versions with Astro 7+ flags', () => {
+      // Act
+      const result = getCompatibilityFlags(8);
+
+      // Assert
+      expect(result.majorVersion).toBe(8);
+      expect(result.supportsHybridOutput).toBe(false);
+      expect(result.requiresNode22).toBe(true);
+      expect(result.usesVite8).toBe(true);
+      expect(result.usesRustCompiler).toBe(true);
+      expect(result.supportsAstroDb).toBe(false);
     });
 
     it('should handle Astro 3.x with legacy flags', () => {
@@ -226,6 +249,11 @@ describe('version-compatibility', () => {
         supportsCjsConfig: true,
         usesVite7: false,
         usesZod4: false,
+        usesVite8: false,
+        usesRustCompiler: false,
+        usesSatteriMarkdown: false,
+        supportsAstroDb: true,
+        defaultCompressHTML: true,
       };
 
       // Assert

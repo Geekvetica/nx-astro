@@ -9,7 +9,7 @@ export interface NormalizedOptions {
   template: 'minimal' | 'blog' | 'portfolio';
   skipFormat: boolean;
   importExisting: boolean;
-  astroVersion: '5' | '6' | 'latest';
+  astroVersion: '5' | '6' | '7' | 'latest';
 }
 
 export function normalizeOptions(

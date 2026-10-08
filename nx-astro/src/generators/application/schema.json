@@ -59,7 +59,7 @@
     "astroVersion": {
       "type": "string",
       "description": "Major Astro version to target",
-      "enum": ["5", "6", "latest"],
+      "enum": ["5", "6", "7", "latest"],
       "default": "latest"
     }
   },

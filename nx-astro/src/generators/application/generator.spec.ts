@@ -551,7 +551,23 @@ describe('application generator', () => {
       expect(astroConfig).not.toContain("output: 'hybrid'");
     });
 
-    it('should generate Astro 6 compatible config when astroVersion is latest', async () => {
+    it('should generate Astro 7 compatible config when astroVersion is 7', async () => {
+      const options: ApplicationGeneratorSchema = {
+        name: 'astro7-app',
+        astroVersion: '7',
+      };
+
+      await applicationGenerator(tree, options);
+
+      const astroConfig = tree.read(
+        'apps/astro7-app/astro.config.mjs',
+        'utf-8',
+      );
+      expect(astroConfig).toContain("output: 'static'");
+      expect(astroConfig).not.toContain("output: 'hybrid'");
+    });
+
+    it('should generate Astro 7 compatible config when astroVersion is latest', async () => {
       const options: ApplicationGeneratorSchema = {
         name: 'astro-latest',
         astroVersion: 'latest',
@@ -568,7 +584,7 @@ describe('application generator', () => {
     });
 
     it('should generate ESM config file for all versions', async () => {
-      for (const version of ['5', '6', 'latest'] as const) {
+      for (const version of ['5', '6', '7', 'latest'] as const) {
         const options: ApplicationGeneratorSchema = {
           name: `esm-${version}`,
           astroVersion: version,

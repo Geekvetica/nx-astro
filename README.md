@@ -746,17 +746,18 @@ To trigger a release:
 
 ## Compatibility
 
-| nx-astro | Nx      | Astro  | Node.js          | Package Managers     |
-| -------- | ------- | ------ | ---------------- | -------------------- |
-| ^1.0.0   | ^21.0.0 | ^5.0.0 | ^18.0.0, ^20.0.0 | bun, pnpm, yarn, npm |
+| nx-astro | Nx       | Astro         | Node.js          | Package Managers     |
+| -------- | -------- | ------------- | ---------------- | -------------------- |
+| ^1.0.0   | ^21.0.0  | ^5.0.0        | ^18.0.0, ^20.0.0 | bun, pnpm, yarn, npm |
+| ^2.0.0   | >=21.0.0 | 5.x, 6.x, 7.x | >=22.12.0        | bun, pnpm, yarn, npm |
 
 **Note**: Version 1.0.4+ includes automatic package manager detection for seamless command execution in monorepo environments.
 
 ## Requirements
 
-- Node.js 18.x or 20.x
+- Node.js 22.12.0 or later
 - Nx 21.x or later
-- Astro 5.x or later
+- Astro 5.x, 6.x, or 7.x
 - Package manager: bun, pnpm, yarn, or npm
 
 ## Package Manager Support
