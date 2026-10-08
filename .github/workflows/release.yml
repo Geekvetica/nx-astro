@@ -32,7 +32,8 @@
 #   - A human approves every release with 2FA before it is public
 #   - Only release commits on main are staged (see "Verify release tag")
 #   - v* tags are protected by a GitHub tag ruleset (admins only)
-#   - Minimal permissions with id-token for OIDC
+#   - Read-only by default; id-token only in the publish job and
+#     contents: write only in the GitHub release job
 #
 # Provenance:
 #   - Publishes with npm provenance statements
@@ -60,11 +61,9 @@ concurrency:
   group: release
   cancel-in-progress: false
 
-# Permissions required for npm Trusted Publishing (OIDC)
+# Read-only by default; jobs that need more request it themselves
 permissions:
-  contents: write # Create releases
-  packages: write # Publish packages
-  id-token: write # OIDC token for npm Trusted Publishing and provenance
+  contents: read
 
 env:
   NODE_VERSION: '24.x'
@@ -88,7 +87,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 0
 
       - name: Verify release tag
@@ -151,6 +150,9 @@ jobs:
   publish:
     name: Stage on npm
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # OIDC token for npm Trusted Publishing and provenance
     timeout-minutes: 10
     needs: test
 
@@ -158,7 +160,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v6
@@ -206,16 +208,24 @@ jobs:
           echo "Publishing version: $VERSION"
 
       - name: Stage on npm with provenance
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           # Stage the built package from dist directory via npm Trusted
           # Publishing: npm exchanges this job's OIDC token for a short-lived
           # credential, so no NPM_TOKEN secret is needed. A staged version is
           # not public until a maintainer approves it with 2FA. This requires:
-          #   - id-token: write permission (set above)
+          #   - id-token: write permission (set on this job)
           #   - A trusted publisher for release.yml configured on npmjs.com
           #   - npm >= 11.15.0
+          # npm requires an explicit dist-tag for prerelease versions; keep
+          # them off `latest` by staging them under `next`.
+          DIST_TAG=latest
+          if [[ "$VERSION" == *-* ]]; then
+            DIST_TAG=next
+          fi
           cd dist/nx-astro
-          npm stage publish --access public --provenance
+          npm stage publish --access public --provenance --tag "$DIST_TAG"
 
       - name: Point to approval
         run: |
@@ -244,6 +254,8 @@ jobs:
   github-release:
     name: Create GitHub Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # Create releases
     timeout-minutes: 5
     needs: publish
 
@@ -251,7 +263,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag || github.ref }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           fetch-depth: 0
 
       - name: Get version from tag
@@ -302,6 +314,8 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
+          # Explicit tag: on workflow_dispatch, GITHUB_REF is the branch
+          tag_name: v${{ steps.version.outputs.version }}
           name: Release v${{ steps.version.outputs.version }}
           body: |
             # nx-astro v${{ steps.version.outputs.version }}
