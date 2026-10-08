@@ -1,6 +1,6 @@
 import { execSync } from 'child_process';
 import { dirname, join } from 'path';
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import {
   fileExists,
@@ -41,9 +41,9 @@ describe('nx-astro e2e', () => {
 
   afterAll(() => {
     if (projectDirectory) {
-      // Cleanup the test project
+      // Cleanup the test project and its private temp directory
       logStep('Cleaning up test project...');
-      rmSync(projectDirectory, {
+      rmSync(dirname(projectDirectory), {
         recursive: true,
         force: true,
       });
@@ -634,17 +634,26 @@ describe('Sample test', () => {
  */
 function createTestProject() {
   const projectName = 'test-project';
-  const projectDirectory = join(tmpdir(), 'nx-astro-e2e', projectName);
+  // A fresh, private (0700) directory with a random name: a fixed path in the
+  // shared temp dir could be pre-created or swapped by another user
+  const tempDirectory = mkdtempSync(join(tmpdir(), 'nx-astro-e2e-'));
+  const projectDirectory = join(tempDirectory, projectName);
 
-  // Ensure projectDirectory is empty
-  rmSync(projectDirectory, {
-    recursive: true,
-    force: true,
-  });
-  mkdirSync(dirname(projectDirectory), {
-    recursive: true,
-  });
+  try {
+    setUpTestProject(projectName, projectDirectory);
+  } catch (error) {
+    // afterAll never sees this directory when setup fails, so remove it here
+    rmSync(tempDirectory, { recursive: true, force: true });
+    throw error;
+  }
 
+  return projectDirectory;
+}
+
+/**
+ * Creates the workspace in projectDirectory and adds tsconfig.base.json
+ */
+function setUpTestProject(projectName: string, projectDirectory: string) {
   execSync(
     `npx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
     {
@@ -659,9 +668,10 @@ function createTestProject() {
   console.log(`Created test project in "${projectDirectory}"`);
 
   // Ensure tsconfig.base.json exists at workspace root (required for hybrid TypeScript configuration)
+  // Create it only if missing in one atomic step (flag 'wx'), with no
+  // separate existence check that could race
   const tsconfigBasePath = join(projectDirectory, 'tsconfig.base.json');
-  if (!existsSync(tsconfigBasePath)) {
-    console.log('Creating tsconfig.base.json at workspace root...');
+  try {
     writeFileSync(
       tsconfigBasePath,
       JSON.stringify(
@@ -688,10 +698,14 @@ function createTestProject() {
         null,
         2,
       ),
+      { flag: 'wx' },
     );
+    console.log('Created tsconfig.base.json at workspace root');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+      throw error;
+    }
   }
-
-  return projectDirectory;
 }
 
 interface PnpmLsNode {
