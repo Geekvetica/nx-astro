@@ -176,6 +176,24 @@ describe('syncAstrojsDependencies', () => {
     });
   });
 
+  describe('unreadable project package.json', () => {
+    it('should throw when project package.json exists but cannot be read', () => {
+      // Arrange: a directory where the file is expected (EISDIR on read)
+      vol.fromJSON({
+        '/workspace/package.json': JSON.stringify({
+          dependencies: { astro: '^5.0.0' },
+        }),
+        '/workspace/apps/my-app/package.json/.keep': '',
+      });
+
+      // Act & Assert
+      expect(() =>
+        syncAstrojsDependencies('apps/my-app', '/workspace'),
+      ).toThrow();
+      expect(logger.warn).not.toHaveBeenCalled();
+    });
+  });
+
   describe('no Astro-related dependencies in root', () => {
     it('should clear Astro-related dependencies from project when root has none', () => {
       // Arrange
