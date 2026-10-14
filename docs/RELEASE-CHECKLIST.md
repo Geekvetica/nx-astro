@@ -6,16 +6,16 @@ This checklist should be followed every time a new version of nx-astro is releas
 
 ### 1. Code Quality Verification
 
-- [ ] All unit tests passing (`npx nx test nx-astro`)
-- [ ] All E2E tests passing (`npx nx e2e nx-astro-e2e`)
-- [ ] No linting errors (`npx nx lint nx-astro`)
-- [ ] No TypeScript errors (`npx nx build nx-astro`)
+- [ ] All unit tests passing (`pnpm exec nx test nx-astro`)
+- [ ] All E2E tests passing (`pnpm exec nx e2e nx-astro-e2e`)
+- [ ] No linting errors (`pnpm exec nx lint nx-astro`)
+- [ ] No TypeScript errors (`pnpm exec nx build nx-astro`)
 - [ ] Code review completed (if applicable)
 - [ ] Security audit clean (`pnpm audit` or `npm audit`)
 
 ### 2. Documentation Updates
 
-- [ ] CHANGELOG.md entry checked: `nx release` generates it from Conventional Commits (step 3); preview it with `--dry-run` and make sure commit messages describe the changes
+- [ ] CHANGELOG.md entry checked: `nx release` generates it from Conventional Commits (step 6); preview it with `--dry-run` (step 3) and make sure commit messages describe the changes
   - New features listed
   - Bug fixes documented
   - Breaking changes highlighted
@@ -25,24 +25,21 @@ This checklist should be followed every time a new version of nx-astro is releas
 - [ ] Examples tested and verified
 - [ ] API documentation current
 
-### 3. Version Bump
+### 3. Version Decision
 
 - [ ] Decide version number (semver: major.minor.patch)
   - **Patch** (0.0.x): Bug fixes, minor improvements
   - **Minor** (0.x.0): New features, backward compatible
   - **Major** (x.0.0): Breaking changes
-- [ ] Preview the release: `pnpm exec nx release <patch|minor|major> --skip-publish --dry-run`
-- [ ] Create it: `pnpm exec nx release <patch|minor|major> --skip-publish`
-  - bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `chore(release): publish X.Y.Z` and creates the annotated `vX.Y.Z` tag
-  - does not push, publish or create the GitHub release
-- [ ] Update any hardcoded version references
+- [ ] Preview the release (changes nothing): `pnpm exec nx release <patch|minor|major> --skip-publish --dry-run`
+- [ ] Update and commit any hardcoded version references (`nx release` bumps only `nx-astro/package.json`)
 
 ### 4. Final Testing
 
 - [ ] Clean build from scratch
   ```bash
   rm -rf dist/ node_modules/.cache
-  npx nx build nx-astro
+  pnpm exec nx build nx-astro
   ```
 - [ ] Verify build output
   ```bash
@@ -66,20 +63,22 @@ This checklist should be followed every time a new version of nx-astro is releas
 
 ### 5. Repository Preparation
 
-- [ ] All changes committed
-- [ ] Working directory clean (`git status`)
-- [ ] On correct branch (usually `main` or `release`)
+- [ ] All changes committed and merged to `main`
+- [ ] On `main` (`git branch --show-current`); the release workflow rejects a tag whose commit is not on `main`, so do not release from another branch
 - [ ] Pull latest changes (`git pull origin main`)
-- [ ] Create release branch (optional)
-  ```bash
-  git checkout -b release/v0.1.0
-  ```
+- [ ] Working directory clean (`git status`)
 
 ## Release Process
 
-### 6. Check the Release Commit and Tag
+### 6. Create the Release Commit and Tag
 
-`nx release` created both in step 3. Do not create the tag by hand.
+Run this last, on the clean, up-to-date `main` from step 5. Do not create the tag by hand.
+
+```bash
+pnpm exec nx release <patch|minor|major> --skip-publish
+```
+
+It builds the plugin, bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `chore(release): publish X.Y.Z` and creates the annotated `vX.Y.Z` tag. It does not push, publish or create the GitHub release.
 
 ```bash
 git log -1 --format=%s          # chore(release): publish X.Y.Z
@@ -91,7 +90,7 @@ git show --no-patch vX.Y.Z      # annotated tag on that commit
 ```bash
 # Clean build
 rm -rf dist/
-npx nx build nx-astro
+pnpm exec nx build nx-astro
 
 # Verify files are included
 cd dist/nx-astro

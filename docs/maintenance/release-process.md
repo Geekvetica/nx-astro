@@ -1,21 +1,19 @@
 # Release Process
 
-This document describes the automated release process for `@geekvetica/nx-astro` and how to trigger and manage releases.
+This document describes the release process for `@geekvetica/nx-astro`: how a maintainer creates a release locally and what the release workflow does with it.
 
 ## Overview
 
-The `@geekvetica/nx-astro` plugin uses an automated release workflow powered by GitHub Actions and Nx Release. The release process handles:
+A release has two halves:
 
-- Version bumping (semver)
-- Changelog generation
-- Git tagging
-- npm publishing
-- GitHub release creation
-- Post-release validation
+- **Locally, with Nx Release** (`pnpm exec nx release <specifier> --skip-publish`): version bump, changelog entry, release commit and annotated tag. Nothing is pushed.
+- **In GitHub Actions** (`.github/workflows/release.yml`, triggered by pushing the tag): tag verification, lint and unit tests, npm staging with provenance, and the GitHub release.
+
+A maintainer then approves the staged version on npmjs.com with 2FA, which makes it public.
 
 ## Release Types
 
-The release workflow supports semantic versioning with the following bump types:
+Nx Release supports semantic versioning with the following bump types:
 
 - **Patch** (`0.0.x`): Bug fixes and minor improvements
 - **Minor** (`0.x.0`): New features, backward compatible changes
@@ -24,153 +22,53 @@ The release workflow supports semantic versioning with the following bump types:
 
 ## Prerequisites
 
-Before triggering a release, ensure:
+Before creating a release, ensure:
 
-1. You have write access to the repository
-2. All CI checks are passing on the `main` branch
-3. The `main` branch is up to date
+1. You can push to `main` and create `v*` tags (tags are protected by a ruleset; admins only)
+2. All CI checks are passing on `main`
+3. Your local `main` is clean and up to date (`git pull origin main`)
 4. npm Trusted Publishing is configured for `@geekvetica/nx-astro` (see [npm Trusted Publishing](#npm-trusted-publishing)). No npm token secret is needed.
 
-## How to Trigger a Release
+## How to Create a Release
 
-### 1. Navigate to GitHub Actions
+1. Create the release commit and tag locally (see [Version Determination](#version-determination)):
 
-1. Go to the repository: https://github.com/geekvetica/nx-astro
-2. Click on the **Actions** tab
-3. Select **Release** workflow from the left sidebar
+   ```bash
+   pnpm exec nx release patch --skip-publish --dry-run   # preview
+   pnpm exec nx release patch --skip-publish
+   ```
 
-### 2. Run the Workflow
+2. Push the commit and the tag together:
 
-1. Click **Run workflow** button (top right)
-2. Select the version bump type:
-   - **patch**: For bug fixes (e.g., 1.0.0 → 1.0.1)
-   - **minor**: For new features (e.g., 1.0.0 → 1.1.0)
-   - **major**: For breaking changes (e.g., 1.0.0 → 2.0.0)
-   - **prerelease**: For pre-release versions (e.g., 1.0.0 → 1.0.1-beta.0)
-3. If selecting **prerelease**, enter a prerelease identifier (default: `beta`)
-4. Click **Run workflow**
+   ```bash
+   git push --follow-tags
+   ```
 
-### 3. Monitor the Release
+   The tag push triggers the release workflow. Push the commit with the tag: the workflow rejects a tag whose commit is not on `main`.
 
-The workflow consists of four jobs:
+3. Approve the staged version with 2FA in the **Staged Packages** tab on https://www.npmjs.com/package/@geekvetica/nx-astro.
 
-1. **Validate Release Conditions** (~5 minutes)
-   - Verifies you're on the `main` branch
-   - Ensures the repository is in a releasable state
-
-2. **Run Full Test Suite** (~20 minutes)
-   - Runs linting on all projects
-   - Executes unit tests with coverage
-   - Builds the plugin
-   - Runs E2E tests
-
-3. **Release and Publish** (~15 minutes)
-   - Bumps version using Nx Release
-   - Generates changelog from git commits
-   - Creates and pushes git tag
-   - Publishes to npm registry
-   - Creates GitHub release
-
-4. **Validate Release** (~10 minutes)
-   - Waits for npm registry propagation
-   - Verifies package is available on npm
-   - Confirms GitHub release was created
+To stage an existing tag again (for example after fixing the trusted publisher), run the workflow manually with that tag: `gh workflow run release.yml -f tag=vX.Y.Z`. The manual run takes only a `tag` input; it never chooses or bumps a version.
 
 ## Release Workflow Details
 
-### Job 1: Validate Release Conditions
+The workflow (`.github/workflows/release.yml`) has three jobs.
 
-```yaml
-Purpose: Ensure we're on the main branch and ready to release
-Steps:
-  - Checkout repository
-  - Verify we're on the main branch
-  - Fail fast if on wrong branch
-```
+### Job 1: Run Tests and Lint
 
-**What it checks:**
+- **Verify release tag**: refuses the tag unless it matches `v<major>.<minor>.<patch>` (optional prerelease suffix), points to a commit with the subject `chore(release): publish <version>`, that commit's `nx-astro/package.json` has the same version, and the commit is on `main`
+- Installs dependencies, runs lint and unit tests (E2E tests run in regular CI, not here)
 
-- Current branch is `main`
-- No uncommitted changes
+### Job 2: Stage on npm
 
-**Why it matters:**
+- Builds the plugin and stages `dist/nx-astro` with `npm stage publish --access public --provenance` (prereleases under the `next` dist-tag)
+- Authenticates through npm Trusted Publishing (OIDC); the trusted publisher allows staging only, so the workflow cannot make a version public by itself
+- Links to the approval page in the run summary
 
-- Prevents accidental releases from feature branches
-- Ensures consistent release source
+### Job 3: Create GitHub Release
 
-### Job 2: Run Full Test Suite
-
-```yaml
-Purpose: Validate code quality and functionality before release
-Steps:
-  - Install dependencies
-  - Run linting on all projects
-  - Run unit tests with coverage
-  - Build the plugin
-  - Run E2E tests
-```
-
-**What it validates:**
-
-- No linting errors
-- All unit tests pass
-- Code coverage meets thresholds
-- Plugin builds successfully
-- E2E tests verify plugin functionality
-
-**Why it matters:**
-
-- Ensures we only release working code
-- Prevents broken versions from being published
-
-### Job 3: Release and Publish
-
-```yaml
-Purpose: Version, tag, publish, and create release
-Steps:
-  - Configure Git user
-  - Build the plugin
-  - Run Nx release version
-  - Push tags to repository
-  - Publish to npm registry
-  - Extract changelog
-  - Create GitHub release
-```
-
-**What it does:**
-
-1. **Version Bump**: Uses Nx Release to bump version in `package.json`
-2. **Changelog Generation**: Generates changelog from conventional commits
-3. **Git Tagging**: Creates annotated git tag (e.g., `v1.0.0`)
-4. **npm Publishing**: Publishes built package to npm registry
-5. **GitHub Release**: Creates release with changelog and installation instructions
-
-**Key files modified:**
-
-- `nx-astro/package.json` - Version bumped
-- `dist/nx-astro/package.json` - Built package version
-- `CHANGELOG.md` - Updated with new version (if configured)
-
-### Job 4: Validate Release
-
-```yaml
-Purpose: Verify release was successful
-Steps:
-  - Wait for npm propagation
-  - Verify package on npm
-  - Verify GitHub release exists
-```
-
-**What it validates:**
-
-- Package is available on npm registry
-- GitHub release was created successfully
-- Release assets are accessible
-
-**Why it matters:**
-
-- Catches publishing failures early
-- Ensures users can install the new version
+- Extracts the version's entry from `CHANGELOG.md` (written locally by `nx release`)
+- Creates the GitHub release for the tag with that changelog and installation instructions; prereleases are marked as pre-release
 
 ## Version Determination
 
@@ -194,7 +92,7 @@ This bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `ch
 
 ## Changelog Generation
 
-The release workflow generates a changelog based on:
+`nx release` writes the `CHANGELOG.md` entry locally, based on:
 
 - **Conventional Commits**: Commit messages following the format:
 
