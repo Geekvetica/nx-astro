@@ -466,7 +466,7 @@ pnpx nx e2e nx-astro-e2e --verbose
 ### Workspace Configuration
 
 - **Type:** Nx workspace with `apps` preset
-- **Package Manager:** pnpm
+- **Package Manager:** pnpm, the version pinned in the root `package.json` `packageManager` field. The jest global setup installs it into its temp directory and puts it first on `PATH`, so the result does not depend on the globally installed pnpm.
 - **Node Version:** Current
 - **Location:** `tmp/test-project/`
 - **Registry:** Verdaccio local registry

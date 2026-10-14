@@ -190,6 +190,8 @@ Long-running server tests can be flaky and slow. Instead, we:
 
 The project uses pnpm as the package manager, so all tests use pnpm for consistency.
 
+The test workspace lives in a temp directory outside this repository, so it would otherwise pick up the globally installed pnpm. The jest global setup (`tools/scripts/start-local-registry.ts`) installs the version pinned in the root `package.json` `packageManager` field and puts it first on `PATH`. Newer pnpm majors fail on ignored dependency build scripts, which made results depend on the developer's machine.
+
 ### Why install @astrojs/check in test?
 
 The check executor requires `@astrojs/check` which may not be installed by default. Installing it in the test ensures reliability.
