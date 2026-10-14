@@ -20,7 +20,13 @@ interface NxReleaseConfig {
       { semverBump?: string; changelog?: { hidden?: boolean } | boolean }
     >;
   };
-  git: { push?: boolean; commitMessage: string };
+  git: {
+    commit?: boolean;
+    tag?: boolean;
+    push?: boolean;
+    commitMessage: string;
+  };
+  releaseTag: { pattern: string };
   version: { preVersionCommand: string };
 }
 
@@ -60,6 +66,26 @@ describe('workspace release configuration', () => {
     expect(release.git.commitMessage.replace('{version}', version)).toBe(
       `chore(release): publish ${version}`,
     );
+  });
+
+  it('[190-S02] commits and tags from a local nx release', () => {
+    expect(release.git.commit).toBe(true);
+    expect(release.git.tag).toBe(true);
+  });
+
+  it('[190-S03] creates release tags that release.yml accepts', () => {
+    const releaseWorkflow = readWorkspaceFile('.github/workflows/release.yml');
+    const [, tagFormat] =
+      /if \[\[ ! "\$TAG" =~ (\S+) \]\]/.exec(releaseWorkflow) ?? [];
+    // Without this, new RegExp(undefined) would accept every tag
+    expect(tagFormat).toMatch(/^\^v/);
+    const acceptedTag = new RegExp(tagFormat);
+
+    for (const version of ['1.2.3', '1.2.3-beta.0']) {
+      expect(release.releaseTag.pattern.replace('{version}', version)).toMatch(
+        acceptedTag,
+      );
+    }
   });
 
   it('[187-R1] builds with the workspace nx before versioning', () => {

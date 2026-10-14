@@ -87,13 +87,16 @@ git show --no-patch vX.Y.Z      # annotated tag on that commit
 
 ### 7. Check the Release Build
 
-`nx release` rebuilt the plugin in step 6 (`preVersionCommand`), so `dist/nx-astro` is the release build. Check it without changing the repository:
+`nx release` builds the plugin (`preVersionCommand`) _before_ it bumps the version, so `dist/nx-astro/package.json` still has the previous version. Rebuild to get the release build, then check it. This only writes to the ignored `dist/` directory and changes no tracked file:
 
 ```bash
+pnpm exec nx build nx-astro --skip-nx-cache
 cd dist/nx-astro
-ls -la
-npm pack --dry-run   # lists exactly what will be published
+grep '"version"' package.json   # the new version
+npm pack --dry-run              # lists exactly what will be published
 ```
+
+The release workflow builds again from the tag, so this check is for your confidence only; it does not affect what is published.
 
 ### 8. Publish to npm
 
