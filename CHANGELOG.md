@@ -1,3 +1,17 @@
+## 3.0.2 (2026-10-14)
+
+### 🏡 Chore
+
+- **deps:** bump astro from 7.3.7 to 7.3.8 ([#180](https://github.com/Geekvetica/nx-astro/pull/180))
+- **deps-dev:** bump eslint from 9.39.5 to 10.12.0 ([#181](https://github.com/Geekvetica/nx-astro/pull/181))
+- **deps-dev:** bump @types/node from 25.6.2 to 26.6.5 ([#184](https://github.com/Geekvetica/nx-astro/pull/184))
+- **deps-dev:** bump the dev-dependencies group with 2 updates ([#183](https://github.com/Geekvetica/nx-astro/pull/183))
+- **ci:** bump pnpm/action-setup from 6.0.10 to 6.1.0 ([#179](https://github.com/Geekvetica/nx-astro/pull/179))
+
+### ❤️ Thank You
+
+- Paweł Wojciechowski @pwojciechowski
+
 ## 3.0.1 (2026-10-08)
 
 ### 🩹 Fixes
