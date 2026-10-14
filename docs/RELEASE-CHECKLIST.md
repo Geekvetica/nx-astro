@@ -15,7 +15,7 @@ This checklist should be followed every time a new version of nx-astro is releas
 
 ### 2. Documentation Updates
 
-- [ ] CHANGELOG.md updated with all changes
+- [ ] CHANGELOG.md entry checked: `nx release` generates it from Conventional Commits (step 3); preview it with `--dry-run` and make sure commit messages describe the changes
   - New features listed
   - Bug fixes documented
   - Breaking changes highlighted
@@ -31,8 +31,10 @@ This checklist should be followed every time a new version of nx-astro is releas
   - **Patch** (0.0.x): Bug fixes, minor improvements
   - **Minor** (0.x.0): New features, backward compatible
   - **Major** (x.0.0): Breaking changes
-- [ ] Update version in `package.json`
-- [ ] Update version in `nx-astro/package.json`
+- [ ] Preview the release: `pnpm exec nx release <patch|minor|major> --skip-publish --dry-run`
+- [ ] Create it: `pnpm exec nx release <patch|minor|major> --skip-publish`
+  - bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `chore(release): publish X.Y.Z` and creates the annotated `vX.Y.Z` tag
+  - does not push, publish or create the GitHub release
 - [ ] Update any hardcoded version references
 
 ### 4. Final Testing
@@ -75,14 +77,13 @@ This checklist should be followed every time a new version of nx-astro is releas
 
 ## Release Process
 
-### 6. Create Git Tag
+### 6. Check the Release Commit and Tag
+
+`nx release` created both in step 3. Do not create the tag by hand.
 
 ```bash
-# Create annotated tag
-git tag -a v0.1.0 -m "Release version 0.1.0"
-
-# Push tag to origin
-git push origin v0.1.0
+git log -1 --format=%s          # chore(release): publish X.Y.Z
+git show --no-patch vX.Y.Z      # annotated tag on that commit
 ```
 
 ### 7. Build for Production

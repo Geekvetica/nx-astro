@@ -34,33 +34,39 @@ The release workflow needs no npm token. npm trusts `release.yml` via OIDC and t
 
 ### Step 1: Create Version and Tag Locally
 
-Run `nx release` locally to version the package and create a git tag:
+Run `nx release` locally, with `--skip-publish`, to version the package, write the changelog, commit and tag:
 
 ```bash
+# Preview first: shows the version bump and the CHANGELOG entry, changes nothing
+pnpm exec nx release patch --skip-publish --dry-run
+
 # For patch version (0.9.0 → 0.9.1)
-pnpx nx release version patch
+pnpm exec nx release patch --skip-publish
 
 # For minor version (0.9.0 → 0.10.0)
-pnpx nx release version minor
+pnpm exec nx release minor --skip-publish
 
 # For major version (0.9.0 → 1.0.0)
-pnpx nx release version major
+pnpm exec nx release major --skip-publish
 
 # For specific version
-pnpx nx release version 1.0.0
+pnpm exec nx release 1.0.0 --skip-publish
 
 # For prerelease version
-pnpx nx release version prerelease --preid=beta
+pnpm exec nx release prerelease --preid=beta --skip-publish
 ```
 
 This command will:
 
-- ✅ Update `package.json` version
-- ✅ Generate `CHANGELOG.md` from git commits
+- ✅ Build the plugin (`preVersionCommand`)
+- ✅ Update the version in `nx-astro/package.json`
+- ✅ Add an entry to `CHANGELOG.md` from the commits since the last `v*` tag
 - ✅ Create a git commit: `chore(release): publish X.X.X`
-- ✅ Create a git tag: `vX.X.X`
+- ✅ Create an annotated git tag: `vX.X.X`
 
-**Important:** This does NOT publish to npm. Publishing happens automatically in the next step.
+It does **not** push, publish to npm or create the GitHub release (`release.git.push` is `false` and `createRelease` is `false` in `nx.json`); the next steps do that.
+
+Use the top-level `nx release` command. The `nx release version` and `nx release changelog` subcommands fail with this workspace's `release.git` configuration (`The "release.git" property in nx.json may not be used with the "nx release version" subcommand`).
 
 ### Step 2: Push Tag to GitHub
 
@@ -122,8 +128,8 @@ npm audit signatures
 For the very first release (0.9.0), use the `--first-release` flag:
 
 ```bash
-pnpx nx release version 0.9.0 --first-release
-git push && git push --tags
+pnpm exec nx release 0.9.0 --first-release --skip-publish
+git push --follow-tags
 ```
 
 The `--first-release` flag tells `nx release` that there are no previous git tags to compare against.
@@ -134,10 +140,10 @@ To release a prerelease version (e.g., beta, alpha):
 
 ```bash
 # Create a beta prerelease
-pnpx nx release version prerelease --preid=beta
+pnpm exec nx release prerelease --preid=beta --skip-publish
 
 # This creates version like: 0.9.1-beta.0
-git push && git push --tags
+git push --follow-tags
 ```
 
 GitHub Actions will automatically mark it as a prerelease on GitHub.
@@ -177,6 +183,17 @@ git commit -m "docs: update README with new examples"
 # Refactoring
 git commit -m "refactor: simplify generator logic"
 ```
+
+Only these commit types appear in `CHANGELOG.md`:
+
+| Type    | Section        |
+| ------- | -------------- |
+| `feat`  | 🚀 Features    |
+| `fix`   | 🩹 Fixes       |
+| `perf`  | 🔥 Performance |
+| `chore` | 🏡 Chore       |
+
+`chore` is shown (configured in `nx.json` › `release.conventionalCommits`) so that a release containing only dependency updates, such as Dependabot's `chore(deps): …` and `chore(deps-dev): …` commits, still gets a meaningful entry. Other types (`docs`, `refactor`, `test`, `ci`, `build`, …) are hidden; Dependabot's GitHub Actions updates use `ci(deps): …` for that reason.
 
 ## Troubleshooting
 
@@ -221,8 +238,8 @@ git tag -d v1.0.0
 git push origin :refs/tags/v1.0.0
 
 # Then retry the release
-pnpx nx release version 1.0.0
-git push && git push --tags
+pnpm exec nx release 1.0.0 --skip-publish
+git push --follow-tags
 ```
 
 ### GitHub Actions workflow fails during tests

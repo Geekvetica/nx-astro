@@ -174,21 +174,23 @@ Steps:
 
 ## Version Determination
 
-The workflow uses **Nx Release** to determine the next version:
+The maintainer chooses the next version locally with **Nx Release** (see [RELEASING.md](../../RELEASING.md) for the full flow):
 
 ```bash
 # Patch release (1.0.0 → 1.0.1)
-npx nx release version --specifier=patch
+pnpm exec nx release patch --skip-publish
 
 # Minor release (1.0.0 → 1.1.0)
-npx nx release version --specifier=minor
+pnpm exec nx release minor --skip-publish
 
 # Major release (1.0.0 → 2.0.0)
-npx nx release version --specifier=major
+pnpm exec nx release major --skip-publish
 
 # Prerelease (1.0.0 → 1.0.1-beta.0)
-npx nx release version --specifier=prerelease --preid=beta
+pnpm exec nx release prerelease --preid=beta --skip-publish
 ```
+
+This bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `chore(release): publish X.Y.Z` and creates the annotated `vX.Y.Z` tag. It does not push or create the GitHub release; push with `git push --follow-tags` and the release workflow does the rest. Use the top-level command: the `nx release version` and `nx release changelog` subcommands are rejected with this workspace's `release.git` configuration.
 
 ## Changelog Generation
 
@@ -200,13 +202,11 @@ The release workflow generates a changelog based on:
   <type>(<scope>): <subject>
   ```
 
-- **Supported Types**:
+- **Types shown in the changelog** (others such as `docs`, `refactor`, `test`, `ci` and `build` are hidden):
   - `feat`: New features
   - `fix`: Bug fixes
-  - `docs`: Documentation changes
-  - `refactor`: Code refactoring
-  - `test`: Test changes
-  - `chore`: Build/tooling changes
+  - `perf`: Performance improvements
+  - `chore`: Maintenance, including Dependabot's `chore(deps)` and `chore(deps-dev)` updates, so that a dependency-only release still gets an entry
 
 - **Example Changelog Entry**:
 
@@ -397,12 +397,13 @@ npm deprecate @geekvetica/nx-astro@1.0.0 "Critical bug fixed in 1.0.1"
 - `nx-astro/package.json` in that commit has the same version
 - the commit is on `main`
 
-**Solution:** Create releases only with `pnpx nx release` on an up-to-date `main`, then push the commit and tag:
+**Solution:** Create releases only with `nx release` on an up-to-date `main`, then push the commit and tag:
 
 ```bash
 git checkout main
 git pull origin main
-pnpx nx release
+pnpm exec nx release patch --skip-publish
+git push --follow-tags
 ```
 
 ### Release Fails at Tests

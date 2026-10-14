@@ -314,16 +314,15 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
 {
   "release": {
     "version": {
-      "preVersionCommand": "pnpm dlx nx run-many -t build",
-      "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "fallbackCurrentVersionResolver": "disk",
-        "specifierSource": "prompt"
-      }
+      "preVersionCommand": "pnpm exec nx run-many -t build",
+      "specifierSource": "prompt",
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk",
+      "preserveLocalDependencyProtocols": false
     },
     "changelog": {
       "workspaceChangelog": {
-        "createRelease": "github",
+        "createRelease": false,
         "file": "CHANGELOG.md",
         "entryWhenNoChanges": false,
         "renderOptions": {
@@ -334,13 +333,28 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
       },
       "projectChangelogs": false
     },
+    "conventionalCommits": {
+      "types": {
+        "chore": {
+          "semverBump": "none",
+          "changelog": {
+            "title": "🏡 Chore"
+          }
+        }
+      }
+    },
     "git": {
       "commit": true,
       "commitMessage": "chore(release): publish {version}",
       "commitArgs": "--no-verify",
       "tag": true,
       "tagMessage": "v{version}",
-      "tagArgs": "--force"
+      "tagArgs": "--force",
+      "push": false
+    },
+    "projects": ["nx-astro"],
+    "releaseTag": {
+      "pattern": "v{version}"
     }
   }
 }
@@ -350,8 +364,9 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
 
 - **preVersionCommand**: Builds plugin before versioning
 - **currentVersionResolver**: Uses git tags as source of truth
-- **changelog**: Generates workspace-level changelog
-- **git**: Automatically commits and tags releases
+- **changelog**: Generates a workspace-level changelog; `createRelease` is `false` because the release workflow creates the GitHub release
+- **conventionalCommits**: Shows `chore` commits (including Dependabot's dependency updates) in the changelog
+- **git**: Commits and tags releases locally; `push` is `false`, so the maintainer pushes with `git push --follow-tags`
 
 ## Required Secrets
 
@@ -411,11 +426,8 @@ No npm token is required. The release workflow stages releases with npm Trusted 
 To test the release process locally without publishing:
 
 ```bash
-# Dry run release
-npx nx release --dry-run
-
-# Version only (no publish)
-npx nx release version --dry-run
+# Dry run: shows the version bump and CHANGELOG entry, changes nothing
+pnpm exec nx release patch --skip-publish --dry-run
 
 # See what would be published
 cd dist/nx-astro
