@@ -476,7 +476,7 @@ pnpx nx e2e nx-astro-e2e --verbose
 
 Tests automatically install:
 
-- nx-astro plugin (from local registry)
+- nx-astro plugin (from the packed tarball)
 - @astrojs/check (for type checking)
 - typescript (for type checking)
 - All Astro dependencies
@@ -568,11 +568,6 @@ Tests automatically install:
 
    ```bash
    ping registry.npmjs.org
-   ```
-
-3. Verify verdaccio is running:
-   ```bash
-   ps aux | grep verdaccio
    ```
 
 ### Check Executor Fails

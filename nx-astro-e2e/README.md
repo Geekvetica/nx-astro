@@ -113,8 +113,8 @@ pnpx nx e2e nx-astro-e2e --verbose
 
 ## Test Environment
 
-- Tests create a temporary Nx workspace in `tmp/test-project/`
-- Uses verdaccio local registry for plugin installation
+- Tests create a temporary Nx workspace in a private `nx-astro-e2e-*` directory under the OS temp directory
+- Installs the plugin from a tarball of the built package (`dist/nx-astro`), using the pnpm version pinned in the root `package.json`
 - Cleans up test workspace after completion
 - Timeout: 5 minutes per test suite (configurable in `jest.config.ts`)
 
@@ -123,7 +123,7 @@ pnpx nx e2e nx-astro-e2e --verbose
 1. **Setup (beforeAll)**
 
    - Create temporary Nx workspace
-   - Install nx-astro plugin from local registry
+   - Install nx-astro plugin from the tarball
 
 2. **Test Execution**
 
@@ -164,7 +164,6 @@ The E2E test suite covers:
 
 - Increase timeout in `jest.config.ts`
 - Check network connectivity (for package installation)
-- Verify verdaccio registry is running
 
 ### Tests fail during check executor
 
