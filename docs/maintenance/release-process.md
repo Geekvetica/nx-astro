@@ -109,7 +109,7 @@ This bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `ch
 - **Example Changelog Entry**:
 
   ```markdown
-  ## 1.1.0
+  # 1.1.0 (2026-01-15)
 
   ### 🚀 Features
 

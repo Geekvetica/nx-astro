@@ -51,7 +51,7 @@ This checklist should be followed every time a new version of nx-astro is releas
   cd dist/nx-astro
   npm pack
   ```
-- [ ] Install in fresh Nx workspace
+- [ ] Install in fresh Nx workspace (deliberately with npm, as a consumer would)
   ```bash
   npx create-nx-workspace@latest test-ws --preset=apps
   cd test-ws

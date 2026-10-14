@@ -542,7 +542,7 @@ Located in `.github/workflows/`:
 
 - Triggers: push of a `v*.*.*` tag; manual `workflow_dispatch` re-stages an existing tag
 - Jobs: Run Tests and Lint (verifies the release tag), Stage on npm, Create GitHub Release
-- Duration: ~40 minutes
+- Duration: usually 5-10 minutes
 
 ### Workflow Architecture
 
