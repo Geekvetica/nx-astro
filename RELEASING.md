@@ -224,7 +224,7 @@ git push origin v0.9.0
 
 ### "Tag already exists" error
 
-If `nx release` stopped midway, or you need to redo a release that was **not pushed yet**, remove both the tag and the local release commit before retrying. Otherwise the retry finds the old `chore(release): publish` commit, lists it in the changelog and creates a second release commit.
+If `nx release` stopped midway, or you need to redo a release that was **not pushed yet**, remove both the tag and the local release commit before retrying. Otherwise the retry stacks a second `chore(release): publish` commit on top of the first.
 
 ```bash
 # If nx release stopped before committing, discard its uncommitted edits
@@ -250,11 +250,12 @@ If the release commit and tag are **already on GitHub** and only the workflow fa
 
 **Solution:**
 
+Re-running the workflow tests the same tagged commit again, so release a new version instead:
+
 1. Run tests locally first: `pnpm test`
-2. Fix any failures
-3. Commit and push fixes
-4. Delete the failed release tag
-5. Create a new release
+2. Fix the failures on `main` (through a PR) and wait for CI to pass
+3. Create a new patch release: `pnpm exec nx release patch --skip-publish`, then `git push --follow-tags`
+4. The failed version was never staged. Deleting its tag is optional (`git push origin :refs/tags/vX.Y.Z`; `v*` tags are admin-only)
 
 ## Rollback
 

@@ -540,8 +540,8 @@ Located in `.github/workflows/`:
 
 **release.yml** - Automated Release:
 
-- Triggers: Manual workflow dispatch
-- Jobs: Run Tests and Lint (verifies the release tag), Stage on npm, Create GitHub Release; triggered by pushing a `v*` tag
+- Triggers: push of a `v*.*.*` tag; manual `workflow_dispatch` re-stages an existing tag
+- Jobs: Run Tests and Lint (verifies the release tag), Stage on npm, Create GitHub Release
 - Duration: ~40 minutes
 
 ### Workflow Architecture

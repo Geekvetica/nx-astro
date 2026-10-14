@@ -308,11 +308,12 @@ No npm token is required. The release workflow stages releases with npm Trusted 
 
 **Configuration:** Automatically provided by GitHub Actions - no setup needed.
 
-**Permissions:** The workflow requests minimal permissions:
+**Permissions:** The release workflow is read-only by default (`contents: read`) and widens permissions per job:
 
-- `contents: write` - Create releases and push tags
-- `packages: write` - Publish packages (if needed)
-- `pull-requests: write` - Update PRs (if needed)
+- `publish` (Stage on npm): `id-token: write`, for the npm Trusted Publishing OIDC token and provenance
+- `github-release` (Create GitHub Release): `contents: write`, to create the GitHub release
+
+It never pushes commits or tags.
 
 ## Triggering Workflows
 

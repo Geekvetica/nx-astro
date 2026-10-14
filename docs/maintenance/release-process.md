@@ -111,13 +111,13 @@ This bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `ch
   ```markdown
   ## 1.1.0
 
-  ### Features
+  ### 🚀 Features
 
-  - feat(application): add portfolio template option
+  - **application:** add portfolio template option
 
-  ### Bug Fixes
+  ### 🩹 Fixes
 
-  - fix(build): correct output path resolution on Windows
+  - **build:** correct output path resolution on Windows
   ```
 
 ## npm Publishing
@@ -315,7 +315,7 @@ git push --follow-tags
 
 1. Fix the failing tests on `main` (through a PR) and wait for CI to pass
 2. Create a new patch release with `pnpm exec nx release patch --skip-publish` and push it with `git push --follow-tags`
-3. The failed version was never staged; optionally delete its tag (`git push origin :refs/tags/vX.Y.Z`, see [RELEASING.md](../../RELEASING.md))
+3. The failed version was never staged. Deleting its tag is optional (`git push origin :refs/tags/vX.Y.Z`; `v*` tags are admin-only)
 
 ### Release Fails at Publishing
 
@@ -352,18 +352,15 @@ gh workflow run release.yml -f tag=v1.0.0
 **Symptom:** GitHub release creation fails
 **Possible Causes:**
 
-- Tag already exists
-- Insufficient permissions
+- Missing `CHANGELOG.md` entry for the version (the release body falls back to `Release <version>`)
+- Insufficient permissions (`contents: write` on the `github-release` job)
 - Network issues
 
-**Solution:**
+**Solution:** do not delete or recreate the tag; the version is already staged on npm. Re-run only the failed job of that workflow run:
 
 ```bash
-# Check if tag exists
-git ls-remote --tags origin
-
-# If tag exists, delete and re-run
-git push --delete origin v1.0.0
+gh run list --workflow release.yml --limit 5
+gh run rerun <run-id> --failed
 ```
 
 ## Release Schedule
@@ -449,11 +446,12 @@ No npm secret is required. `GITHUB_TOKEN` is provided automatically by GitHub Ac
 
 ### Workflow Permissions
 
-The release workflow requires:
+The release workflow is read-only by default (`contents: read`) and widens permissions per job:
 
-- `contents: write` - To push tags and commits
-- `packages: write` - To publish packages
-- `pull-requests: write` - To create release PRs (if needed)
+- `publish` (Stage on npm): `id-token: write`, for the npm Trusted Publishing OIDC token and provenance
+- `github-release` (Create GitHub Release): `contents: write`, to create the GitHub release
+
+It never pushes commits or tags; the maintainer pushes them.
 
 ### Nx Release Configuration
 
@@ -463,11 +461,47 @@ Located in `nx.json`:
 {
   "release": {
     "version": {
-      "conventionalCommits": true,
-      "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "specifierSource": "prompt"
+      "preVersionCommand": "pnpm exec nx run-many -t build",
+      "specifierSource": "prompt",
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk",
+      "preserveLocalDependencyProtocols": false
+    },
+    "changelog": {
+      "workspaceChangelog": {
+        "createRelease": false,
+        "file": "CHANGELOG.md",
+        "entryWhenNoChanges": false,
+        "renderOptions": {
+          "authors": true,
+          "commitReferences": true,
+          "versionTitleDate": true
+        }
+      },
+      "projectChangelogs": false
+    },
+    "conventionalCommits": {
+      "types": {
+        "chore": {
+          "semverBump": "none",
+          "changelog": {
+            "title": "🏡 Chore"
+          }
+        }
       }
+    },
+    "git": {
+      "commit": true,
+      "commitMessage": "chore(release): publish {version}",
+      "commitArgs": "--no-verify",
+      "tag": true,
+      "tagMessage": "v{version}",
+      "tagArgs": "--force",
+      "push": false
+    },
+    "projects": ["nx-astro"],
+    "releaseTag": {
+      "pattern": "v{version}"
     }
   }
 }
