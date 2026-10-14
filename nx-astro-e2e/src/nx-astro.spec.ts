@@ -60,6 +60,22 @@ describe('nx-astro e2e', () => {
       });
     });
 
+    it('[186] runs the consumer workspace on the pnpm version this repository pins', () => {
+      logStep('Verifying the consumer workspace pnpm version...');
+      const rootPackageJson = readJsonFile<{ packageManager: string }>(
+        'package.json',
+        process.cwd(),
+      );
+      const version = execSync('pnpm --version', {
+        cwd: projectDirectory,
+        encoding: 'utf-8',
+      }).trim();
+
+      // packageManager may carry a "+sha512..." integrity suffix
+      const [pinned] = rootPackageJson.packageManager.split('+');
+      expect(`pnpm@${version}`).toBe(pinned);
+    });
+
     it('[169-S03] resolves a single @nx/devkit version in an Nx 23 host', () => {
       logStep('Verifying a single @nx/devkit version is installed...');
       const output = execSync('pnpm ls @nx/devkit --depth Infinity --json', {

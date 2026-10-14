@@ -7,11 +7,14 @@
  * - Copies the built package to a temporary directory
  * - Modifies ONLY the temp copy's package.json to 0.0.0-e2e
  * - Creates a tarball from the temp copy
+ * - Installs the pnpm version pinned in the root package.json into the temp
+ *   directory and puts it first on PATH, so the e2e workspace never runs on
+ *   whatever pnpm happens to be installed globally
  * - Original repository files remain untouched
  */
 
 import { execSync } from 'child_process';
-import { join } from 'path';
+import { delimiter, join } from 'path';
 import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 
@@ -36,7 +39,7 @@ export default async () => {
     packageJson.version = '0.0.0-e2e';
     writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
     console.log(
-      `Modified temp package.json version: ${originalVersion} → 0.0.0-e2e`
+      `Modified temp package.json version: ${originalVersion} → 0.0.0-e2e`,
     );
 
     // Create tarball from temp directory
@@ -54,6 +57,8 @@ export default async () => {
     // Store temp dir path for cleanup in globalTeardown
     process.env.E2E_TEMP_DIR = tempDir;
 
+    installPinnedPnpm(join(tempDir, 'pnpm'));
+
     console.log('E2E preparation complete');
     console.log('✓ Repository files untouched');
     console.log('✓ Tarball ready for testing');
@@ -62,3 +67,42 @@ export default async () => {
     throw error;
   }
 };
+
+/**
+ * Installs the pnpm version from the root package.json `packageManager` field
+ * into installDir and prepends its bin directory to PATH. The e2e workspace
+ * lives outside this repository, so without this it would use the global pnpm,
+ * and newer pnpm majors fail on ignored dependency build scripts.
+ */
+function installPinnedPnpm(installDir: string) {
+  const version = readPinnedPnpmVersion();
+  console.log(`Installing pinned pnpm ${version} for the e2e workspace...`);
+  // Through a shell, like `npm pack` above, so npm.cmd also resolves on
+  // Windows; version is validated by readPinnedPnpmVersion
+  execSync(
+    `npm install --prefix "${installDir}" --no-save --no-audit --no-fund --no-package-lock pnpm@${version}`,
+    { stdio: 'inherit' },
+  );
+  const binDir = join(installDir, 'node_modules', '.bin');
+  process.env.PATH = `${binDir}${delimiter}${process.env.PATH ?? ''}`;
+}
+
+/**
+ * Returns the pnpm version from the root package.json `packageManager` field.
+ * An optional `+sha512...` suffix is accepted but not checked; npm verifies
+ * the downloaded tarball against the registry's integrity instead.
+ */
+function readPinnedPnpmVersion(): string {
+  const { packageManager } = JSON.parse(
+    readFileSync(join(process.cwd(), 'package.json'), 'utf-8'),
+  ) as { packageManager?: string };
+  const match = /^pnpm@(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)(?:\+.*)?$/.exec(
+    packageManager ?? '',
+  );
+  if (!match) {
+    throw new Error(
+      `Root package.json packageManager must pin pnpm (got "${packageManager}")`,
+    );
+  }
+  return match[1];
+}
