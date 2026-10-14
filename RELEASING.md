@@ -227,7 +227,10 @@ git push origin v0.9.0
 If `nx release` stopped midway, or you need to redo a release that was **not pushed yet**, remove both the tag and the local release commit before retrying. Otherwise the retry finds the old `chore(release): publish` commit, lists it in the changelog and creates a second release commit.
 
 ```bash
-# Delete the local tag
+# If nx release stopped before committing, discard its uncommitted edits
+git restore nx-astro/package.json CHANGELOG.md
+
+# Delete the local tag (if it was created)
 git tag -d v1.0.0
 
 # Drop the local release commit (only if HEAD is the unpushed chore(release) commit)

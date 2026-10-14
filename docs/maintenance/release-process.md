@@ -260,7 +260,7 @@ npm unpublish @geekvetica/nx-astro@1.0.0
 ### Option 3: Quick Patch Release (Recommended)
 
 1. Fix the issue on `main` branch
-2. Trigger patch release immediately
+2. Create and push a patch release immediately
 3. Deprecate broken version
 4. Announce fix to users
 
@@ -273,8 +273,11 @@ git checkout main
 git commit -m "fix: critical issue in build executor"
 git push origin main
 
-# 2. Trigger patch release via GitHub Actions
-# 3. Deprecate broken version
+# 2. Create the patch release and push it (triggers the release workflow)
+pnpm exec nx release patch --skip-publish
+git push --follow-tags
+
+# 3. After approving the staged version on npmjs.com, deprecate the broken one
 npm deprecate @geekvetica/nx-astro@1.0.0 "Critical bug fixed in 1.0.1"
 
 # 4. Announce fix
@@ -307,13 +310,12 @@ git push --follow-tags
 ### Release Fails at Tests
 
 **Symptom:** Test job fails
-**Cause:** Tests failing on `main`
-**Solution:**
+**Cause:** Tests failing on the tagged release commit
+**Solution:** re-running the workflow tests the same tagged commit again, so release a new version instead:
 
-1. Fix failing tests
-2. Push to `main`
-3. Wait for CI to pass
-4. Re-run release workflow
+1. Fix the failing tests on `main` (through a PR) and wait for CI to pass
+2. Create a new patch release with `pnpm exec nx release patch --skip-publish` and push it with `git push --follow-tags`
+3. The failed version was never staged; optionally delete its tag (`git push origin :refs/tags/vX.Y.Z`, see [RELEASING.md](../../RELEASING.md))
 
 ### Release Fails at Publishing
 
@@ -401,8 +403,9 @@ For critical security issues:
 4. Merge and release immediately
 
    ```bash
-   # After merge, trigger patch release
-   # Skip normal testing cycle if necessary
+   # After merge, on an up-to-date main
+   pnpm exec nx release patch --skip-publish
+   git push --follow-tags
    ```
 
 5. Announce with security advisory

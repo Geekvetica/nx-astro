@@ -56,8 +56,8 @@ This checklist should be followed every time a new version of nx-astro is releas
   npx create-nx-workspace@latest test-ws --preset=apps
   cd test-ws
   npm install /path/to/nx-astro-<version>.tgz
-  npx nx g nx-astro:init
-  npx nx g nx-astro:app my-app
+  npx nx g @geekvetica/nx-astro:init
+  npx nx g @geekvetica/nx-astro:app my-app
   npx nx build my-app
   ```
 
