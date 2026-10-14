@@ -124,15 +124,15 @@ The release workflow creates the GitHub release from the tag and the `CHANGELOG.
 
 - [ ] Verify package on npm
   ```bash
-  npm view nx-astro
-  npm view nx-astro versions
+  npm view @geekvetica/nx-astro
+  npm view @geekvetica/nx-astro versions
   ```
 - [ ] Test installation from npm
   ```bash
   npx create-nx-workspace@latest test-install --preset=apps
   cd test-install
-  npm install --save-dev nx-astro
-  npx nx g nx-astro:init
+  npm install --save-dev @geekvetica/nx-astro
+  npx nx g @geekvetica/nx-astro:init
   ```
 - [ ] Check npm package page
   - README displays correctly
@@ -161,11 +161,8 @@ The release workflow creates the GitHub release from the tag and the `CHANGELOG.
 
 ### 13. Housekeeping
 
-- [ ] Merge release branch to main (if using release branches)
-- [ ] Delete release branch (if temporary)
 - [ ] Update project board/milestones
 - [ ] Plan next release
-- [ ] Start new section in CHANGELOG for next version
 
 ## Rollback Procedure
 
@@ -174,14 +171,14 @@ If critical issues are discovered after release:
 ### Option 1: Deprecate Version
 
 ```bash
-npm deprecate nx-astro@0.1.0 "Critical bug, please upgrade to 0.1.1"
+npm deprecate @geekvetica/nx-astro@0.1.0 "Critical bug, please upgrade to 0.1.1"
 ```
 
 ### Option 2: Unpublish (within 72 hours only)
 
 ```bash
 # WARNING: Only works within 72 hours of publish
-npm unpublish nx-astro@0.1.0
+npm unpublish @geekvetica/nx-astro@0.1.0
 ```
 
 ### Option 3: Quick Patch Release

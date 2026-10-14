@@ -88,7 +88,7 @@ npx nx lint nx-astro-e2e
 Build all projects:
 
 ```sh
-pnpm dlx nx run-many -t build
+pnpm exec nx run-many -t build
 ```
 
 ### Graph Visualization

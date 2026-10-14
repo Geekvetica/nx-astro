@@ -70,15 +70,13 @@ Use the top-level `nx release` command. The `nx release version` and `nx release
 
 ### Step 2: Push Tag to GitHub
 
-Push the tag to GitHub to trigger automated publishing:
+Push the release commit and its tag together to trigger automated publishing:
 
 ```bash
-# Push the commit and tags
-git push && git push --tags
-
-# Or push everything at once
 git push --follow-tags
 ```
+
+Push them together: the workflow rejects a tag whose commit is not on `main`.
 
 ### Step 3: GitHub Actions Stages the Release
 
@@ -207,10 +205,8 @@ Only these commit types appear in `CHANGELOG.md`:
 # Check local tags
 git tag
 
-# Push all tags
-git push --tags
-
-# Or push specific tag
+# Make sure the release commit is on main, then push the tag
+git push origin main
 git push origin v0.9.0
 ```
 
@@ -228,19 +224,22 @@ git push origin v0.9.0
 
 ### "Tag already exists" error
 
-If a release failed midway, you may need to delete the tag:
+If `nx release` stopped midway, or you need to redo a release that was **not pushed yet**, remove both the tag and the local release commit before retrying. Otherwise the retry finds the old `chore(release): publish` commit, lists it in the changelog and creates a second release commit.
 
 ```bash
-# Delete local tag
+# Delete the local tag
 git tag -d v1.0.0
 
-# Delete remote tag
-git push origin :refs/tags/v1.0.0
+# Drop the local release commit (only if HEAD is the unpushed chore(release) commit)
+git log -1 --format=%s   # must print: chore(release): publish 1.0.0
+git reset --hard HEAD~1
 
 # Then retry the release
 pnpm exec nx release 1.0.0 --skip-publish
 git push --follow-tags
 ```
+
+If the release commit and tag are **already on GitHub** and only the workflow failed (for example npm staging), do not recreate them. Fix the cause and stage the existing tag again with `gh workflow run release.yml -f tag=v1.0.0`.
 
 ### GitHub Actions workflow fails during tests
 
