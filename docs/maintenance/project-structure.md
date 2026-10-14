@@ -296,20 +296,18 @@ nx-astro-e2e/
 
 ### E2E Test Workflow
 
-1. **Setup** (jest global setup):
-   - Start local npm registry (verdaccio)
-   - Build `nx-astro` plugin
-   - Publish to local registry with `@e2e` tag
+1. **Setup** (jest global setup, `tools/scripts/start-local-registry.ts`; the `e2e` target builds `nx-astro` first):
+   - Copy `dist/nx-astro` to a temp directory, set its version to `0.0.0-e2e` and pack it into a tarball
+   - Install the pnpm version pinned in the root `package.json` `packageManager` field into that temp directory and put it first on `PATH`
 
 2. **Test Execution**:
-   - Create temporary Nx workspace
-   - Install plugin from local registry
+   - Create a temporary Nx workspace with `create-nx-workspace --pm pnpm`
+   - Install the plugin from the tarball
    - Run generators and executors
    - Verify outputs
 
-3. **Teardown** (jest global teardown):
-   - Stop verdaccio
-   - Clean up temporary workspaces
+3. **Teardown** (jest global teardown, `tools/scripts/stop-local-registry.ts`):
+   - Remove the temp directory and the tarball
 
 ### E2E Test Categories
 

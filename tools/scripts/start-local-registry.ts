@@ -13,7 +13,7 @@
  * - Original repository files remain untouched
  */
 
-import { execFileSync, execSync } from 'child_process';
+import { execSync } from 'child_process';
 import { delimiter, join } from 'path';
 import { cpSync, mkdtempSync, readFileSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
@@ -77,24 +77,21 @@ export default async () => {
 function installPinnedPnpm(installDir: string) {
   const version = readPinnedPnpmVersion();
   console.log(`Installing pinned pnpm ${version} for the e2e workspace...`);
-  execFileSync(
-    'npm',
-    [
-      'install',
-      '--prefix',
-      installDir,
-      '--no-save',
-      '--no-audit',
-      '--no-fund',
-      '--no-package-lock',
-      `pnpm@${version}`,
-    ],
+  // Through a shell, like `npm pack` above, so npm.cmd also resolves on
+  // Windows; version is validated by readPinnedPnpmVersion
+  execSync(
+    `npm install --prefix "${installDir}" --no-save --no-audit --no-fund --no-package-lock pnpm@${version}`,
     { stdio: 'inherit' },
   );
   const binDir = join(installDir, 'node_modules', '.bin');
   process.env.PATH = `${binDir}${delimiter}${process.env.PATH ?? ''}`;
 }
 
+/**
+ * Returns the pnpm version from the root package.json `packageManager` field.
+ * An optional `+sha512...` suffix is accepted but not checked; npm verifies
+ * the downloaded tarball against the registry's integrity instead.
+ */
 function readPinnedPnpmVersion(): string {
   const { packageManager } = JSON.parse(
     readFileSync(join(process.cwd(), 'package.json'), 'utf-8'),

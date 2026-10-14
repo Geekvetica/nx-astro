@@ -468,8 +468,8 @@ pnpx nx e2e nx-astro-e2e --verbose
 - **Type:** Nx workspace with `apps` preset
 - **Package Manager:** pnpm, the version pinned in the root `package.json` `packageManager` field. The jest global setup installs it into its temp directory and puts it first on `PATH`, so the result does not depend on the globally installed pnpm.
 - **Node Version:** Current
-- **Location:** `tmp/test-project/`
-- **Registry:** Verdaccio local registry
+- **Location:** a private `nx-astro-e2e-*` directory under the OS temp directory (`mkdtemp`)
+- **Plugin source:** a tarball of the built plugin (`npm pack` of `dist/nx-astro`, version `0.0.0-e2e`), installed with `pnpm add`
 - **Cleanup:** Automatic
 
 ### Dependencies

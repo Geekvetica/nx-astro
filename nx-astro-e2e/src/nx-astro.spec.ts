@@ -73,7 +73,7 @@ describe('nx-astro e2e', () => {
 
       // packageManager may carry a "+sha512..." integrity suffix
       const [pinned] = rootPackageJson.packageManager.split('+');
-      expect(pinned).toBe(`pnpm@${version}`);
+      expect(`pnpm@${version}`).toBe(pinned);
     });
 
     it('[169-S03] resolves a single @nx/devkit version in an Nx 23 host', () => {
