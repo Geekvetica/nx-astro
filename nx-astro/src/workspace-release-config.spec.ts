@@ -41,8 +41,12 @@ describe('workspace release configuration', () => {
     const chore = release.conventionalCommits?.types?.chore;
 
     expect(chore?.semverBump).toBe('none');
+    // `changelog: false` or `hidden: true` would hide chore commits again
     expect(chore?.changelog).toEqual(
-      expect.not.objectContaining({ hidden: true }),
+      expect.objectContaining({ title: expect.any(String) }),
+    );
+    expect(chore?.changelog).not.toEqual(
+      expect.objectContaining({ hidden: true }),
     );
   });
 

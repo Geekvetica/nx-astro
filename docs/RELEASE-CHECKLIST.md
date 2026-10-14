@@ -72,7 +72,7 @@ This checklist should be followed every time a new version of nx-astro is releas
 
 ### 6. Create the Release Commit and Tag
 
-Run this last, on the clean, up-to-date `main` from step 5. Do not create the tag by hand.
+Run this on the clean, up-to-date `main` from step 5. It is the last change to the repository before pushing in step 8. Do not create the tag by hand.
 
 ```bash
 pnpm exec nx release <patch|minor|major> --skip-publish
@@ -85,16 +85,14 @@ git log -1 --format=%s          # chore(release): publish X.Y.Z
 git show --no-patch vX.Y.Z      # annotated tag on that commit
 ```
 
-### 7. Build for Production
+### 7. Check the Release Build
+
+`nx release` rebuilt the plugin in step 6 (`preVersionCommand`), so `dist/nx-astro` is the release build. Check it without changing the repository:
 
 ```bash
-# Clean build
-rm -rf dist/
-pnpm exec nx build nx-astro
-
-# Verify files are included
 cd dist/nx-astro
 ls -la
+npm pack --dry-run   # lists exactly what will be published
 ```
 
 ### 8. Publish to npm
@@ -108,7 +106,7 @@ git push --follow-tags
 - [ ] Release workflow succeeded: https://github.com/geekvetica/nx-astro/actions
 - [ ] Staged version approved with 2FA in the **Staged Packages** tab on https://www.npmjs.com/package/@geekvetica/nx-astro
 
-To check what will be published before tagging, run `npm pack --dry-run` in `dist/nx-astro`. See [RELEASING.md](../RELEASING.md) for the full flow.
+See [RELEASING.md](../RELEASING.md) for the full flow.
 
 ### 9. Check the GitHub Release
 
