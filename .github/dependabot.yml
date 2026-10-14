@@ -97,8 +97,10 @@ updates:
 
     # Commit message configuration
     commit-message:
-      prefix: 'chore(deps)'
-      prefix-development: 'chore(deps-dev)'
+      # include: 'scope' appends (deps) or (deps-dev), so the prefix is the
+      # bare type; chore commits appear in the changelog (see nx.json)
+      prefix: 'chore'
+      prefix-development: 'chore'
       include: 'scope'
 
     # Labels for PRs (commented out - create these labels in GitHub if needed)
@@ -137,7 +139,8 @@ updates:
 
     # Commit message configuration
     commit-message:
-      prefix: 'chore(ci)'
+      # Renders as ci(deps): ..., which the changelog hides
+      prefix: 'ci'
       include: 'scope'
 
     # Labels for PRs (commented out - create these labels in GitHub if needed)

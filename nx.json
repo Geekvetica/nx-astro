@@ -47,7 +47,7 @@
   },
   "release": {
     "version": {
-      "preVersionCommand": "pnpm dlx nx run-many -t build",
+      "preVersionCommand": "pnpm exec nx run-many -t build",
       "specifierSource": "prompt",
       "currentVersionResolver": "git-tag",
       "fallbackCurrentVersionResolver": "disk",
@@ -55,7 +55,7 @@
     },
     "changelog": {
       "workspaceChangelog": {
-        "createRelease": "github",
+        "createRelease": false,
         "file": "CHANGELOG.md",
         "entryWhenNoChanges": false,
         "renderOptions": {
@@ -66,13 +66,24 @@
       },
       "projectChangelogs": false
     },
+    "conventionalCommits": {
+      "types": {
+        "chore": {
+          "semverBump": "none",
+          "changelog": {
+            "title": "🏡 Chore"
+          }
+        }
+      }
+    },
     "git": {
       "commit": true,
       "commitMessage": "chore(release): publish {version}",
       "commitArgs": "--no-verify",
       "tag": true,
       "tagMessage": "v{version}",
-      "tagArgs": "--force"
+      "tagArgs": "--force",
+      "push": false
     },
     "projects": ["nx-astro"],
     "releaseTag": {

@@ -15,7 +15,7 @@
     "format:check": "nx format:check",
     "typecheck": "nx run-many -t build --all",
     "clean": "nx reset && rm -rf dist node_modules/.cache",
-    "release": "nx release",
+    "release": "nx release --skip-publish",
     "verify": "npm run format:check && npm run lint && npm run test && npm run build",
     "prepare": "husky"
   },

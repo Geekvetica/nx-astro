@@ -66,6 +66,15 @@
     "test": {
       "executor": "@nx/jest:jest",
       "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "inputs": [
+        "default",
+        "^production",
+        "{workspaceRoot}/jest.preset.js",
+        "{workspaceRoot}/nx.json",
+        "{workspaceRoot}/package.json",
+        "{workspaceRoot}/.github/dependabot.yml",
+        "{workspaceRoot}/.github/workflows/release.yml"
+      ],
       "options": {
         "jestConfig": "nx-astro/jest.config.ts"
       },

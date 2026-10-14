@@ -6,8 +6,9 @@
 #   Automated npm staged publishing with provenance after local versioning.
 #
 # Workflow:
-#   1. Developer runs `pnpx nx release` locally to version and create git tag
-#   2. Developer pushes tag to GitHub: `git push --tags`
+#   1. Developer runs `pnpm exec nx release <specifier> --skip-publish`
+#      locally to version, write the changelog, commit and tag (no push)
+#   2. Developer pushes the commit and tag together: `git push --follow-tags`
 #   3. This workflow automatically triggers on tag push
 #   4. Workflow builds, tests, and stages the version on npm with provenance
 #   5. Workflow creates GitHub release

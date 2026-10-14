@@ -734,15 +734,12 @@ nx e2e nx-astro-e2e
 
 ## Release Process
 
-Releases are automated via GitHub Actions. See our [CI/CD setup guide](./docs/ci-cd-setup.md#release-pipeline) for details.
+Releases are created locally with Nx Release and published by GitHub Actions. See [RELEASING.md](./RELEASING.md) for the full flow.
 
-To trigger a release:
-
-1. Go to Actions tab
-2. Select "Release" workflow
-3. Click "Run workflow"
-4. Choose version bump type (patch, minor, major)
-5. Confirm
+1. On an up-to-date, clean `main`, run `pnpm exec nx release <patch|minor|major> --skip-publish` (bumps the version, writes `CHANGELOG.md`, commits and tags; nothing is pushed)
+2. Push the commit and tag: `git push --follow-tags`
+3. The release workflow verifies the tag, runs lint and tests, stages the version on npm and creates the GitHub release
+4. A maintainer approves the staged version on npmjs.com with 2FA
 
 ## Compatibility
 

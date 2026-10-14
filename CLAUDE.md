@@ -45,7 +45,8 @@ This workspace uses pnpm as the package manager.
 
 - Version management via `nx release`
 - Uses git tags for current version resolution with disk fallback
-- Pre-version command: `pnpm dlx nx run-many -t build`
+- Pre-version command: `pnpm exec nx run-many -t build`
+- Release locally with `pnpm exec nx release <patch|minor|major> --skip-publish` (commits and tags, never pushes); see `RELEASING.md`
 
 ## Common Commands
 
@@ -87,7 +88,7 @@ npx nx lint nx-astro-e2e
 Build all projects:
 
 ```sh
-pnpm dlx nx run-many -t build
+pnpm exec nx run-many -t build
 ```
 
 ### Graph Visualization

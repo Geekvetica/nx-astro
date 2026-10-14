@@ -34,45 +34,49 @@ The release workflow needs no npm token. npm trusts `release.yml` via OIDC and t
 
 ### Step 1: Create Version and Tag Locally
 
-Run `nx release` locally to version the package and create a git tag:
+Run `nx release` locally, with `--skip-publish`, to version the package, write the changelog, commit and tag:
 
 ```bash
+# Preview first: shows the version bump and the CHANGELOG entry, changes nothing
+pnpm exec nx release patch --skip-publish --dry-run
+
 # For patch version (0.9.0 → 0.9.1)
-pnpx nx release version patch
+pnpm exec nx release patch --skip-publish
 
 # For minor version (0.9.0 → 0.10.0)
-pnpx nx release version minor
+pnpm exec nx release minor --skip-publish
 
 # For major version (0.9.0 → 1.0.0)
-pnpx nx release version major
+pnpm exec nx release major --skip-publish
 
 # For specific version
-pnpx nx release version 1.0.0
+pnpm exec nx release 1.0.0 --skip-publish
 
 # For prerelease version
-pnpx nx release version prerelease --preid=beta
+pnpm exec nx release prerelease --preid=beta --skip-publish
 ```
 
 This command will:
 
-- ✅ Update `package.json` version
-- ✅ Generate `CHANGELOG.md` from git commits
+- ✅ Build the plugin (`preVersionCommand`)
+- ✅ Update the version in `nx-astro/package.json`
+- ✅ Add an entry to `CHANGELOG.md` from the commits since the last `v*` tag
 - ✅ Create a git commit: `chore(release): publish X.X.X`
-- ✅ Create a git tag: `vX.X.X`
+- ✅ Create an annotated git tag: `vX.X.X`
 
-**Important:** This does NOT publish to npm. Publishing happens automatically in the next step.
+It does **not** push, publish to npm or create the GitHub release (`release.git.push` is `false` and `createRelease` is `false` in `nx.json`); the next steps do that.
+
+Use the top-level `nx release` command. The `nx release version` and `nx release changelog` subcommands fail with this workspace's `release.git` configuration (`The "release.git" property in nx.json may not be used with the "nx release version" subcommand`).
 
 ### Step 2: Push Tag to GitHub
 
-Push the tag to GitHub to trigger automated publishing:
+Push the release commit and its tag together to trigger automated publishing:
 
 ```bash
-# Push the commit and tags
-git push && git push --tags
-
-# Or push everything at once
 git push --follow-tags
 ```
+
+Push them together: the workflow rejects a tag whose commit is not on `main`.
 
 ### Step 3: GitHub Actions Stages the Release
 
@@ -122,8 +126,8 @@ npm audit signatures
 For the very first release (0.9.0), use the `--first-release` flag:
 
 ```bash
-pnpx nx release version 0.9.0 --first-release
-git push && git push --tags
+pnpm exec nx release 0.9.0 --first-release --skip-publish
+git push --follow-tags
 ```
 
 The `--first-release` flag tells `nx release` that there are no previous git tags to compare against.
@@ -134,10 +138,10 @@ To release a prerelease version (e.g., beta, alpha):
 
 ```bash
 # Create a beta prerelease
-pnpx nx release version prerelease --preid=beta
+pnpm exec nx release prerelease --preid=beta --skip-publish
 
 # This creates version like: 0.9.1-beta.0
-git push && git push --tags
+git push --follow-tags
 ```
 
 GitHub Actions will automatically mark it as a prerelease on GitHub.
@@ -178,6 +182,17 @@ git commit -m "docs: update README with new examples"
 git commit -m "refactor: simplify generator logic"
 ```
 
+Only these commit types appear in `CHANGELOG.md`:
+
+| Type    | Section        |
+| ------- | -------------- |
+| `feat`  | 🚀 Features    |
+| `fix`   | 🩹 Fixes       |
+| `perf`  | 🔥 Performance |
+| `chore` | 🏡 Chore       |
+
+`chore` is shown (configured in `nx.json` › `release.conventionalCommits`) so that a release containing only dependency updates, such as Dependabot's `chore(deps): …` and `chore(deps-dev): …` commits, still gets a meaningful entry. Other types (`docs`, `refactor`, `test`, `ci`, `build`, …) are hidden; Dependabot's GitHub Actions updates use `ci(deps): …` for that reason.
+
 ## Troubleshooting
 
 ### GitHub Actions workflow doesn't trigger
@@ -190,10 +205,8 @@ git commit -m "refactor: simplify generator logic"
 # Check local tags
 git tag
 
-# Push all tags
-git push --tags
-
-# Or push specific tag
+# Make sure the release commit is on main, then push the tag
+git push origin main
 git push origin v0.9.0
 ```
 
@@ -211,19 +224,25 @@ git push origin v0.9.0
 
 ### "Tag already exists" error
 
-If a release failed midway, you may need to delete the tag:
+If `nx release` stopped midway, or you need to redo a release that was **not pushed yet**, remove both the tag and the local release commit before retrying. Otherwise the retry stacks a second `chore(release): publish` commit on top of the first.
 
 ```bash
-# Delete local tag
+# If nx release stopped before committing, discard its uncommitted edits
+git restore nx-astro/package.json CHANGELOG.md
+
+# Delete the local tag (if it was created)
 git tag -d v1.0.0
 
-# Delete remote tag
-git push origin :refs/tags/v1.0.0
+# Drop the local release commit (only if HEAD is the unpushed chore(release) commit)
+git log -1 --format=%s   # must print: chore(release): publish 1.0.0
+git reset --hard HEAD~1
 
 # Then retry the release
-pnpx nx release version 1.0.0
-git push && git push --tags
+pnpm exec nx release 1.0.0 --skip-publish
+git push --follow-tags
 ```
+
+If the release commit and tag are **already on GitHub** and only the workflow failed (for example npm staging), do not recreate them. Fix the cause and stage the existing tag again with `gh workflow run release.yml -f tag=v1.0.0`.
 
 ### GitHub Actions workflow fails during tests
 
@@ -231,11 +250,12 @@ git push && git push --tags
 
 **Solution:**
 
+Re-running the workflow tests the same tagged commit again, so release a new version instead:
+
 1. Run tests locally first: `pnpm test`
-2. Fix any failures
-3. Commit and push fixes
-4. Delete the failed release tag
-5. Create a new release
+2. Fix the failures on `main` (through a PR) and wait for CI to pass
+3. Create a new patch release: `pnpm exec nx release patch --skip-publish`, then `git push --follow-tags`
+4. The failed version was never staged. Deleting its tag is optional (`git push origin :refs/tags/vX.Y.Z`; `v*` tags are admin-only)
 
 ## Rollback
 

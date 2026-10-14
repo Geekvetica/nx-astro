@@ -6,16 +6,16 @@ This checklist should be followed every time a new version of nx-astro is releas
 
 ### 1. Code Quality Verification
 
-- [ ] All unit tests passing (`npx nx test nx-astro`)
-- [ ] All E2E tests passing (`npx nx e2e nx-astro-e2e`)
-- [ ] No linting errors (`npx nx lint nx-astro`)
-- [ ] No TypeScript errors (`npx nx build nx-astro`)
+- [ ] All unit tests passing (`pnpm exec nx test nx-astro`)
+- [ ] All E2E tests passing (`pnpm exec nx e2e nx-astro-e2e`)
+- [ ] No linting errors (`pnpm exec nx lint nx-astro`)
+- [ ] No TypeScript errors (`pnpm exec nx build nx-astro`)
 - [ ] Code review completed (if applicable)
 - [ ] Security audit clean (`pnpm audit` or `npm audit`)
 
 ### 2. Documentation Updates
 
-- [ ] CHANGELOG.md updated with all changes
+- [ ] CHANGELOG.md entry checked: `nx release` generates it from Conventional Commits (step 6); preview it with `--dry-run` (step 3) and make sure commit messages describe the changes
   - New features listed
   - Bug fixes documented
   - Breaking changes highlighted
@@ -25,22 +25,21 @@ This checklist should be followed every time a new version of nx-astro is releas
 - [ ] Examples tested and verified
 - [ ] API documentation current
 
-### 3. Version Bump
+### 3. Version Decision
 
 - [ ] Decide version number (semver: major.minor.patch)
   - **Patch** (0.0.x): Bug fixes, minor improvements
   - **Minor** (0.x.0): New features, backward compatible
   - **Major** (x.0.0): Breaking changes
-- [ ] Update version in `package.json`
-- [ ] Update version in `nx-astro/package.json`
-- [ ] Update any hardcoded version references
+- [ ] Preview the release (changes nothing): `pnpm exec nx release <patch|minor|major> --skip-publish --dry-run`
+- [ ] Update and commit any hardcoded version references (`nx release` bumps only `nx-astro/package.json`)
 
 ### 4. Final Testing
 
 - [ ] Clean build from scratch
   ```bash
   rm -rf dist/ node_modules/.cache
-  npx nx build nx-astro
+  pnpm exec nx build nx-astro
   ```
 - [ ] Verify build output
   ```bash
@@ -52,49 +51,48 @@ This checklist should be followed every time a new version of nx-astro is releas
   cd dist/nx-astro
   npm pack
   ```
-- [ ] Install in fresh Nx workspace
+- [ ] Install in fresh Nx workspace (deliberately with npm, as a consumer would)
   ```bash
   npx create-nx-workspace@latest test-ws --preset=apps
   cd test-ws
-  npm install /path/to/nx-astro-<version>.tgz
-  npx nx g nx-astro:init
-  npx nx g nx-astro:app my-app
+  npm install /path/to/geekvetica-nx-astro-<version>.tgz
+  npx nx g @geekvetica/nx-astro:init
+  npx nx g @geekvetica/nx-astro:app my-app
   npx nx build my-app
   ```
 
 ### 5. Repository Preparation
 
-- [ ] All changes committed
-- [ ] Working directory clean (`git status`)
-- [ ] On correct branch (usually `main` or `release`)
+- [ ] All changes committed and merged to `main`
+- [ ] On `main` (`git branch --show-current`); the release workflow rejects a tag whose commit is not on `main`, so do not release from another branch
 - [ ] Pull latest changes (`git pull origin main`)
-- [ ] Create release branch (optional)
-  ```bash
-  git checkout -b release/v0.1.0
-  ```
+- [ ] Working directory clean (`git status`)
 
 ## Release Process
 
-### 6. Create Git Tag
+### 6. Create the Release Commit and Tag
+
+Run this on the clean, up-to-date `main` from step 5. It is the last change to the repository before pushing in step 8. Do not create the tag by hand.
 
 ```bash
-# Create annotated tag
-git tag -a v0.1.0 -m "Release version 0.1.0"
-
-# Push tag to origin
-git push origin v0.1.0
+pnpm exec nx release <patch|minor|major> --skip-publish
 ```
 
-### 7. Build for Production
+It builds the plugin, bumps `nx-astro/package.json`, writes the `CHANGELOG.md` entry, commits `chore(release): publish X.Y.Z` and creates the annotated `vX.Y.Z` tag. It does not push, publish or create the GitHub release.
 
 ```bash
-# Clean build
-rm -rf dist/
-npx nx build nx-astro
+git log -1 --format=%s          # chore(release): publish X.Y.Z
+git show --no-patch vX.Y.Z      # annotated tag on that commit
+```
 
-# Verify files are included
+### 7. Check the Release Build
+
+`nx release` rebuilt the plugin in step 6 (`preVersionCommand`), so `dist/nx-astro` is the release build. Check it without changing the repository:
+
+```bash
 cd dist/nx-astro
 ls -la
+npm pack --dry-run   # lists exactly what will be published
 ```
 
 ### 8. Publish to npm
@@ -108,7 +106,7 @@ git push --follow-tags
 - [ ] Release workflow succeeded: https://github.com/geekvetica/nx-astro/actions
 - [ ] Staged version approved with 2FA in the **Staged Packages** tab on https://www.npmjs.com/package/@geekvetica/nx-astro
 
-To check what will be published before tagging, run `npm pack --dry-run` in `dist/nx-astro`. See [RELEASING.md](../RELEASING.md) for the full flow.
+See [RELEASING.md](../RELEASING.md) for the full flow.
 
 ### 9. Check the GitHub Release
 
@@ -124,15 +122,15 @@ The release workflow creates the GitHub release from the tag and the `CHANGELOG.
 
 - [ ] Verify package on npm
   ```bash
-  npm view nx-astro
-  npm view nx-astro versions
+  npm view @geekvetica/nx-astro
+  npm view @geekvetica/nx-astro versions
   ```
 - [ ] Test installation from npm
   ```bash
   npx create-nx-workspace@latest test-install --preset=apps
   cd test-install
-  npm install --save-dev nx-astro
-  npx nx g nx-astro:init
+  npm install --save-dev @geekvetica/nx-astro
+  npx nx g @geekvetica/nx-astro:init
   ```
 - [ ] Check npm package page
   - README displays correctly
@@ -161,11 +159,8 @@ The release workflow creates the GitHub release from the tag and the `CHANGELOG.
 
 ### 13. Housekeeping
 
-- [ ] Merge release branch to main (if using release branches)
-- [ ] Delete release branch (if temporary)
 - [ ] Update project board/milestones
 - [ ] Plan next release
-- [ ] Start new section in CHANGELOG for next version
 
 ## Rollback Procedure
 
@@ -174,14 +169,14 @@ If critical issues are discovered after release:
 ### Option 1: Deprecate Version
 
 ```bash
-npm deprecate nx-astro@0.1.0 "Critical bug, please upgrade to 0.1.1"
+npm deprecate @geekvetica/nx-astro@0.1.0 "Critical bug, please upgrade to 0.1.1"
 ```
 
 ### Option 2: Unpublish (within 72 hours only)
 
 ```bash
 # WARNING: Only works within 72 hours of publish
-npm unpublish nx-astro@0.1.0
+npm unpublish @geekvetica/nx-astro@0.1.0
 ```
 
 ### Option 3: Quick Patch Release

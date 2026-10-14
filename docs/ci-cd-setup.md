@@ -203,108 +203,38 @@ This cancels in-progress runs when new commits are pushed, saving CI minutes.
 
 ### Purpose
 
-The release pipeline automates version management, changelog generation, and package publishing. It ensures a consistent and reliable release process.
+The release workflow (`.github/workflows/release.yml`) publishes a version that a maintainer created locally with Nx Release. Versioning, the changelog, the release commit and the tag all happen locally (see [RELEASING.md](../RELEASING.md)); the workflow verifies, stages and announces.
 
 ### Trigger
 
-Releases are triggered manually via GitHub Actions UI:
-
-1. Go to Actions tab in GitHub
-2. Select "Release" workflow
-3. Click "Run workflow"
-4. Choose version bump type:
-   - **patch**: Bug fixes (1.0.0 → 1.0.1)
-   - **minor**: New features (1.0.0 → 1.1.0)
-   - **major**: Breaking changes (1.0.0 → 2.0.0)
-   - **prerelease**: Pre-release version (1.0.0 → 1.0.1-beta.0)
-5. For prerelease, optionally specify identifier (default: beta)
+- **Automatic:** pushing a `v*.*.*` tag (`git push --follow-tags` after `pnpm exec nx release <specifier> --skip-publish`)
+- **Manual:** `workflow_dispatch` with an existing `tag` input, to stage that tag again (for example after fixing the npm trusted publisher). It never chooses or bumps a version.
 
 ### Pipeline Architecture
 
 ```
-validate (check branch, conditions)
-    └── test (run full test suite)
-        └── release (version, publish, create release)
-            └── validate-release (verify npm, GitHub)
+test (verify release tag, lint, unit tests)
+    └── publish (build, stage on npm with provenance)
+        └── github-release (create GitHub release from CHANGELOG.md)
 ```
 
 ### Jobs Breakdown
 
-#### 1. Validate Release Conditions
+#### 1. Run Tests and Lint
 
-**Purpose:** Ensure safe release conditions
+- **Verify release tag:** the tag matches `v<major>.<minor>.<patch>` (optional prerelease suffix), points to a commit with the subject `chore(release): publish <version>`, that commit's `nx-astro/package.json` has the same version, and the commit is on `main`
+- Install dependencies, run lint and unit tests (E2E tests run in regular CI, not here)
 
-**Checks:**
+#### 2. Stage on npm
 
-- Running on `main` branch only
-- No uncommitted changes
-- Valid repository state
+- Build the plugin and stage `dist/nx-astro` with `npm stage publish --access public --provenance` (prereleases under the `next` dist-tag)
+- Authenticate with npm Trusted Publishing (OIDC, no stored token); the trusted publisher allows staging only
+- A maintainer approves the staged version on npmjs.com with 2FA, which makes it public
 
-**Why:** Prevents accidental releases from feature branches or invalid states.
+#### 3. Create GitHub Release
 
-#### 2. Run Full Test Suite
-
-**Purpose:** Verify plugin is in releasable state
-
-**Actions:**
-
-- Run all linting checks
-- Run all unit tests with coverage
-- Build the plugin
-- Run E2E tests
-
-**Why:** Ensures quality before publishing to npm.
-
-#### 3. Release and Publish
-
-**Purpose:** Version, tag, publish, and create release
-
-**Steps:**
-
-1. **Setup Environment**
-   - Checkout with full git history (for changelog)
-   - Setup pnpm and Node.js
-   - Configure npm registry authentication
-   - Configure git user for commits
-
-2. **Version Bump**
-   - Use Nx release to bump version
-   - Follow semantic versioning (semver)
-   - Update package.json in dist directory
-
-3. **Changelog Generation**
-   - Generate CHANGELOG.md from git commits
-   - Include commit messages, authors, and references
-   - Use conventional commits format
-
-4. **Git Operations**
-   - Commit version changes: `chore(release): publish {version}`
-   - Create git tag: `v{version}`
-   - Push commits and tags to repository
-
-5. **npm Publishing**
-   - Stage the version from the dist directory (`npm stage publish`)
-   - Set public access
-   - Authenticate with npm Trusted Publishing (OIDC, no stored token)
-   - A maintainer approves the staged version on npmjs.com with 2FA
-
-6. **GitHub Release**
-   - Create GitHub release from git tag
-   - Include changelog in release notes
-   - Add installation instructions
-   - Mark as prerelease if applicable
-
-#### 4. Validate Release
-
-**Purpose:** Verify successful publication
-
-**Checks:**
-
-- Package available on npm registry
-- GitHub release created
-- Correct version published
-
-**Wait Period:** 30 seconds for npm registry propagation
+- Extract the version's entry from `CHANGELOG.md`
+- Create the GitHub release for the tag with that changelog and installation instructions; mark prereleases as pre-release
 
 ### Nx Release Configuration
 
@@ -314,16 +244,15 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
 {
   "release": {
     "version": {
-      "preVersionCommand": "pnpm dlx nx run-many -t build",
-      "generatorOptions": {
-        "currentVersionResolver": "git-tag",
-        "fallbackCurrentVersionResolver": "disk",
-        "specifierSource": "prompt"
-      }
+      "preVersionCommand": "pnpm exec nx run-many -t build",
+      "specifierSource": "prompt",
+      "currentVersionResolver": "git-tag",
+      "fallbackCurrentVersionResolver": "disk",
+      "preserveLocalDependencyProtocols": false
     },
     "changelog": {
       "workspaceChangelog": {
-        "createRelease": "github",
+        "createRelease": false,
         "file": "CHANGELOG.md",
         "entryWhenNoChanges": false,
         "renderOptions": {
@@ -334,13 +263,28 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
       },
       "projectChangelogs": false
     },
+    "conventionalCommits": {
+      "types": {
+        "chore": {
+          "semverBump": "none",
+          "changelog": {
+            "title": "🏡 Chore"
+          }
+        }
+      }
+    },
     "git": {
       "commit": true,
       "commitMessage": "chore(release): publish {version}",
       "commitArgs": "--no-verify",
       "tag": true,
       "tagMessage": "v{version}",
-      "tagArgs": "--force"
+      "tagArgs": "--force",
+      "push": false
+    },
+    "projects": ["nx-astro"],
+    "releaseTag": {
+      "pattern": "v{version}"
     }
   }
 }
@@ -350,8 +294,9 @@ The release process uses Nx's built-in release capabilities configured in `nx.js
 
 - **preVersionCommand**: Builds plugin before versioning
 - **currentVersionResolver**: Uses git tags as source of truth
-- **changelog**: Generates workspace-level changelog
-- **git**: Automatically commits and tags releases
+- **changelog**: Generates a workspace-level changelog; `createRelease` is `false` because the release workflow creates the GitHub release
+- **conventionalCommits**: Shows `chore` commits (including Dependabot's dependency updates) in the changelog
+- **git**: Commits and tags releases locally; `push` is `false`, so the maintainer pushes with `git push --follow-tags`
 
 ## Required Secrets
 
@@ -363,11 +308,12 @@ No npm token is required. The release workflow stages releases with npm Trusted 
 
 **Configuration:** Automatically provided by GitHub Actions - no setup needed.
 
-**Permissions:** The workflow requests minimal permissions:
+**Permissions:** The release workflow is read-only by default (`contents: read`) and widens permissions per job:
 
-- `contents: write` - Create releases and push tags
-- `packages: write` - Publish packages (if needed)
-- `pull-requests: write` - Update PRs (if needed)
+- `publish` (Stage on npm): `id-token: write`, for the npm Trusted Publishing OIDC token and provenance
+- `github-release` (Create GitHub Release): `contents: write`, to create the GitHub release
+
+It never pushes commits or tags.
 
 ## Triggering Workflows
 
@@ -388,34 +334,28 @@ No npm token is required. The release workflow stages releases with npm Trusted 
 
 ### Release Workflow
 
-**Manual Trigger Only:**
+**Automatic:** pushing a release tag. Create it locally and push it with the release commit:
 
-1. Navigate to Actions tab in GitHub
-2. Select "Release" workflow
-3. Click "Run workflow"
-4. Configure release:
-   - Version bump: patch, minor, major, or prerelease
-   - Prerelease ID (if applicable): beta, alpha, rc
-5. Click "Run workflow"
+```bash
+pnpm exec nx release patch --skip-publish
+git push --follow-tags
+```
 
-**Wait for Completion:**
+**Manual (re-stage an existing tag):**
 
-- Validation: ~5 minutes
-- Tests: ~15-20 minutes
-- Release: ~5 minutes
-- Validation: ~5 minutes
-- Total: ~30-40 minutes
+```bash
+gh workflow run release.yml -f tag=vX.Y.Z
+```
+
+The manual run takes only a `tag`; it never bumps a version.
 
 ### Local Release Testing
 
 To test the release process locally without publishing:
 
 ```bash
-# Dry run release
-npx nx release --dry-run
-
-# Version only (no publish)
-npx nx release version --dry-run
+# Dry run: shows the version bump and CHANGELOG entry, changes nothing
+pnpm exec nx release patch --skip-publish --dry-run
 
 # See what would be published
 cd dist/nx-astro

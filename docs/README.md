@@ -134,11 +134,10 @@ Documentation for maintainers and core contributors of the `@geekvetica/nx-astro
 ### Release Management
 
 - [Release Process](./maintenance/release-process.md) - Release procedures and automation
-  - How to trigger releases
+  - How to create a release (local `nx release`, then push the tag)
   - Release workflow details
   - Version management
   - Publishing process
-  - Post-release validation
   - Rollback procedures
 
 ### Contributing
