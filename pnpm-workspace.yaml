@@ -12,4 +12,5 @@ strictPeerDependencies: false
 # major; remove an entry once `pnpm why <pkg>` shows only fixed versions.
 overrides:
   compression@<1.8.2: ^1.8.2
+  handlebars@>=4.0.0 <4.7.10: ^4.7.10
   undici@>=7.0.0 <7.29.1: ^7.29.1
