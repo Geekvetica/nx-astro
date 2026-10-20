@@ -140,6 +140,14 @@ describe('extractDependencies', () => {
     );
   });
 
+  it('should keep the JSON parse error as the cause when package.json is invalid', () => {
+    writeFileSync(join(tempDir, 'package.json'), '{ invalid json }');
+
+    expect(() => extractDependencies(tempDir)).toThrow(
+      expect.objectContaining({ cause: expect.any(SyntaxError) }),
+    );
+  });
+
   it('should filter all incompatible protocols from devDependencies', () => {
     const packageJson = {
       devDependencies: {

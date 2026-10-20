@@ -108,6 +108,7 @@ export function extractDependencies(sourcePath: string): ExtractedDependencies {
     throw new Error(
       `Failed to parse package.json at ${packageJsonPath}:\n` +
         `${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
 

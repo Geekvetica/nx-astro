@@ -79,7 +79,7 @@ export function validateSource(sourcePath: string): void {
     throw new Error(
       `Source path does not exist: ${sourcePath}\n` +
         `Resolved to: ${absolutePath}\n` +
-        `Please verify the path and try again.`
+        `Please verify the path and try again.`,
     );
   }
 
@@ -88,7 +88,7 @@ export function validateSource(sourcePath: string): void {
   if (!stats.isDirectory()) {
     throw new Error(
       `Source path is not a directory: ${sourcePath}\n` +
-        `The import generator can only import from directories containing Astro projects.`
+        `The import generator can only import from directories containing Astro projects.`,
     );
   }
 
@@ -102,7 +102,7 @@ export function validateSource(sourcePath: string): void {
     throw new Error(
       `No Astro configuration file found in: ${sourcePath}\n` +
         `Expected one of: ${ASTRO_CONFIG_FILES.join(', ')}\n` +
-        `This does not appear to be an Astro project.`
+        `This does not appear to be an Astro project.`,
     );
   }
 
@@ -112,7 +112,7 @@ export function validateSource(sourcePath: string): void {
     throw new Error(
       `package.json not found in: ${sourcePath}\n` +
         `Expected location: ${packageJsonPath}\n` +
-        `An Astro project must have a package.json file.`
+        `An Astro project must have a package.json file.`,
     );
   }
 
@@ -125,7 +125,8 @@ export function validateSource(sourcePath: string): void {
     throw new Error(
       `Invalid package.json in: ${sourcePath}\n` +
         `The package.json file could not be parsed as valid JSON.\n` +
-        `Error: ${error instanceof Error ? error.message : String(error)}`
+        `Error: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error },
     );
   }
 
@@ -139,7 +140,7 @@ export function validateSource(sourcePath: string): void {
     throw new Error(
       `Astro not found in dependencies in: ${sourcePath}\n` +
         `Expected 'astro' to be listed in dependencies or devDependencies in package.json.\n` +
-        `This does not appear to be an Astro project.`
+        `This does not appear to be an Astro project.`,
     );
   }
 
