@@ -1,3 +1,28 @@
+## 3.0.3 (2026-10-20)
+
+### 🩹 Fixes
+
+- **deps:** override handlebars to 4.7.10 for security advisories ([ae31bd3](https://github.com/Geekvetica/nx-astro/commit/ae31bd3))
+- **e2e:** pin the pnpm version used by the e2e consumer workspace ([#186](https://github.com/Geekvetica/nx-astro/issues/186))
+- **e2e:** address review of the pinned pnpm setup ([04b8431](https://github.com/Geekvetica/nx-astro/commit/04b8431))
+- **import:** keep the JSON parse error as cause when package.json is invalid ([ef17de2](https://github.com/Geekvetica/nx-astro/commit/ef17de2))
+- **release:** make the documented nx release flow work locally ([#187](https://github.com/Geekvetica/nx-astro/issues/187))
+- **release:** rebuild before the checklist's pack check; pin commit and tag settings ([#190](https://github.com/Geekvetica/nx-astro/issues/190))
+
+### 🏡 Chore
+
+- add es2022.error to the TypeScript lib for Error cause typings ([619c375](https://github.com/Geekvetica/nx-astro/commit/619c375))
+- **deps:** bump @astrojs/node from 11.1.7 to 11.1.8 ([#198](https://github.com/Geekvetica/nx-astro/pull/198))
+- **deps:** bump astro from 7.3.8 to 7.4.0 ([#197](https://github.com/Geekvetica/nx-astro/pull/197))
+- **deps-dev:** bump ts-jest from 29.4.14 to 29.4.15 in the jest group ([#196](https://github.com/Geekvetica/nx-astro/pull/196))
+- **deps-dev:** bump typescript-eslint ([#195](https://github.com/Geekvetica/nx-astro/pull/195))
+- **deps-dev:** bump eslint ([#199](https://github.com/Geekvetica/nx-astro/pull/199))
+- **deps-dev:** bump @eslint/js from 9.39.5 to 10.0.1 ([a7bfd43](https://github.com/Geekvetica/nx-astro/commit/a7bfd43))
+
+### ❤️ Thank You
+
+- Pawel Wojciechowski @pwojciechowski
+
 ## 3.0.2 (2026-10-14)
 
 ### 🏡 Chore
