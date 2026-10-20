@@ -127,7 +127,7 @@ describe('validateSource', () => {
       });
 
       expect(() => validateSource(sourcePath)).toThrow(
-        /no Astro configuration file found/i
+        /no Astro configuration file found/i,
       );
     });
 
@@ -139,7 +139,7 @@ describe('validateSource', () => {
       });
 
       expect(() => validateSource(sourcePath)).toThrow(
-        /package\.json.*not found/i
+        /package\.json.*not found/i,
       );
     });
 
@@ -151,7 +151,19 @@ describe('validateSource', () => {
       });
 
       expect(() => validateSource(sourcePath)).toThrow(
-        /invalid package\.json/i
+        /invalid package\.json/i,
+      );
+    });
+
+    it('should keep the JSON parse error as the cause if package.json is invalid JSON', () => {
+      const sourcePath = '/test-project';
+      vol.fromJSON({
+        [`${sourcePath}/astro.config.mjs`]: 'export default {};',
+        [`${sourcePath}/package.json`]: 'invalid json{',
+      });
+
+      expect(() => validateSource(sourcePath)).toThrow(
+        expect.objectContaining({ cause: expect.any(SyntaxError) }),
       );
     });
 
@@ -165,7 +177,7 @@ describe('validateSource', () => {
       });
 
       expect(() => validateSource(sourcePath)).toThrow(
-        /Astro.*not found.*dependencies/i
+        /Astro.*not found.*dependencies/i,
       );
     });
 
@@ -179,7 +191,7 @@ describe('validateSource', () => {
       });
 
       expect(() => validateSource(sourcePath)).toThrow(
-        /Astro.*not found.*dependencies/i
+        /Astro.*not found.*dependencies/i,
       );
     });
   });
@@ -216,7 +228,7 @@ describe('validateSource', () => {
       });
 
       expect(() => validateSource(sourcePath)).toThrow(
-        /astro\.config\.(mjs|js|ts|cjs|mts|cts)/i
+        /astro\.config\.(mjs|js|ts|cjs|mts|cts)/i,
       );
     });
   });
