@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@nx/eslint": "23.3.0",
     "@nx/eslint-plugin": "23.3.0",
     "@nx/jest": "23.3.0",
