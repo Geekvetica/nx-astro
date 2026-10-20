@@ -29,6 +29,7 @@ nx-astro/
 │   ├── troubleshooting.md         # Troubleshooting guide
 │   ├── ci-cd-setup.md             # CI/CD setup guide
 │   ├── consuming-project-ci.md    # Consumer CI/CD guide
+│   ├── RELEASE-CHECKLIST.md       # Release checklist
 │   └── maintenance/               # Maintainer documentation
 │       ├── development-setup.md   # Development environment setup
 │       ├── release-process.md     # Release process guide
@@ -82,8 +83,7 @@ nx-astro/
 ├── CLAUDE.md                      # AI assistant context
 ├── CONTRIBUTING.md                # Contribution guidelines
 ├── LICENSE                        # MIT License
-├── README.md                      # Main documentation
-└── RELEASE-CHECKLIST.md           # Release checklist
+└── README.md                      # Main documentation
 ```
 
 ## Package: nx-astro

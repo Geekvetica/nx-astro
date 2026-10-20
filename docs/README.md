@@ -149,7 +149,7 @@ Documentation for maintainers and core contributors of the `@geekvetica/nx-astro
   - Coding standards
   - Pull request process
 
-- [Release Checklist](../RELEASE-CHECKLIST.md) - Pre-release validation checklist
+- [Release Checklist](./RELEASE-CHECKLIST.md) - Pre-release validation checklist
   - Code quality verification
   - Documentation updates
   - Testing requirements
@@ -203,7 +203,7 @@ Documentation for maintainers and core contributors of the `@geekvetica/nx-astro
 1. Ensure you have [Development Setup](./maintenance/development-setup.md) complete
 2. Understand the [Project Structure](./maintenance/project-structure.md)
 3. Follow the [Release Process](./maintenance/release-process.md)
-4. Use the [Release Checklist](../RELEASE-CHECKLIST.md)
+4. Use the [Release Checklist](./RELEASE-CHECKLIST.md)
 5. Monitor [CI/CD pipelines](./ci-cd-setup.md)
 
 ### I'm having issues

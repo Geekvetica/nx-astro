@@ -354,13 +354,19 @@ The manual run takes only a `tag`; it never bumps a version.
 To test the release process locally without publishing:
 
 ```bash
-# Dry run: shows the version bump and CHANGELOG entry, changes nothing
+# Dry run: shows the next version and the CHANGELOG entry, changes nothing
 pnpm exec nx release patch --skip-publish --dry-run
-
-# See what would be published
-cd dist/nx-astro
-npm pack
 ```
+
+The dry run writes no files, so it does not produce a build of the next version. To inspect what the package will contain, build it and list the contents without writing a tarball:
+
+```bash
+pnpm exec nx build nx-astro --skip-nx-cache
+cd dist/nx-astro
+npm pack --dry-run   # lists the files that would be published
+```
+
+The packed contents carry the _current_ version from `nx-astro/package.json`, not the next one. The release workflow builds again from the tag, so this check is for your confidence only. To check the actual release build after `nx release`, see step 7 of the [Release Checklist](./RELEASE-CHECKLIST.md#7-check-the-release-build).
 
 ## Branch Protection
 
