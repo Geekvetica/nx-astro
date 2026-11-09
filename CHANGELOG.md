@@ -1,3 +1,20 @@
+## 3.0.4 (2026-11-09)
+
+### 🩹 Fixes
+
+- **e2e:** pin the test workspace to Nx 23 ([84879c3](https://github.com/Geekvetica/nx-astro/commit/84879c3))
+- **e2e:** pin @emnapi/runtime for the check executor test ([c5f9830](https://github.com/Geekvetica/nx-astro/commit/c5f9830))
+
+### 🏡 Chore
+
+- **deps:** bump @astrojs/node from 11.1.8 to 11.1.11 ([2c97530](https://github.com/Geekvetica/nx-astro/commit/2c97530))
+- **deps:** bump astro from 7.4.0 to 7.4.7 ([9902007](https://github.com/Geekvetica/nx-astro/commit/9902007))
+- **deps-dev:** bump the dev-dependencies group across 1 directory with 8 updates ([389bc50](https://github.com/Geekvetica/nx-astro/commit/389bc50))
+
+### ❤️ Thank You
+
+- Pawel Wojciechowski @pwojciechowski
+
 ## 3.0.3 (2026-10-20)
 
 ### 🩹 Fixes
