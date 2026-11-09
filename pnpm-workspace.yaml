@@ -14,3 +14,9 @@ overrides:
   compression@<1.8.2: ^1.8.2
   handlebars@>=4.0.0 <4.7.10: ^4.7.10
   undici@>=7.0.0 <7.29.1: ^7.29.1
+
+  # Not a security fix: pnpm fills the undeclared @emnapi/runtime peer of
+  # @napi-rs/wasm-runtime with a 2.0 beta, which crashes @astrojs/check against
+  # @emnapi/core 1.x. Remove once 2.0 is stable or the parents declare the peer.
+  '@emnapi/core@>=2.0.0-0': 1.11.3
+  '@emnapi/runtime@>=2.0.0-0': 1.11.3
