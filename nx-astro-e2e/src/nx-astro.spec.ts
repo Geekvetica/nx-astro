@@ -356,10 +356,12 @@ describe('nx-astro e2e', () => {
     beforeAll(() => {
       // Install @astrojs/check as a prerequisite.
       // TypeScript is pinned because `astro check` does not support TypeScript 7.
+      // @emnapi/runtime is pinned because pnpm otherwise fills the undeclared peer
+      // of @astrojs/astro2tsx with a 2.0 beta that crashes against its @emnapi/core 1.x.
       logStep('Installing @astrojs/check for type checking...');
       try {
         runPnpmCommand(
-          'add -D @astrojs/check typescript@~5.9.2',
+          'add -D @astrojs/check typescript@~5.9.2 @emnapi/runtime@1.11.3',
           projectDirectory,
           {
             silent: true,
