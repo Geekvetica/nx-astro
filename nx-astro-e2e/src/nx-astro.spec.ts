@@ -670,8 +670,10 @@ function createTestProject() {
  * Creates the workspace in projectDirectory and adds tsconfig.base.json
  */
 function setUpTestProject(projectName: string, projectDirectory: string) {
+  // Pinned to the newest Nx major in the plugin's peer range (nx-astro/package.json):
+  // @latest moves to majors the plugin does not support yet. Raise it with that range.
   execSync(
-    `npx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
+    `npx create-nx-workspace@23 ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
     {
       cwd: dirname(projectDirectory),
       stdio: 'inherit',
