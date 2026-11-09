@@ -356,10 +356,12 @@ describe('nx-astro e2e', () => {
     beforeAll(() => {
       // Install @astrojs/check as a prerequisite.
       // TypeScript is pinned because `astro check` does not support TypeScript 7.
+      // @emnapi/runtime is pinned because pnpm otherwise fills the undeclared peer
+      // of @astrojs/astro2tsx with a 2.0 beta that crashes against its @emnapi/core 1.x.
       logStep('Installing @astrojs/check for type checking...');
       try {
         runPnpmCommand(
-          'add -D @astrojs/check typescript@~5.9.2',
+          'add -D @astrojs/check typescript@~5.9.2 @emnapi/runtime@1.11.3',
           projectDirectory,
           {
             silent: true,
@@ -670,8 +672,10 @@ function createTestProject() {
  * Creates the workspace in projectDirectory and adds tsconfig.base.json
  */
 function setUpTestProject(projectName: string, projectDirectory: string) {
+  // Pinned to the newest Nx major in the plugin's peer range (nx-astro/package.json):
+  // @latest moves to majors the plugin does not support yet. Raise it with that range.
   execSync(
-    `npx create-nx-workspace@latest ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
+    `npx create-nx-workspace@23 ${projectName} --preset apps --nxCloud=skip --no-interactive --skipGit --pm pnpm`,
     {
       cwd: dirname(projectDirectory),
       stdio: 'inherit',
