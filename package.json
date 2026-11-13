@@ -50,7 +50,7 @@
     "jsonc-eslint-parser": "^3.3.0",
     "lint-staged": "^17.6.0",
     "memfs": "^4.80.0",
-    "nx": "23.3.0",
+    "nx": "24.0.5",
     "prettier": "^3.9.10",
     "ts-jest": "^29.4.15",
     "ts-node": "10.9.2",
