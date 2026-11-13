@@ -29,7 +29,7 @@
     "@astrojs/check": "^0.9.12",
     "@eslint/js": "^10.0.1",
     "@nx/eslint": "23.3.0",
-    "@nx/eslint-plugin": "23.3.0",
+    "@nx/eslint-plugin": "24.0.5",
     "@nx/jest": "23.3.0",
     "@nx/js": "23.3.0",
     "@nx/plugin": "23.3.0",
